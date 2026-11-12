@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Return configuration info for this installation of Komodo."""
 
@@ -135,7 +135,7 @@ def main(argv):
         parser.print_help()
         return 1
     else:
-        print get_info(opts.info)
+        print(get_info(opts.info))
 
 
 if __name__ == "__main__":
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         exc_info = sys.exc_info()
         if log.level <= logging.DEBUG:
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

@@ -186,7 +186,7 @@ class koTransferDownloadOperation(koTransferOperation):
                 rfinfos.append(rfinfo)
                 filesize = 0
                 try:
-                    filesize += long(rfinfo.getFileSize())
+                    filesize += int(rfinfo.getFileSize())
                 except ValueError:
                     pass
                 filesizes.append(filesize)
@@ -218,12 +218,12 @@ class koTransferDownloadOperation(koTransferOperation):
                         raise COMException(nsError.NS_ERROR_ABORT, "Aborted")
                     if not exists(dirname(localpath)):
                         os.makedirs(dirname(localpath))
-                    file(localpath, "wb").write(data)
+                    open(localpath, "wb").write(data)
                     md5hash = md5(data).hexdigest()
                 local_stats.append(os.stat(localpath))
                 local_md5hashes.append(md5hash)
                 try:
-                    total_filesize_downloaded += long(rfinfo.getFileSize())
+                    total_filesize_downloaded += int(rfinfo.getFileSize())
                 except ValueError:
                     pass
                 try:
@@ -248,7 +248,7 @@ class koTransferDownloadOperation(koTransferOperation):
                 time_taken_string = "%d seconds" % (time_taken, )
             self.notifyProgress("Download finished, time taken: %s" % (time_taken_string, ), 100)
             log.debug("koTransferDownloadOperation:: finished, time taken: %s", time_taken_string)
-        except Exception, ex:
+        except Exception as ex:
             if not isinstance(ex, COMException):
                 log.exception("koTransferDownloadOperation:: unexpected exception")
             self.notifyResult(components.interfaces.koIAsyncCallback.RESULT_ERROR,
@@ -318,7 +318,7 @@ class koTransferUploadOperation(koTransferOperation):
                 localpaths.append(localpath)
                 try:
                     filestat = os.stat(localpath)
-                except EnvironmentError, ex:
+                except EnvironmentError as ex:
                     # File is gone - we'll raise an error when we try to access
                     # it below.
                     local_filestats.append((None, str(ex)))
@@ -371,7 +371,7 @@ class koTransferUploadOperation(koTransferOperation):
                         self._createRemoteDirsFromLocalDirs(connection,
                                                             parent_remote_uri,
                                                             dirname(localpath))
-                    data = file(localpath, "rb").read()
+                    data = open(localpath, "rb").read()
                     md5hash = md5(data).hexdigest()
                     if self._aborted:
                         raise COMException(nsError.NS_ERROR_ABORT, "Aborted")
@@ -413,7 +413,7 @@ class koTransferUploadOperation(koTransferOperation):
                 time_taken_string = "%d seconds" % (time_taken, )
             self.notifyProgress("Upload finished, time taken: %s" % (time_taken_string, ), 100)
             log.debug("koTransferUploadOperation:: finished, time taken: %s", time_taken_string)
-        except Exception, ex:
+        except Exception as ex:
             if not isinstance(ex, COMException):
                 log.exception("koTransferUploadOperation:: unexpected exception")
             self.notifyResult(components.interfaces.koIAsyncCallback.RESULT_ERROR,
@@ -426,7 +426,7 @@ class koTransferUploadOperation(koTransferOperation):
             if connection:
                 try:
                     connection.close()
-                except Exception, ex:
+                except Exception as ex:
                     log.warn("Error closing the connection: %r", ex)
 
 

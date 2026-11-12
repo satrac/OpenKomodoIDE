@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2004-2006 ActiveState Software Inc.
 #
 # Contributors:
@@ -29,7 +29,7 @@
 import os
 import sys
 import getopt
-import cgi
+import html
 import logging
 
 
@@ -61,7 +61,7 @@ def htmlescape(content, attribute=0):
         "attribute" (optional) is a boolean indicating if double-quote (")
             should be escaped as well. Default is false.
     """
-    return cgi.escape(content, quote=attribute)
+    return html.escape(content, quote=attribute)
 
 
 #---- mainline
@@ -73,7 +73,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv[1:], "Vvha",
             ["version", "verbose", "help", "attribute"])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         log.error(str(ex))
         log.error("Try `htmlescape --help'.")
         return 1
@@ -84,7 +84,7 @@ def main(argv):
             return
         elif opt in ("-V", "--version"):
             ver = '.'.join([str(part) for part in _version_])
-            print "htmlescape %s" % ver
+            print("htmlescape %s" % ver)
             return
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -98,10 +98,10 @@ def main(argv):
         content = sys.stdin.read()
         escaped = htmlescape(content, attribute)
         sys.stdout.write(escaped)
-    except HTMLEscapeError, ex:
+    except HTMLEscapeError as ex:
         log.error(str(ex))
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             import traceback
             traceback.print_exception(*sys.exc_info())
         return 1

@@ -28,7 +28,7 @@ Dev Notes:
 import sys
 import re
 import pprint
-import __builtin__
+import builtins
 
 
 class PyCompileError(Exception):
@@ -103,16 +103,16 @@ def main(argv):
     except ImportError:
         pass
     else:
-        import StringIO
-        o = StringIO.StringIO()
+        import io
+        o = io.StringIO()
         oldStdout = sys.stdout
         sys.stdout = o
         try:
             tabnanny.check(filename)
-        except IndentationError, e:
+        except IndentationError as e:
             pass # ignore these, we'll catch them later
         sys.stdout = oldStdout
-        lineRe = re.compile("^(?P<fname>.*?) (?P<line>\d+) '(?P<content>.*)'$")
+        lineRe = re.compile(r"^(?P<fname>.*?) (?P<line>\d+) '(?P<content>.*)'$")
         for line in _splitlines(o.getvalue()):
             match = lineRe.match(line)
             if match:
@@ -132,8 +132,8 @@ def main(argv):
 
     # Compile it.
     try:
-        dummy = __builtin__.compile(s, filename, 'exec')
-    except SyntaxError, ex:
+        dummy = builtins.compile(s, filename, 'exec')
+    except SyntaxError as ex:
         r = {}
         r["filename"] = filename
         # Prefix the description with the name of the exception class.

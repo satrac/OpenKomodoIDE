@@ -7,13 +7,13 @@
 import sys
 import os
 import re
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import tempfile
 import collections
 import copy
 
 if len(sys.argv)!=4:
-    print >> sys.stderr, "You must supply sqlite version, input and output filenames"
+    print("You must supply sqlite version, input and output filenames", file=sys.stderr)
 
 if os.path.exists(sys.argv[3]):
     os.remove(sys.argv[3])
@@ -32,8 +32,8 @@ if sys.argv[2]!="src/apsw.c":
 import apsw
 
 with tempfile.NamedTemporaryFile() as f:
-    print basesqurl+"toc.db"
-    f.write(urllib2.urlopen(basesqurl+"toc.db").read())
+    print(basesqurl+"toc.db")
+    f.write(urllib.request.urlopen(basesqurl+"toc.db").read())
     f.flush()
 
     db=apsw.Connection(f.name)
@@ -51,7 +51,7 @@ with tempfile.NamedTemporaryFile() as f:
             consts[title]["page"]=basesqurl+uri.split("#")[0]
 
 def do_mappings():
-    maps=mappings.keys()
+    maps=list(mappings.keys())
     maps.sort()
 
     seenmappings=set()
@@ -64,7 +64,7 @@ def do_mappings():
             # present in multiple mappings
             if val in {"SQLITE_OK", "SQLITE_IGNORE", "SQLITE_ABORT"}:
                 continue
-            for desc, const in consts.items():
+            for desc, const in list(consts.items()):
                 if val in const["vars"]:
                     foundin.add(desc)
 
@@ -78,7 +78,7 @@ def do_mappings():
 
         for v in lookfor:
             if v not in mappings[map]:
-                print "Mapping", map, "is missing", v
+                print("Mapping", map, "is missing", v)
                 shouldexit=True
         if shouldexit:
             sys.exit(1)
@@ -107,7 +107,7 @@ def do_mappings():
 
     for d in sorted(consts.keys()):
         if d not in seenmappings and d not in ignores:
-            print "Missing mapping", d, "with values", consts[d]["vars"], "at", consts[d]["page"]
+            print("Missing mapping", d, "with values", consts[d]["vars"], "at", consts[d]["page"])
 
 
 # we have our own markup to describe what sqlite3 calls we make using
@@ -164,7 +164,7 @@ def do_methods():
         op.extend(fixup(op, saop))
         op.append("")
 
-    keys=methods.keys()
+    keys=list(methods.keys())
     keys.sort()
 
     for k in keys:

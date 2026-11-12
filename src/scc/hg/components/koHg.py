@@ -374,7 +374,7 @@ class KoHG(KoSCCBase):
         hg_stats = result.get('files', {})
 
         result = []
-        for filepath, stat_info in hg_stats.items():
+        for filepath, stat_info in list(hg_stats.items()):
             # stat_info will be a dict with the following keys:
             #    History, Locked, Modified, Path, Status, Switched
             status_string = stat_info.get('status')
@@ -442,7 +442,7 @@ class KoHG(KoSCCBase):
         basedir, relpaths = self.getCommonBaseAndRelativePathsFromURIs([fileuri])
         data = scc_handler.getremotes(cwd=basedir, env=env)
         result = []
-        for name, url in data["items"].items():
+        for name, url in list(data["items"].items()):
             result.append([url, name])
         return result
 
@@ -545,7 +545,7 @@ class KoHGFileChecker(KoSCCChecker, PathHelperMixin):
         # so we do that now
         try:
             result = self.getHgStatus(path, reason)
-        except hglib.HGLibError, e:
+        except hglib.HGLibError as e:
             # we get an exception here if the hg library call errors out
             self.notifyError('Hg status error, click for details', e)
             return False
@@ -568,7 +568,7 @@ class KoHGFileChecker(KoSCCChecker, PathHelperMixin):
             dir_nsUri = self.iosvc.newURI(uri, None, None)
             lenPrePath = len(dir_nsUri.prePath)
             # Cache all the file scc information
-            for filepath, fileinfo in files.items():
+            for filepath, fileinfo in list(files.items()):
                 # Path is given as the relative local file path from
                 # the directory where the command was executed.
                 #   path\\file.txt

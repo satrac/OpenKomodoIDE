@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -35,14 +35,14 @@ class KoWebbrowser(object):
         """Spawn the given command (or argv) and return true iff successful"""
         try:
             env = koprocessutils.getUserEnv()
-        except ServerException, ex:
+        except ServerException as ex:
             log.error(str(ex))
             return 1
         try:
             process.ProcessOpen(command, env=env, stdin=None, stdout=None,
                                 stderr=None)
             return 1
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             log.error(str(ex))
             return 0
 
@@ -59,7 +59,7 @@ class KoWebbrowser(object):
         pattern = re.compile(r"(%\d|%\*|%~[2-9])")
         if pattern.search(command):
             parts = pattern.split(command)
-            LITERAL, CODE = range(2)
+            LITERAL, CODE = list(range(2))
             state = LITERAL
             interpolated = ""
             for part in parts:
@@ -78,7 +78,7 @@ class KoWebbrowser(object):
                         num = int(part[1:])-2
                         try:
                             interpolated += args[num]
-                        except IndexError,ex:
+                        except IndexError as ex:
                             pass
                     state = LITERAL
         else:
@@ -119,7 +119,7 @@ class KoWebbrowser(object):
         try:
             os.startfile(url)
             return 1
-        except WindowsError, e:
+        except WindowsError as e:
             # I don't know who is at fault here but if Netscape 6 (and
             # presumable, therefore, some versions of Mozilla) is set as
             # the default then (1) the browser successfully loads the
@@ -257,7 +257,7 @@ class KoWebbrowser(object):
 
     def _guess_browser_type_from_path(self, path):
         path_lower = path.lower()
-        for browser_type, exe_name in self._exe_name_from_browser_type.items():
+        for browser_type, exe_name in list(self._exe_name_from_browser_type.items()):
             if exe_name.lower() in path_lower:
                 return browser_type
         return None
@@ -306,7 +306,7 @@ class KoWebbrowser(object):
                     join(programFiles, "Opera"))
             try:
                 localAppDataDir = _get_win_folder("CSIDL_LOCAL_APPDATA")
-            except Exception, ex:
+            except Exception as ex:
                 log.warn("error getting local appdata dir: %s", ex)
             else:
                 if localAppDataDir:

@@ -89,7 +89,7 @@ def _getLine(scimoz, lineNo):
     line = scimoz.getTextRange(lineStart, lineEnd)
     return line
 
-class Line(unicode):
+class Line(str):
     r"""Line objects are "smart" wrappers around lines.  They know about
     all of the indentation-related semantics of the line, such as:
       - whether the line is all whitespace or not
@@ -131,7 +131,7 @@ class Line(unicode):
     [2, 4]
     """
     def __init__(self, line):
-        unicode.__init__(line)
+        str.__init__(line)
         self._line = line
         self.iswhitespace = not line.strip()
         self.indentWidths = []
@@ -161,15 +161,15 @@ class Line(unicode):
         return line
     def _strip(self):
         if self.iscode:
-            return unicode(self)
+            return str(self)
         if self.bulleted:
             return self[len(self.bullet):].rstrip()
         else:
             return self[len(self.leadingIndent):].rstrip()
     def __str__(self):
-        return unicode(self._line)
+        return str(self._line)
 
-bulletRe = re.compile("(\s*?[\*%-]\s+)(.*)")
+bulletRe = re.compile(r"(\s*?[\*%-]\s+)(.*)")
 
 def findbullet(line):
     r"""Return a tuple of (bulleted, bullet) where bulleted is true or false.
@@ -194,7 +194,7 @@ def findbullet(line):
 # Match email lines that start with ">", ">>" or "> >" but not python prefixes
 # like ">>>"
 
-commentRe = re.compile("(\s*?(?:\/\*|(?:#+)|(?:>)|(?:>>)|(?:> >)|(?://+)|(?:--))(?!>)\s*)(.*)")
+commentRe = re.compile(r"(\s*?(?:\/\*|(?:#+)|(?:>)|(?:>>)|(?:> >)|(?://+)|(?:--))(?!>)\s*)(.*)")
 def findcomment(line):
     r"""Return a tuple of (iscomment, commentIndent) where 'iscomment' is true
     or false depending on whether the current line is prefixed by a comment
@@ -224,7 +224,7 @@ def findcomment(line):
     else:
         return False, line
 
-codeRe = re.compile("(\s*?)(?:>>>\s)|(?:\.\.\.\s)")
+codeRe = re.compile(r"(\s*?)(?:>>>\s)|(?:\.\.\.\s)")
 def findcode(line):
     r"""Return a tuple of (iscode, codeIndent) where 'iscode' is true
     or false depending on whether the current line is recognized as likely
@@ -246,7 +246,7 @@ def findcode(line):
     else:
         return False, line
 
-commentLineIndentRe = re.compile("(\s*?(?:\*)\s*)(.*)")
+commentLineIndentRe = re.compile(r"(\s*?(?:\*)\s*)(.*)")
 class BlockCommentLine(Line):
     def __init__(self, line):
         Line.__init__(self, line)
@@ -360,12 +360,12 @@ class Para(list):
         # spaces from string.split.
         # Note: If I use re.split([\r\n \t]+), extra newlines get added
         # to the end of the text.
-        breakable_parts = logical_line[len(first_indent):].split(u"\xa0")
+        breakable_parts = logical_line[len(first_indent):].split("\xa0")
         words = []
         for bp in breakable_parts:
           new_words = bp.split()
           if words:
-            words[-1] += u"\xa0"
+            words[-1] += "\xa0"
             if new_words:
               words[-1] += new_words[0]
               del new_words[0]
@@ -605,15 +605,15 @@ def htmlify(text):
     """
     paragraphs = Paragraphize(text)
     htmlcontext = HTMLContext()
-    import cStringIO
-    buffer = cStringIO.StringIO()
+    import io
+    buffer = io.StringIO()
     
     [paragraph.htmlify(buffer, htmlcontext) for paragraph in paragraphs]
     return buffer.getvalue()
 
 def _test():
     import doctest, reflow
-    print "...testing doctests..."
+    print("...testing doctests...")
     return doctest.testmod(reflow)
 
 if __name__ == '__main__':

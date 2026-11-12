@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     An OO interface to 'svn' (the Subversion client command line app).  Based on
@@ -127,7 +127,7 @@ def _joinArgv(argv):
 #---- public stuff
 def getValidOpts(valid, **options):
     newopts = {}
-    for key, val in options.items():
+    for key, val in list(options.items()):
         if key in valid:
             newopts[key] = val
     return newopts
@@ -146,7 +146,7 @@ def makeOptv(**options):
     """
     # SVN args are globally unique across all commands, so this is simple...
     optv = []
-    for key, val in options.items():
+    for key, val in list(options.items()):
         # convert the key from this_is_the_key to --this-is-the-key
         arg = '--' + key.replace('_','-')
         # first, handle those keys that do not have an argument
@@ -161,12 +161,12 @@ def makeOptv(**options):
                 optv.append(arg)
         else:
             optv.append(arg)
-            if type(val) not in types.StringTypes:
+            if type(val) not in (str,):
                 val = str(val)
             optv.append(val)
     return optv
 
-def _parseHits(output, error=[], retval=[], _raw=0, _exp='^(?P<result>\w+)\s+(?P<path>.*)$'):
+def _parseHits(output, error=[], retval=[], _raw=0, _exp=r'^(?P<result>\w+)\s+(?P<path>.*)$'):
     hits = []
     hitRe = re.compile(_exp)
     for line in output:
@@ -248,7 +248,7 @@ class SVN(object):
         argv = [self.svn] + svnoptv + argv
 
         # Prepare and run the given arg vector, 'argv', and return the results.
-        if type(argv) in (types.ListType, types.TupleType):
+        if type(argv) in (list, tuple):
             cmd = _joinArgv(argv)
         else:
             cmd = argv
@@ -310,7 +310,7 @@ class SVN(object):
         self._processHelper.ProcessAbort()
 
     def _simpleCommand(self, command, urls, _raw=0, **svnoptions):
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         argv = [command] + urls
         output, error, retval = self._svnrun(argv, **svnoptions)
@@ -440,7 +440,7 @@ class SVN(object):
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
     
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         
         argv = ['checkout']
@@ -712,7 +712,7 @@ class SVN(object):
         
 
     def diff1(self, urls, _raw=0, **svnoptions):
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         diffs = []
         for url in urls:
@@ -800,7 +800,7 @@ class SVN(object):
         svn is returned in addition to the processed results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         
         argv = ['import'] + urls + [path]
@@ -812,7 +812,7 @@ class SVN(object):
         #    Transmitting file data .........
         #    Committed revision 19.
         #
-        return _parseHits(output, error, retval, _raw, '^(?P<action>\w)\s+(?P<path>.*)$')
+        return _parseHits(output, error, retval, _raw, r'^(?P<action>\w)\s+(?P<path>.*)$')
     
     def workingDirectory(self, path):
         """
@@ -880,7 +880,7 @@ class SVN(object):
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
     
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         
         argv = ['info'] + urls
@@ -986,13 +986,13 @@ class SVN(object):
 
     re_log_revisions = re.compile(
         r'''------------------------------------------------------------------------\s*[\r\n]*'''\
-         '''r(?P<revision>\d+)\s\|\s(?P<author>.*)\s\|\s(?P<date>.*)\s\|\s(?P<num_lines>\d+) line.*[\r\n]*'''\
+         '''r(?P<revision>\\d+)\\s\\|\\s(?P<author>.*)\\s\\|\\s(?P<date>.*)\\s\\|\\s(?P<num_lines>\\d+) line.*[\r\n]*'''\
          '''[\r\n]*'''
     )
 
     def log(self, url, _raw=0, limit=-1, **svnoptions):
         """
-        log: Show the log messages for a set of revision(s) and/or file(s).
+        log: Show the log messages for a set of revision(s) and/or open(s).
         usage: 1. log [PATH]
                2. log URL [PATH...]
         
@@ -1073,13 +1073,13 @@ class SVN(object):
 
         matchIterator = self.re_log_revisions.finditer(output)
         try:
-            match = matchIterator.next()
+            match = next(matchIterator)
         except StopIteration:
             match = None
         while match:
             text_start = match.end()
             try:
-                matchNext = matchIterator.next()
+                matchNext = next(matchIterator)
             except StopIteration:
                 matchNext = None
             if matchNext:
@@ -1450,7 +1450,7 @@ class SVN(object):
           -q [--quiet]             : print as little as possible
           --config-dir arg         : read user configuration files from directory ARG
         """
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         argv = ['resolved'] + urls
         self._svnrun(argv, **svnoptions)
@@ -1575,7 +1575,7 @@ class SVN(object):
             _exp += r'\s+(?P<Last_Changed_Rev>\d+|\?)\s+(?P<Last_Changed_Author>.+?)'
         _exp += r'\s+(?P<Path>.*)$'
         
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         argv = ['status'] + urls
         output, error, retval = self._svnrun(argv, **svnoptions)
@@ -1689,7 +1689,7 @@ class SVN(object):
         # doing a status call on it
         stat = stat_urls = []
         if info and info[0]:
-            for basename in info[0].keys():
+            for basename in list(info[0].keys()):
                 stat_urls.append(basename)
         if stat_urls:
             optv = getValidOpts(['env','cwd','show_updates','verbose','non_recursive','quiet',

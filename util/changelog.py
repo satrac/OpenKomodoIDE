@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Software Inc.
 
 r"""Make a Komodo changelog, given an svn revision range."""
@@ -62,18 +62,18 @@ def changelog_html(start_buildnum, end_buildnum):
     finally:
         del sys.path[0]
 
-    if isinstance(start_buildnum, (str, unicode)):
+    if isinstance(start_buildnum, str):
         start_buildnum = int(start_buildnum)
-    if isinstance(end_buildnum, (str, unicode)):
+    if isinstance(end_buildnum, str):
         end_buildnum = int(end_buildnum)
 
     text = changelog_markdown(start_buildnum, end_buildnum)
     return markdown2.markdown(text,
         extras=["link-patterns"],
         link_patterns=[
-            (re.compile("((komodo\s+)?bug\s*#?(?P<id>\d+))", re.I),
+            (re.compile(r"((komodo\s+)?bug\s*#?(?P<id>\d+))", re.I),
              r'http://bugs.activestate.com/show_bug.cgi?id=\g<id>'),
-            (re.compile("((moz(illa)?\s+)?bug\s*#?(?P<id>\d+))", re.I),
+            (re.compile(r"((moz(illa)?\s+)?bug\s*#?(?P<id>\d+))", re.I),
              r'http://bugzilla.mozilla.org/show_bug.cgi?id=\g<id>'),
             (re.compile(r"\bcommit ([a-f0-9]{40})\b"),
              r'%s/commit/\1' % _git_base_url()),
@@ -105,13 +105,13 @@ def _capture_stdout(argv, ignore_retval=False):
         raise Error("error running '%s'" % ' '.join(argv))
     return stdout
 
-_url_pat = re.compile("(?<!<)(https?://[^\s]+(?<!\.|>))")
+_url_pat = re.compile(r"(?<!<)(https?://[^\s]+(?<!\.|>))")
 def _markdown_urlize(text):
     return _url_pat.sub(r"<\1>", text)
 
 def _markdown_hr_fix(text):
     needs_fix_re = re.compile(r'(?<!\n\n)^(?P<hr>-+)$', re.M)
-    return needs_fix_re.sub('\n\g<hr>', text)
+    return needs_fix_re.sub('\n\\g<hr>', text)
 
 def _markdown_br_fix(text):
     """Ensure EOLs in SVN log checkin messages are changed to Markdown
@@ -213,11 +213,11 @@ def main(argv):
                     % sys.argv[0])
     start_rev, end_rev = args
     if opts.format == "text":
-        print changelog_text(start_rev, end_rev)
+        print(changelog_text(start_rev, end_rev))
     elif opts.format == "html":
-        print changelog_html(start_rev, end_rev)
+        print(changelog_html(start_rev, end_rev))
     elif opts.format == "markdown":
-        print changelog_markdown(start_rev, end_rev)
+        print(changelog_markdown(start_rev, end_rev))
     else:
         raise Error("unknown format: %r" % opts.format)
 

@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 
 """Distutils setup script for luddite.py"""
 
 import sys
 import os
-from distutils.core import setup
+from setuptools import setup
 
 
 #---- support routines
@@ -25,7 +25,7 @@ setup(name="luddite",
       url="https://www.activestate.com/komodo-ide",
       license="Komodo License",
       platforms=["Windows", "Linux", "Mac OS X"],
-      long_description="""\
+      long_description=r"""\
 UDL (User-Defined Languages) is a system for building custom language
 extensions for Komodo. Luddite (this package) is a tool for working with
 UDL: compiling UDL resources, packaging bits into Komodo extensions.

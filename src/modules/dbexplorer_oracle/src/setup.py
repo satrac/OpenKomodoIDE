@@ -226,7 +226,7 @@ class bdist_rpm(distutils.command.bdist_rpm.bdist_rpm):
                 "%s.spec" % self.distribution.get_name())
         queryFormat = "%{name}-%{version}-%{release}.%{arch}.rpm"
         command = "rpm -q --qf '%s' --specfile %s" % (queryFormat, specFile)
-        origFileName = os.popen(command).read()
+        origFileName = subprocess.Popen(command).read()
         parts = origFileName.split("-")
         parts.insert(2, oracleVersion)
         parts.insert(3, "py%s%s" % sys.version_info[:2])
@@ -271,7 +271,7 @@ class test(distutils.core.Command):
         sys.path.insert(0, os.path.abspath("test"))
         sys.path.insert(0, os.path.abspath(buildCommand.build_lib))
         if sys.version_info[0] < 3:
-            execfile(os.path.join("test", "test.py"))
+            exec(compile(open(os.path.join("test", "test.py"), "rb").read(), os.path.join("test", "test.py"), 'exec'))
         else:
             fileName = os.path.join("test", "test3k.py")
             exec(open(fileName).read())

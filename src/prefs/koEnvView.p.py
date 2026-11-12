@@ -6,8 +6,14 @@
 
 from xpcom import components
 import sys, os, re, types, string
-import logging, urllib
+import logging, urllib.request, urllib.parse, urllib.error
 from koTreeView import TreeView
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 
 log = logging.getLogger("koEnvView")
@@ -40,7 +46,7 @@ class KoEnvironmentView(TreeView):
         except KeyError:
             log.error("unknown column id: '%s'", col)
             return ""
-        if type(datum) not in (types.StringType, types.UnicodeType):
+        if type(datum) not in (bytes, str):
             datum = str(datum)
         return datum
 
@@ -107,8 +113,8 @@ class KoEnvironmentView(TreeView):
             self._data.reverse()
         else:
             try:
-                self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                    cmp(dict1[sortBy], dict2[sortBy])
+                self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                    _cmp(dict1[sortBy], dict2[sortBy]))
                                )
             except KeyError:
                 log.error("Cannot sort Environment Variables by: '%s'", sortBy)
@@ -120,7 +126,7 @@ class KoEnvironmentView(TreeView):
             self._tree.endUpdateBatch()
 
     def setVariables(self, envvars):
-        senv = string.split(envvars, "\n") # XXX, mozilla only returns \n ????
+        senv = envvars.split("\n") # XXX, mozilla only returns \n ????
         for i in range(len(senv)):
             senv[i].strip()
             if not senv[i] or senv[i].find('=') == -1:   # skip empty lines
@@ -168,7 +174,7 @@ class KoCGIVariablesView(TreeView):
         except KeyError:
             log.error("unknown CGI variables view column id: '%s'", col)
             return ""
-        if type(datum) not in (types.StringType, types.UnicodeType):
+        if type(datum) not in (bytes, str):
             datum = str(datum)
         return datum
 
@@ -221,8 +227,8 @@ class KoCGIVariablesView(TreeView):
             self._data.reverse()
         else:
             try:
-                self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                    cmp(dict1[sortBy], dict2[sortBy])
+                self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                    _cmp(dict1[sortBy], dict2[sortBy]))
                                )
             except KeyError:
                 log.error("Cannot sort CGI Variables by: '%s'", sortBy)
@@ -233,7 +239,7 @@ class KoCGIVariablesView(TreeView):
         self._tree.endUpdateBatch()
 
     def setVariables(self, type, envvars):
-        senv = string.split(envvars, "\n") # XXX, mozilla only returns \n ????
+        senv = envvars.split("\n") # XXX, mozilla only returns \n ????
         for i in range(len(senv)):
             senv[i].strip()
             if not senv[i] or senv[i].find('=') == -1:   # skip empty lines
@@ -241,7 +247,7 @@ class KoCGIVariablesView(TreeView):
             name, value = senv[i].split("=", 1)
             datum = {"type": type,
                      "name": name,
-                     "value": urllib.unquote(value)}
+                     "value": urllib.parse.unquote(value)}
             self._data.append(datum)
         self._sortedBy = None
         self._tree.beginUpdateBatch()
@@ -253,7 +259,7 @@ class KoCGIVariablesView(TreeView):
         ret = ""
         for i in range(len(self._data)):
             if self._data[i]["type"] == type:
-                ret += self._data[i]["name"] +"="+ urllib.quote(self._data[i]["value"])+"\n"
+                ret += self._data[i]["name"] +"="+ urllib.parse.quote(self._data[i]["value"])+"\n"
         return ret
 # #endif
 

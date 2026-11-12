@@ -11,9 +11,9 @@ class default(Task):
 class hello(Task):
     "say hi"
     def doit(self):
-        print "Hello, World!"
+        print("Hello, World!")
 
 class bye(Task):
     "say bye"
     def doit(self):
-        print "Bye bye."
+        print("Bye bye.")

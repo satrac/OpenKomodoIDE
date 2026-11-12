@@ -31,7 +31,7 @@ class _FileWrapper(object):
         self.f = sys.stdin
         
     def set_text(self, text):
-        from cStringIO import StringIO
+        from io import StringIO
         self.f = StringIO(text)
 
     def readline(self):
@@ -86,7 +86,7 @@ def at_stmt_end(token_type, token_string):
     
 def safe_get_next_token(tokenizer):
     try:
-        return tokenizer.next()
+        return next(tokenizer)
     except (tokenize.TokenError, IndentationError):
         log.debug("problem getting next token")
         raise StopIteration
@@ -454,7 +454,7 @@ if __name__ == '__main__':
     logging.basicConfig()
     f = _FileWrapper()
     if len(sys.argv) == 1:
-        code = """\
+        code = r"""\
 def foo():
     try:
         pass
@@ -463,11 +463,11 @@ def foo():
 """
         f.set_text(code)
         # f.set_stdin()
-        print _calc_py2_py3_scores(f)
+        print(_calc_py2_py3_scores(f))
     else:
         import os
         for path in sys.argv[1:]:
             if not os.path.isfile(path):
                 continue
             f.set_file(path)
-            print "%s: %r" % (path, _calc_py2_py3_scores(f))
+            print("%s: %r" % (path, _calc_py2_py3_scores(f)))

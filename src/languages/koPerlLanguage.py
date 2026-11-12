@@ -41,7 +41,7 @@ class KoPerlLanguage(KoLanguageBase):
     _reg_categories_ = [("komodo-language", name)]
 
     modeNames = ['perl']
-    shebangPatterns = [re.compile(ur'\A#!.*perl.*$', re.IGNORECASE | re.MULTILINE)]
+    shebangPatterns = [re.compile(r'\A#!.*perl.*$', re.IGNORECASE | re.MULTILINE)]
     primary = 1
     internal = 0
     accessKey = 'p'
@@ -51,10 +51,10 @@ class KoPerlLanguage(KoLanguageBase):
     downloadURL = 'http://www.ActiveState.com/Products/ActivePerl'
     commentDelimiterInfo = { "line": [ "#" ]  }
     variableIndicators = '$@%'
-    namedBlockRE = "^[ \t]*?(sub\s+\w+|package\s+\w)"
+    namedBlockRE = "^[ \t]*?(sub\\s+\\w+|package\\s+\\w)"
     namedBlockDescription = 'Perl subs and packages'
 
-    _lineup_chars = u"{}()[]"
+    _lineup_chars = "{}()[]"
     _lineup_open_chars = "([{" # Perl tells the difference between the indent and lineup {}'s
     _lineup_close_chars = ")]}"
 

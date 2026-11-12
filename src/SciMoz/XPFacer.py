@@ -26,9 +26,9 @@ except ImportError:
                     os.path.split(sys.argv[0])[0], "../scintilla/scripts"
                 ))
     if not os.path.isfile(os.path.join(scintillaIncPath,"Scintilla.iface")):
-        print "WARNING: Expecting to find 'Face.py' and 'Scintilla.iface' in path"
-        print scintillaIncPath, ", but I can't. "
-        print "I'm probably gunna fail real-soon-now!"
+        print("WARNING: Expecting to find 'Face.py' and 'Scintilla.iface' in path")
+        print(scintillaIncPath, ", but I can't. ")
+        print("I'm probably gunna fail real-soon-now!")
     sys.path.insert(0, scintillaIncPath)
     sys.path.insert(1, scintillaScriptsPath)
     import Face
@@ -286,7 +286,7 @@ def _(lines, indent=0, replacements=None, file=None):
     if lines[-1] == "":
         lines.pop(-1)
 
-    lines = map(lambda line: (" " * indent) + line, lines)
+    lines = [(" " * indent) + line for line in lines]
     if file is not None:
         # write to the file
         file.write("%s\n" % "\n".join(lines))
@@ -384,7 +384,7 @@ def fixup_iface_data(face):
     setters
     @param face: The scintilla interface definition structure
     """
-    for name in face.features.keys():
+    for name in list(face.features.keys()):
         feature = face.features[name]
         log.debug("Fixing up feature %s: %r", name, feature)
         if not "Name" in feature:
@@ -405,10 +405,10 @@ def fixup_iface_data(face):
                 "Value": feature["Param2Value"]
             })
         feature["ParamCount"] = \
-            len(filter(lambda p: p["Type"] != "void", feature["Params"]))
+            len([p for p in feature["Params"] if p["Type"] != "void"])
 
         if feature["FeatureType"] == "get":
-            if attributeName(name) in manualGetterProperties.keys():
+            if attributeName(name) in list(manualGetterProperties.keys()):
                 # this has a matching manual getter, skip it
                 del face.features[name]
                 if name in face.order:
@@ -426,7 +426,7 @@ def fixup_iface_data(face):
                     feature["MatchingFeature"] = None
 
         if feature["FeatureType"] == "set":
-            if attributeName(name) in manualSetterProperties.keys():
+            if attributeName(name) in list(manualSetterProperties.keys()):
                 # this has a matching manual setter, skip it
                 del face.features[name]
                 if name in face.order:
@@ -447,12 +447,12 @@ def fixup_iface_data(face):
                     feature["FeatureType"] = "fun"
 
         if feature["FeatureType"] == "fun":
-            if attributeName(feature["Name"]) in manualGetterProperties.keys():
+            if attributeName(feature["Name"]) in list(manualGetterProperties.keys()):
                 if not idlName(feature["Name"]) in manualFunctions:
                     feature["FeatureType"] = "overridden"
 
     # loop again, and check for setters with no getters
-    for feature in face.features.values():
+    for feature in list(face.features.values()):
         if feature["FeatureType"] != "set":
             continue
         if feature["MatchingFeature"]["FeatureType"] != "get":
@@ -461,7 +461,7 @@ def fixup_iface_data(face):
             feature["FeatureType"] = "fun"
 
     # add in the manually implemented getters
-    for name, feature in manualGetterProperties.items():
+    for name, feature in list(manualGetterProperties.items()):
         feature["Name"] = name
         feature["FeatureType"] = "get"
         feature["MatchingFeature"] = None
@@ -471,7 +471,7 @@ def fixup_iface_data(face):
             face.order.append(name)
 
     # add in the manually implemented setters
-    for name, feature in manualSetterProperties.items():
+    for name, feature in list(manualSetterProperties.items()):
         feature["Name"] = name
         feature["FeatureType"] = "set"
         feature["MatchingFeature"] = getterVersion(feature, face)
@@ -488,8 +488,8 @@ def generate_idl_constants_fragment(face):
     @param face: The scintilla interface definition structure
     """
     unwantedValues = ["SCI_START", "SCI_OPTIONAL_START", "SCI_LEXER_START"]
-    outputfile = file("ISciMoz_gen.consts.fragment", "w")
-    print "Dumping ISciMoz interface constants to %s" % outputfile.name
+    outputfile = open("ISciMoz_gen.consts.fragment", "w")
+    print("Dumping ISciMoz interface constants to %s" % outputfile.name)
     outputfile.write("%{C++\n#ifndef SCINTILLA_HIDE_DEFINES\n%}\n")
     for name in face.order:
         if name in unwantedValues:
@@ -499,7 +499,7 @@ def generate_idl_constants_fragment(face):
         if feature["FeatureType"] == "val":
             value = feature["Value"]
             if "Comment" in feature:
-                _(map(lambda x: "// " + x, feature["Comment"]), 8, file=outputfile)
+                _(["// " + x for x in feature["Comment"]], 8, file=outputfile)
             _("const %(unsigned)slong %(name)s = %(value)s;",
               8,
               replacements={
@@ -520,7 +520,7 @@ def generate_idl_method_fragment(feature, file, indent=8):
     @return: number of slots taken
     """
     if "Comment" in feature:
-        _(map(lambda x: "// " + x, feature["Comment"]), indent, file=file)
+        _(["// " + x for x in feature["Comment"]], indent, file=file)
     args = []
     missingType = None
     for param in feature["Params"]:
@@ -582,7 +582,7 @@ def generate_idl_attribute_fragment(feature, file, indent=8):
         return 0
 
     if "Comment" in feature:
-        _(map(lambda x: "// " + x, feature["Comment"]), 8, file=file)
+        _(["// " + x for x in feature["Comment"]], 8, file=file)
 
     assert feature["ReturnType"] in typeInfo, \
         "idl type for return type %s missing while generating attribute %s" % (
@@ -608,8 +608,8 @@ def generate_idl_lite_fragment(face):
     Generate the ISciMozLite interface fragment
     @param face: the scintilla interface definition structure
     """
-    outputfile = file("ISciMoz_lite_gen.idl.fragment", "w")
-    print "Dumping ISciMoz 'lite' inteface to %s" % outputfile.name
+    outputfile = open("ISciMoz_lite_gen.idl.fragment", "w")
+    print("Dumping ISciMoz 'lite' inteface to %s" % outputfile.name)
     liteFeatures = str.split("""
         addText insertText length currentPos anchor selectAll gotoLine
         gotoPos startStyling setStyling markerAdd markerNext styleSetFore
@@ -650,7 +650,7 @@ def generate_idl_full_fragment(face):
         charPosAtPosition
     """.split()
 
-    outputfile = file("ISciMoz_gen.idl.fragment", "w")
+    outputfile = open("ISciMoz_gen.idl.fragment", "w")
     static_guids = [  # Keep the GUIDs the same across builds.
         "a53c386b-99e2-4b2e-85e7-fb5a29322369",
         "4645e5bd-4cd1-44dc-9d70-00b38dc87d29",
@@ -671,7 +671,7 @@ def generate_idl_full_fragment(face):
     interfaceCount = 0
     slotCount = 0
 
-    print "Dumping ISciMoz inteface to %s" % outputfile.name
+    print("Dumping ISciMoz inteface to %s" % outputfile.name)
     _(idlTemplateHead % (static_guids[interfaceCount], interfaceCount), file=outputfile)
     for name in face.order:
         if idlName(name) in suppressedFeatures:
@@ -907,8 +907,8 @@ def generate_cxx_xpcom_fragment(face):
     Generate the C++ XPCOM stubs
     @param face: the scintilla interface definition structure
     """
-    outputfile = file("npscimoz_gen.h", "w")
-    print "Dumping C++ SciMoz implementation to %s" % outputfile.name
+    outputfile = open("npscimoz_gen.h", "w")
+    print("Dumping C++ SciMoz implementation to %s" % outputfile.name)
     for name in face.order:
         if idlName(name) in manualFunctions + discardedFeatures:
             # skip manually implemented functions
@@ -930,7 +930,7 @@ def generate_npapi_identifiers(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Dumping NPAPI identifier declarations to %s" % file.name
+    print("Dumping NPAPI identifier declarations to %s" % file.name)
 
     methods = set(manualFunctions)
     for name in face.order:
@@ -968,7 +968,7 @@ def generate_npapi_init(methods, properties, file):
     @param properties: the list of property names (as listed in the idl)
     @param file: the file to write to
     """
-    print "Dumping NPAPI identifier initialization to %s" % file.name
+    print("Dumping NPAPI identifier initialization to %s" % file.name)
     _("""
         static bool mNPIdentifiersInitialized = 0;
         void SciMoz::SciMozInitNPIdentifiers() {
@@ -1008,7 +1008,7 @@ def generate_npapi_has_method(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Generating NPAPI HasMethod implementation in %s" % file.name
+    print("Generating NPAPI HasMethod implementation in %s" % file.name)
     _("""
       bool
       SciMoz::HasMethod(NPIdentifier np_name)
@@ -1262,7 +1262,7 @@ def generate_npapi_invoke(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Generating NPAPI Invoke implementation in %s" % file.name
+    print("Generating NPAPI Invoke implementation in %s" % file.name)
     _("""
       bool
       SciMoz::Invoke(NPP instance,
@@ -1308,7 +1308,7 @@ def generate_npapi_has_property(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Generating NPAPI HasProperty implementation in %s" % file.name
+    print("Generating NPAPI HasProperty implementation in %s" % file.name)
     _("""
       bool
       SciMoz::HasProperty(NPIdentifier np_name)
@@ -1428,7 +1428,7 @@ def generate_npapi_get_property(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Generating NPAPI GetProperty implementation in %s" % file.name
+    print("Generating NPAPI GetProperty implementation in %s" % file.name)
     _("""
       bool
       SciMoz::GetProperty(NPIdentifier np_name, NPVariant *result)
@@ -1592,7 +1592,7 @@ def generate_npapi_set_property(face, file):
     @param face: the scintilla interface definition structure
     @param file: the file to write to
     """
-    print "Generating NPAPI SetProperty implementation in %s" % file.name
+    print("Generating NPAPI SetProperty implementation in %s" % file.name)
     _("""
       bool
       SciMoz::SetProperty(NPIdentifier np_name, const NPVariant *value)
@@ -1620,8 +1620,8 @@ def generate_npapi_set_property(face, file):
       file=file)
 
 def generate_wrapper(face, interfaceCount):
-    outputfile = file("ISciMoz_jswrapper_gen.fragment", "w")
-    print "Generating XPCOM wrapper in %s" % outputfile.name
+    outputfile = open("ISciMoz_jswrapper_gen.fragment", "w")
+    print("Generating XPCOM wrapper in %s" % outputfile.name)
     for i in range(interfaceCount + 1):
         _("""
           koSciMozWrapper.prototype._interfaces.push(Components.interfaces.ISciMoz_Part%(i)s);
@@ -1632,8 +1632,8 @@ def generate_wrapper(face, interfaceCount):
           file=outputfile)
 
     methods = set(manualFunctions)
-    getters = set(map(attributeName, manualGetterProperties.keys()))
-    setters = set(map(attributeName, manualSetterProperties.keys()))
+    getters = set(map(attributeName, list(manualGetterProperties.keys())))
+    setters = set(map(attributeName, list(manualSetterProperties.keys())))
 
     for name in face.order:
         if idlName(name) in discardedFeatures:
@@ -1902,7 +1902,7 @@ def main():
     generate_idl_lite_fragment(face)
     generate_idl_full_fragment(face)
     generate_cxx_xpcom_fragment(face)
-    outputfile = file("generated_plugin_code.h", "w")
+    outputfile = open("generated_plugin_code.h", "w")
     generate_npapi_identifiers(face, outputfile)
     generate_npapi_has_method(face, outputfile)
     generate_npapi_invoke(face, outputfile)

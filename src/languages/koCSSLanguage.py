@@ -92,7 +92,7 @@ class koLessLanguage(koCSSCommonLanguage):
         if self._lexers_by_name.get(self.name, None) is None:
             lexer = koCSSCommonLanguage.get_lexer(self)
             if lexer != self._lexers_by_name[self.name]:
-                print("Error in koLessLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name]))
+                print(("Error in koLessLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name])))
                       
             lexer.setProperty('lexer.css.less.language', '1')
         return self._lexers_by_name[self.name]
@@ -118,7 +118,7 @@ class koSCSSLanguage(koCSSCommonLanguage):
         if self._lexers_by_name.get(self.name, None) is None:
             lexer = koCSSCommonLanguage.get_lexer(self)
             if lexer != self._lexers_by_name[self.name]:
-                print("Error in koSCSSLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name]))
+                print(("Error in koSCSSLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name])))
                       
             lexer.setProperty('lexer.css.scss.language', '1')
         return self._lexers_by_name[self.name]
@@ -137,7 +137,7 @@ class koSassLanguage(koCSSCommonLanguage):
         if self._lexers_by_name.get(self.name, None) is None:
             lexer = koCSSCommonLanguage.get_lexer(self)
             if lexer != self._lexers_by_name[self.name]:
-                print("Error in koSassLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name]))
+                print(("Error in koSassLanguage: lexer:%r, self._lexers_by_name[self.name:%s]:%r" % (lexer, self.name, self._lexers_by_name[self.name])))
                       
             lexer.setProperty('lexer.css.sass.language', '1')
             lexer.supportsFolding = 0

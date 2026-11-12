@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -28,7 +28,7 @@ class KoSystemDataService:
         import sysdata
         try:
             return sysdata.get(name)
-        except sysdata.SysDataError, ex:
+        except sysdata.SysDataError as ex:
             errmsg = str(ex)
             log.error(errmsg)
             self.lastErrorSvc.setLastError(0, errmsg)
@@ -44,7 +44,7 @@ class KoSystemDataService:
         import sysdata
         try:
             return sysdata.set(name, value)
-        except sysdata.SysDataError, ex:
+        except sysdata.SysDataError as ex:
             errmsg = str(ex)
             log.error(errmsg)
             self.lastErrorSvc.setLastError(0, errmsg)
@@ -56,7 +56,7 @@ class KoSystemDataService:
         import sysdata
         try:
             return sysdata.flush(name)
-        except sysdata.SysDataError, ex:
+        except sysdata.SysDataError as ex:
             errmsg = str(ex)
             log.error(errmsg)
             self.lastErrorSvc.setLastError(0, errmsg)

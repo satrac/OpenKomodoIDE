@@ -7,9 +7,15 @@
 
 from xpcom import components
 import logging
+from functools import cmp_to_key
 log = logging.getLogger('koFindResultsView')
 import sys, os, re, types
 from koTreeView import TreeView
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 class KoFindResultsView(TreeView):
     _com_interfaces_ = [components.interfaces.koIFindResultsView,
@@ -50,7 +56,7 @@ class KoFindResultsView(TreeView):
         except KeyError:
             log.error("unknown find result column id: '%s'" % column.id)
             return ""
-        if type(datum) not in (types.StringType, types.UnicodeType):
+        if type(datum) not in (bytes, str):
             datum = str(datum)
         return datum
 
@@ -90,7 +96,7 @@ class KoFindResultsView(TreeView):
         if not self.rootPath:
             return fileName
         
-        if fileName.find(self.rootPath) is not 0:
+        if fileName.find(self.rootPath) != 0:
             return fileName
         
         return "<%s>%s" % (os.path.basename(self.rootPath), fileName[len(self.rootPath):])
@@ -253,12 +259,12 @@ class KoFindResultsView(TreeView):
             try:
                 if sortBy == "findresults-context":
                     # strip leading whitespace for context sort order
-                    self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                        cmp(dict1[sortBy].lstrip(), dict2[sortBy].lstrip())
+                    self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                        _cmp(dict1[sortBy].lstrip(), dict2[sortBy].lstrip()))
                                    )
                 else:
-                    self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                        cmp(dict1[sortBy], dict2[sortBy])
+                    self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                        _cmp(dict1[sortBy], dict2[sortBy]))
                                    )
             except KeyError:
                 log.error("Cannot sort find results by: '%s'" % sortBy)
@@ -285,7 +291,7 @@ class KoFindResultsView(TreeView):
         for column in self.columns:
             # Modified form of getCellText:
             celltext = datum[column.id]
-            if type(celltext) not in (types.StringType, types.UnicodeType):
+            if type(celltext) not in (bytes, str):
                 celltext = str(celltext)
             else:
                 celltext = celltext.lower()
@@ -358,5 +364,5 @@ class KoFindResultsView(TreeView):
             if datum["type"] != "hit":
                 continue
             urlDict[datum["url"]] = 1
-        return len(urlDict.keys())
+        return len(list(urlDict.keys()))
 

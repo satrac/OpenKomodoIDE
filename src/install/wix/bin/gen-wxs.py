@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Generate feature-*.wxs.in from feature-*.template.in and feature-*.ini
@@ -10,7 +10,6 @@ ship.  This mainly exists so we can list our files in a more readable format.
 
 import collections
 import hashlib
-import imp
 import os.path
 import sys
 
@@ -44,11 +43,11 @@ def readFileList(filename, config=set()):
                 section = line[1:-1]
                 for part in section.split("."):
                     if not part in config:
-                        print "Skipping section %s: feature %s fail" % (section, part)
+                        print("Skipping section %s: feature %s fail" % (section, part))
                         valid = False
                         break
                 else:
-                    print "Adding section %s" % (section,)
+                    print("Adding section %s" % (section,))
             else:
                 if valid:
                     results.add(line)
@@ -212,6 +211,10 @@ def main(template, filelist, outfile, config={}):
 if __name__ == '__main__':
     abspath = os.path.abspath
     config_path = abspath(os.path.join(abspath(__file__), "../../../.."))
-    file, pathname, description = imp.find_module("bkconfig", [config_path])
-    config = imp.load_module("bkconfig", file, pathname, description)
+    import importlib.machinery, importlib.util
+    spec = importlib.machinery.PathFinder.find_spec("bkconfig", [config_path])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named 'bkconfig' in %r" % (config_path,))
+    config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config)
     main(*sys.argv[1:], config=config)

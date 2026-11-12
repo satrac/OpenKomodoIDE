@@ -172,7 +172,7 @@ class KoP4(KoSCCBase):
         #print "p4 diff ",repr(files)
         _files = groupFilesByDirectory(files)
         diff = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             basedir_files = _files[basedir]
             if not basedir_files:
                 # Work on everything underneath this directory.
@@ -389,7 +389,7 @@ class KoP4(KoSCCBase):
         # we init the cvs object with the root we retreived
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.add(files=_files[basedir],
                                   _raw=1, cwd=basedir)
             if 'stderr' in raw:
@@ -446,7 +446,7 @@ class KoP4(KoSCCBase):
         #print "p4 commit ",repr(files)
         # p4lib saves message to a message for file
         _files = self._normalizeFiles(files)
-        basedir = self._osPathSvc.commonprefixlist(groupFilesByDirectory(_files).keys())
+        basedir = self._osPathSvc.commonprefixlist(list(groupFilesByDirectory(_files).keys()))
         output = ''
         result, raw = scc_handler.submit(_files,
                                 description=message,
@@ -485,7 +485,7 @@ class KoP4(KoSCCBase):
     def _do_remove(self, files, force, recursive, scc_handler=None):
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.delete(_files[basedir], _raw=1, cwd=basedir)
             raw_stderr = raw.get('stderr')
             if raw_stderr:
@@ -534,7 +534,7 @@ class KoP4(KoSCCBase):
     def _do_update(self, files, options, scc_handler=None):
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.sync(_files[basedir], _raw=1, cwd=basedir)
             if 'stderr' in raw:
                 output += raw['stderr']
@@ -577,7 +577,7 @@ class KoP4(KoSCCBase):
         # item properties
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.revert(_files[basedir], _raw=1, cwd=basedir)
             if 'stderr' in raw:
                 output += raw['stderr']
@@ -593,7 +593,7 @@ class KoP4(KoSCCBase):
         # item properties
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.edit(_files[basedir], _raw=1, cwd=basedir)
             if 'stderr' in raw:
                 output += raw['stderr']
@@ -607,7 +607,7 @@ class KoP4(KoSCCBase):
     def _do_status(self, files, recursive, options, scc_handler=None):
         sccStatusItems = []
         _files = groupFilesByDirectory(files)
-        for basedir, files in _files.items():
+        for basedir, files in list(_files.items()):
             if not files or files == ['./...']:
                 # use the current directory then
                 if recursive:
@@ -742,7 +742,7 @@ class KoP4FileChecker(KoSCCChecker):
             #print "p4 checking ",basepath + subpath
             path = uriparse.URIToLocalPath(dir_nsUri.spec)
             p4fstat = self.p4.fstat(subpath, cwd=path)
-        except p4lib.P4LibError, e:
+        except p4lib.P4LibError as e:
             # Don't notify errors for paths that are not under SCC
             if str(e).find("is not under client's root") == -1:
                 self.notifyError('Perforce status error, click for details', e)
@@ -776,7 +776,7 @@ class KoP4FileChecker(KoSCCChecker):
             dirs = None
             try:
                 dirs = self.p4.dirs(fpath)
-            except p4lib.P4LibError, e:
+            except p4lib.P4LibError as e:
                 log.debug("p4 dirs failed")
                 log.debug(e)
                 pass

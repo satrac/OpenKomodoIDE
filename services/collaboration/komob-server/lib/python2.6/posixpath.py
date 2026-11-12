@@ -311,7 +311,7 @@ def expandvars(path):
 def normpath(path):
     """Normalize path, eliminating double slashes, etc."""
     # Preserve unicode (if path is unicode)
-    slash, dot = (u'/', u'.') if isinstance(path, unicode) else ('/', '.')
+    slash, dot = ('/', '.') if isinstance(path, str) else ('/', '.')
     if path == '':
         return dot
     initial_slashes = path.startswith('/')
@@ -340,8 +340,8 @@ def normpath(path):
 def abspath(path):
     """Return an absolute path."""
     if not isabs(path):
-        if isinstance(path, unicode):
-            cwd = os.getcwdu()
+        if isinstance(path, str):
+            cwd = os.getcwd()
         else:
             cwd = os.getcwd()
         path = join(cwd, path)

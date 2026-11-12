@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2008 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -14,7 +14,7 @@ sys.path.append(join(dirname(                        # src
                        dirname(                        # bzr
                         dirname(abspath(__file__))))),  #pylib
                       "python-sitelib"))
-print sys.path[-1]
+print(sys.path[-1])
 import koBzrlib
 
 class BzrTest(koBzrlib.Bzr):
@@ -49,13 +49,13 @@ class test_koBzrlib(unittest.TestCase):
         #pprint(result)
         files = result.get('files', {})
         self.assertEqual(len(files), len(output['status'].splitlines()), "Incorrect number of files: %r" % (len(files), ))
-        for path, (expected_status_flags, expected_status) in {
+        for path, (expected_status_flags, expected_status) in list({
                             normpath(join(cwd, 'COPYING.txt')): (' ', 'D'),
                             normpath(join(cwd, 'README')): (' ', 'M'),
                             normpath(join(cwd, 'TODO')): ('-', 'D'),
                             normpath(join(cwd, 'added.txt')): ('+', 'N'),
                             normpath(join(cwd, 'newfile.txt')): ('?', ' '),
-                    }.items():
+                    }.items()):
             self.assertTrue(path in files, "File was not found: %r" % (path, ))
             status = files[path]['status']
             self.assertEqual(status, expected_status, "File %r has incorrect status: %r" % (path, status, ))
@@ -80,13 +80,13 @@ class test_koBzrlib(unittest.TestCase):
         #pprint(result)
         files = result.get('files', {})
         self.assertEqual(len(files), len(output.get('status').splitlines()), "Incorrect number of files: %r" % (len(files), ))
-        for path, (expected_status_flags, expected_status) in {
+        for path, (expected_status_flags, expected_status) in list({
                             normpath(join(cwd, 'COPYING.txt')): (' ', 'D'),
                             normpath(join(cwd, 'README')): (' ', 'M'),
                             normpath(join(cwd, 'TODO')): ('-', 'D'),
                             normpath(join(cwd, 'added.txt')): ('+', 'N'),
                             normpath(join(cwd, 'newfile.txt')): ('?', ' '),
-                    }.items():
+                    }.items()):
             self.assertTrue(path in files, "File was not found: %r" % (path, ))
             status = files[path]['status']
             self.assertEqual(status, expected_status, "File %r has incorrect status: %r" % (path, status, ))

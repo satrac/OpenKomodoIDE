@@ -9,7 +9,7 @@ from koLintResult import KoLintResult
 from koLintResults import koLintResults
 from xpcom.server.enumerator import *
 import os, sys, re
-import StringIO  # Do not use cStringIO!  See html5 class for an explanation
+import io  # Do not use cStringIO!  See html5 class for an explanation
 
 from zope.cachedescriptors.property import LazyClassAttribute
 
@@ -23,7 +23,7 @@ logging.basicConfig()
 log = logging.getLogger("KoHTMLLinter")
 #log.setLevel(logging.DEBUG)
 
-_doctype_re = re.compile("<!doctype\s+html\s*?(.*?)\s*>", re.IGNORECASE|re.DOTALL)
+_doctype_re = re.compile(r"<!doctype\s+html\s*?(.*?)\s*>", re.IGNORECASE|re.DOTALL)
 
 class MultiLangStringBuilder(dict):
     """
@@ -51,7 +51,7 @@ class MultiLangStringBuilder(dict):
         self[name].append(s)
         
     def finish(self):
-        for name in self.keys():
+        for name in list(self.keys()):
             self._pushBlanks(name)
     
     def last_text_matches_pattern(self, name, ptn):
@@ -128,7 +128,7 @@ class _CommonHTMLLinter(object):
 
     def addLineNumbers(self, s, currLineNum):
         lines = s.splitlines(True)
-        nums = range(0, len(lines))
+        nums = list(range(0, len(lines)))
         return "".join(["%4d:%s" % (num + currLineNum, line) for num, line in zip(nums, lines)])
 
     def _trim(self, s):
@@ -286,20 +286,20 @@ class _CommonHTMLLinter(object):
         
         The JS lexer gets text between script tags passed as is.  But then there
         are other wrinkles:
-        M -> JS after: /on\w+\s*=\s*["']/ ::
+        M -> JS after: /on\\w+\\s*=\\s*["']/ ::
              If the terms 'return' and 'event' aren't used here, insert a ';' if needed
              Otherwise, insert 'function _kof##() {';, => _IN_JS_FUNCTION_DEF
              and add an 'event' arg.
-        M -> JS after: /<field.*?>\s*/       :: => _IN_JS_SQUELCH
-        M -> JS after: /<script.*?>\s*/       :: blank <![CDATA[, => _IN_JS_SCRIPT
-        M -> JS after: />\s*/       :: insert 'function _kof##() {';  blank <![CDATA[ -- Assume not a script tag, => _IN_JS_FUNCTION_DEF_INVOCN
+        M -> JS after: /<field.*?>\\s*/       :: => _IN_JS_SQUELCH
+        M -> JS after: /<script.*?>\\s*/       :: blank <![CDATA[, => _IN_JS_SCRIPT
+        M -> JS after: />\\s*/       :: insert 'function _kof##() {';  blank <![CDATA[ -- Assume not a script tag, => _IN_JS_FUNCTION_DEF_INVOCN
         M -> JS after: other:  , => _IN_JS_SQUELCH
-        M -> CSS after: />\s*/ :: nothing, => _IN_CSS_STYLE
+        M -> CSS after: />\\s*/ :: nothing, => _IN_CSS_STYLE
         M -> CSS after: ["'] :: insert  '_x {', => _IN_CSS_ATTR
         M -> CSS after: other:  => _IN_CSS_SQUELCH
         
         land at M, currState & _IN_JS:
-            blank  /]]>\s*/
+            blank  /]]>\\s*/
             _IN_JS_SQUELCH: emit nothing
             _IN_JS_SCRIPT: emit nothing
             _IN_JS_FUNCTION_DEF: emit '}'
@@ -319,7 +319,7 @@ class _CommonHTMLLinter(object):
         find TPL_END => drop _IN_SSL
         
         Two points about this state machine:
-        1. SSL_EMITTERS start with patterns like /<\?=/ or /<\?php\s+echo\b/.  They emit
+        1. SSL_EMITTERS start with patterns like /<\\?=/ or /<\\?php\\s+echo\b/.  They emit
            a value that the browser will see.  SSL_BLOCK doesn't emit code, so it all gets squelched.
         2. States will overlap across families.  For example, we can have JS_SQUELCH and SSL_BLOCK at the same time
         3. Whenever we end up in markup, we can end whatever is pending, and clear all
@@ -354,12 +354,12 @@ class _CommonHTMLLinter(object):
         textAsBytes = request.content.encode("utf-8")
         uniqueLanguageNames = dict([(k, None) for k in languageNamesAtTransitionPoints])
         if udlMapping:
-            for targetName in udlMapping.values():
+            for targetName in list(udlMapping.values()):
                 try:
                     uniqueLanguageNames[targetName] = []
                 except TypeError:
                     log.debug("udlMapping:%s, targetName:%r", udlMapping, targetName)
-        uniqueLanguageNames = uniqueLanguageNames.keys()
+        uniqueLanguageNames = list(uniqueLanguageNames.keys())
         #log.debug("transitionPoints:%s", transitionPoints)
         #log.debug("uniqueLanguageNames:%s", uniqueLanguageNames)
         ###bytesByLang =OLD### dict([(k, []) for k in uniqueLanguageNames])
@@ -395,7 +395,7 @@ class _CommonHTMLLinter(object):
                 for j in range(currLineNum, currLineNum + numNewLinesInCurrText + 1):
                     self._multiLanguageLineNumbers.add(j)
             squelchedText = self._spaceOutNonNewlines(currText)
-            for name in bytesByLang.keys():
+            for name in list(bytesByLang.keys()):
                 if origLangName == "CSS" and langName == name:
                     if currState & self._IN_CSS:
                         # We're in a run of CSS, could be separated by SSL blocks
@@ -600,7 +600,7 @@ class _CommonHTMLLinter(object):
         # Dump pending white-space to end so we see last-line messages on each stream.
         bytesByLang.finish()
         bytesByLangFinal = {}
-        for name in bytesByLang.keys():
+        for name in list(bytesByLang.keys()):
             bytesByLangFinal[name] = "".join(bytesByLang[name])
             #log.debug("Lint doc(%s):[\n%s\n]", name, bytesByLang[name])
         bytesByLang = bytesByLangFinal
@@ -608,7 +608,7 @@ class _CommonHTMLLinter(object):
         python_encoding_name = request.encoding.python_encoding_name
         if python_encoding_name not in ('ascii', 'utf-8'):
             charsByLang = {}
-            for name, byteSubset in bytesByLang.items():
+            for name, byteSubset in list(bytesByLang.items()):
                 try:
                     charsByLang[name] = byteSubset.decode("utf-8").encode(python_encoding_name)
                 except:
@@ -618,7 +618,7 @@ class _CommonHTMLLinter(object):
             charsByLang = bytesByLang
 
         lintResultsByLangName = {}
-        for langName, textSubset in charsByLang.items():
+        for langName, textSubset in list(charsByLang.items()):
             if not textSubset.strip():
                 # Don't bother linting empty documents.  XML-based languages
                 # require at least one element, but that could be annoying.
@@ -669,10 +669,10 @@ class _CommonHTMLLinter(object):
         if numLintResultSets == 0:
             return koLintResults()
         elif len(charsByLang) == 1:
-            return self._check_emitted_code_lines(lintResultsByLangName.values()[0], textAsBytes)
+            return self._check_emitted_code_lines(list(lintResultsByLangName.values())[0], textAsBytes)
         else:
             finalLintResults = koLintResults()
-            for langName, lintResultSet in lintResultsByLangName.items():
+            for langName, lintResultSet in list(lintResultsByLangName.items()):
                 mLangName = self._getMappedName(langName)
                 for lintResult in lintResultSet.getResults():
                     lintResult.description = mLangName + ": " + lintResult.description
@@ -877,13 +877,13 @@ class CommonTidyLinter(object):
         lines = [l for l in lines if l.startswith('line ')]
         lines = self.filterLines(lines)
         results = koLintResults()
-        resultRe = re.compile("""^
+        resultRe = re.compile(r"""^
             line\s(?P<line>\d+)
             \scolumn\s(?P<column>\d+)
             \s-\s(?P<desc>.*)$""", re.VERBOSE)
         for line in lines:
             if enc == '-utf8':
-                line = unicode(line,'utf-8')
+                line = str(line,'utf-8')
             resultMatch = resultRe.search(line)
             if not resultMatch:
                 log.warn("Could not parse tidy output line: %r", line)
@@ -1160,7 +1160,7 @@ class KoHTML5_html5libLinter:
             # Use StringIO, not CStringIO!
             # CStringIO.StringIO(latin1 str).read() => ucs2 string 
             # StringIO.StringIO(latin1 str).read() => latin1 string 
-            inputStream = StringIO.StringIO(text)
+            inputStream = io.StringIO(text)
             parser = html5lib.HTMLParser()
             try:
                 doc = parser.parse(inputStream,
@@ -1183,7 +1183,7 @@ class KoHTML5_html5libLinter:
                 else:
                     #log.debug("Ignoring additional params: %s", params)
                     pass
-            for lineNo, endColNo, errorName, params in groupedErrors.values():
+            for lineNo, endColNo, errorName, params in list(groupedErrors.values()):
                 #print "KoHTMLLinter: %r -> %r" % (line, resultMatch.groupdict())
                 if lineNo >= len(textLines) or len(textLines[lineNo]) == 0:
                     lineNo = len(textLines) - 1

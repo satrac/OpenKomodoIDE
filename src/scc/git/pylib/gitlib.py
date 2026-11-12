@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2008 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -9,6 +9,13 @@ import re
 import types
 import pprint
 import logging
+
+try:
+    from version_compat import LooseVersion
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "util")))
+    from version_compat import LooseVersion
+    sys.path.pop(0)
 
 # Komodo modules.
 import process
@@ -28,7 +35,7 @@ class GITLibError(ServerException):
             if kwargs.get(key, None) is not None:
                 setattr(self, key, kwargs[key])
                 del kwargs[key]
-        log.debug(kwargs.items())
+        log.debug(list(kwargs.items()))
         if ServerException is Exception:
             ServerException.__init__(self, *args) # no XPCOM
         else:
@@ -55,7 +62,7 @@ class GIT:
         """Prepare and run the given arg vector, 'argv', and return the
         results.  Returns (<stdout>, <stderr>).
         """
-        if type(argv) not in (types.ListType, types.TupleType):
+        if type(argv) not in (list, tuple):
             raise GITLibError("_runCommand:: argv is not a list: %r" % (argv, ),
                               cwd=cwd)
         # Remove any empty options from the cmd list.
@@ -163,7 +170,7 @@ class GIT:
 
     def clone(self, urls, cwd=None, altdirname=None, command_options="",
               terminalHandler=None, env=None):
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         argv = [self.executable, 'clone']
         if command_options:
@@ -214,8 +221,8 @@ class GIT:
 
     log_revisions_re = re.compile(
         r'''commit\s+(?P<revision>\w*?)\n''' \
-         '''Author:\s+(?P<author>.*?)\n''' \
-         '''Date:\s+(?P<date>.*?)\n''' \
+         '''Author:\\s+(?P<author>.*?)\n''' \
+         '''Date:\\s+(?P<date>.*?)\n''' \
          '''\n'''
     )
 
@@ -357,13 +364,13 @@ class GIT:
         log_items = []
         matchIterator = self.log_revisions_re.finditer(output)
         try:
-            match = matchIterator.next()
+            match = next(matchIterator)
         except StopIteration:
             match = None
         while match:
             text_start = match.end()
             try:
-                matchNext = matchIterator.next()
+                matchNext = next(matchIterator)
             except StopIteration:
                 matchNext = None
             if matchNext:
@@ -793,7 +800,7 @@ class GIT:
             # we end up refreshing the local refs to that remote repo's branches
             # too (bug 99920)
             remotes = self.getremotes(localrepo, env=env)["items"]
-            for name, url in remotes.items():
+            for name, url in list(remotes.items()):
                 if url == remoterepo:
                     remoterepo = name
                     break
@@ -851,7 +858,6 @@ class GIT:
         @returns {bool} True if the git executable is within the specified
             version range (inclusive), False if not.
         """
-        from distutils.version import LooseVersion
         version = self._version
         if version is None:
             # no version available

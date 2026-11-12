@@ -4,22 +4,22 @@ class TestLobVar(BaseTestCase):
 
     def __PerformTest(self, type, inputType):
         if type == "CLOB":
-            longString = u""
+            longString = ""
         else:
             longString = ""
         directType = getattr(cx_Oracle, type)
-        self.cursor.execute(u"truncate table Test%ss" % type)
+        self.cursor.execute("truncate table Test%ss" % type)
         for i in range(0, 11):
             if i > 0:
                 if type == "CLOB":
-                    char = unichr(ord('A') + i - 1)
+                    char = chr(ord('A') + i - 1)
                 else:
                     char = chr(ord('A') + i - 1)
                 longString += char * 25000
             elif inputType != directType:
                 continue
             self.cursor.setinputsizes(longString = inputType)
-            self.cursor.execute(u"""
+            self.cursor.execute("""
                     insert into Test%ss (
                       IntCol,
                       %sCol
@@ -30,7 +30,7 @@ class TestLobVar(BaseTestCase):
                     integerValue = i,
                     longString = longString)
         self.connection.commit()
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select *
                 from Test%ss
                 order by IntCol""" % type)
@@ -42,9 +42,9 @@ class TestLobVar(BaseTestCase):
                 self.failUnlessEqual(lob.read(), "")
             else:
                 if type == "CLOB":
-                    char = unichr(ord('A') + integerValue - 1)
-                    prevChar = unichr(ord('A') + integerValue - 2)
-                    actualValue = unicode(lob)
+                    char = chr(ord('A') + integerValue - 1)
+                    prevChar = chr(ord('A') + integerValue - 2)
+                    actualValue = str(lob)
                 else:
                     char = chr(ord('A') + integerValue - 1)
                     prevChar = chr(ord('A') + integerValue - 2)
@@ -60,12 +60,12 @@ class TestLobVar(BaseTestCase):
                 self.failUnlessEqual(lob.read(offset, 10), string)
 
     def __TestTrim(self, type):
-        self.cursor.execute(u"truncate table Test%ss" % type)
+        self.cursor.execute("truncate table Test%ss" % type)
         self.cursor.setinputsizes(longString = getattr(cx_Oracle, type))
         longString = "X" * 75000
         if type == "CLOB":
-            longString = unicode(longString)
-        self.cursor.execute(u"""
+            longString = str(longString)
+        self.cursor.execute("""
                 insert into Test%ss (
                   IntCol,
                   %sCol
@@ -75,7 +75,7 @@ class TestLobVar(BaseTestCase):
                 )""" % (type, type),
                 integerValue = 1,
                 longString = longString)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select %sCol
                 from Test%ss
                 where IntCol = 1""" % (type, type))
@@ -104,17 +104,17 @@ class TestLobVar(BaseTestCase):
 
     def testCLOBCursorDescription(self):
         "test cursor description is accurate for CLOBs"
-        self.cursor.execute(u"select * from TestCLOBs")
+        self.cursor.execute("select * from TestCLOBs")
         self.failUnlessEqual(self.cursor.description,
-                [ (u'INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
-                  (u'CLOBCOL', cx_Oracle.CLOB, -1, 4000, 0, 0, 0) ])
+                [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
+                  ('CLOBCOL', cx_Oracle.CLOB, -1, 4000, 0, 0, 0) ])
 
     def testBLOBCursorDescription(self):
         "test cursor description is accurate for BLOBs"
-        self.cursor.execute(u"select * from TestBLOBs")
+        self.cursor.execute("select * from TestBLOBs")
         self.failUnlessEqual(self.cursor.description,
-                [ (u'INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
-                  (u'BLOBCOL', cx_Oracle.BLOB, -1, 4000, 0, 0, 0) ])
+                [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
+                  ('BLOBCOL', cx_Oracle.BLOB, -1, 4000, 0, 0, 0) ])
 
     def testBLOBTrim(self):
         "test trimming a BLOB"
@@ -127,7 +127,7 @@ class TestLobVar(BaseTestCase):
     def testMultipleFetch(self):
         "test retrieving data from a CLOB after multiple fetches"
         self.cursor.arraysize = 1
-        self.cursor.execute(u"select CLOBCol from TestCLOBS")
+        self.cursor.execute("select CLOBCol from TestCLOBS")
         rows = self.cursor.fetchall()
         self.failUnlessRaises(cx_Oracle.ProgrammingError, rows[1][0].read)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """ Uses the virustotal package (https://github.com/Gawen/virustotal) to
 interact with the VirusTotal API.
@@ -44,7 +44,7 @@ import tempfile
 import json
 import subprocess
 import shutil
-import StringIO
+import io
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -112,7 +112,7 @@ def test_vt_api(apikey):
     log.debug("Testing VirusTotal API server...")
     v = virustotal.VirusTotal(apikey)
     try:
-        report = v.get(StringIO.StringIO("X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"))
+        report = v.get(io.StringIO(r"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"))
         if report.positives:
             log.debug("VirusTotal API seems alive.  LET'S DO THIS!")
         else:
@@ -134,14 +134,14 @@ def archive_Komodo_intall(tempfolder):
     komodo-sdk.zip section as a basical example of the steps then needed.
     """
     log.info("Repacking and zipping Komodo files...\n")
-    kopaths = ["lib\mozilla\components",
-               "lib\mozilla\extensions",
-               "lib\mozilla\plugins",
-               "lib\support"]
-    kosdkpath = "lib\sdk"
-    mozpypath = "lib\mozilla\python"
-    mozpath = "lib\mozilla"
-    pypath = "lib\python"
+    kopaths = [r"lib\mozilla\components",
+               r"lib\mozilla\extensions",
+               r"lib\mozilla\plugins",
+               r"lib\support"]
+    kosdkpath = r"lib\sdk"
+    mozpypath = r"lib\mozilla\python"
+    mozpath = r"lib\mozilla"
+    pypath = r"lib\python"
     ziplist = []
     appendedPath = ""
     for root, dirs, files in os.walk(tempfolder):

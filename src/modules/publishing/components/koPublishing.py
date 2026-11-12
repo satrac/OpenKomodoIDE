@@ -7,7 +7,7 @@ import time
 import stat
 import logging
 import threading
-import Queue
+import queue
 from hashlib import md5
 from os.path import join, exists, isdir, isfile, basename, dirname
 from posixpath import join as rjoin
@@ -37,7 +37,7 @@ class remoteFileGenerator(threading.Thread):
         self.includes = includes
         self.excludes = excludes
         self._isrunning = False
-        self.queue = Queue.Queue()
+        self.queue = queue.Queue()
 
     def reconnect(self):
         rfSvc = components.classes["@activestate.com/koRemoteConnectionService;1"].\
@@ -49,7 +49,7 @@ class remoteFileGenerator(threading.Thread):
             return
         try:
             dir_rfinfo = self.connection.list(remote_dir, 1)  # refresh
-        except Exception, ex:
+        except Exception as ex:
             # Try reconnecting - the connection may have timed out, bug 92563.
             log.info("remoteFileGenerator:: reconnecting")
             self.reconnect()
@@ -82,7 +82,7 @@ class remoteFileGenerator(threading.Thread):
             log.info("remoteFileGenerator:: starting")
             self._isrunning = True
             self._gen_remote_items(self.remote_dir, self.includes, self.excludes)
-        except Exception, ex:
+        except Exception as ex:
             self.queue.put(ex)
         finally:
             self._isrunning = False
@@ -153,7 +153,7 @@ class koPublishingPushOperation(koPublishingOperation):
                 if child_rfinfo is None:
                     # Create the remote directory.
                     #print "  Creating remote directory: %r" % (remote_path)
-                    self._connection.createDirectory(remote_path, 0700)
+                    self._connection.createDirectory(remote_path, 0o700)
                     has_changed = True
                 child_rfinfo = self._connection.list(remote_path, 1)# Refresh
                 # XXX: what to do if it exists and is not a directory?
@@ -161,11 +161,11 @@ class koPublishingPushOperation(koPublishingOperation):
                 assert child_rfinfo.isDirectory(), "Remote path already exists, but is not a directory: %r" % (remote_path)
                 has_changed |= self._push_directory(local_path, child_rfinfo)
             elif stat.S_ISREG(st_mode): # Regular file.
-                local_file_data = file(local_path, "rb").read()
+                local_file_data = open(local_path, "rb").read()
                 if not child_rfinfo:
                     #print "  Creating synced file: %r" % (remote_path)
                     self._connection.writeFile(remote_path, local_file_data)
-                    file(local_path, "wb").write(local_file_data)
+                    open(local_path, "wb").write(local_file_data)
                     has_changed = True
                 else:
                     # XXX: what to do if it exists locally, but is not a file?
@@ -206,7 +206,7 @@ class koPublishingPushOperation(koPublishingOperation):
                     last_parent_path = parent_path
                     parent_path = dirname(parent_path)
                 for parent_path in create_paths:
-                    self._connection.createDirectory(parent_path, 0700)
+                    self._connection.createDirectory(parent_path, 0o700)
                 dir_rfinfo = self._connection.list(remote_dir, 1)# Refresh
                 assert dir_rfinfo, "Remote directory still does not exist: %r" % (remote_dir)
             return self._push_directory(local_dir, dir_rfinfo)
@@ -229,7 +229,7 @@ class koPublishingPushOperation(koPublishingOperation):
             if self._connection:
                 try:
                     self._connection.close()
-                except Exception, ex:
+                except Exception as ex:
                     log.warn("Error closing the connection: %r", ex)
 
 
@@ -278,12 +278,14 @@ class koPublishingSyncOperation(koPublishingOperation):
                 # Try to get an item from the queue, but also keep ensuring the
                 # operation hasn't been aborted.
                 hit = rfg.queue.get(timeout=2)
-            except Queue.Empty:
-                continue
-            finally:
+            except queue.Empty:
                 if self._aborted:
                     rfg.stop()
                     break
+                continue
+            if self._aborted:
+                rfg.stop()
+                break
             if hit is None:
                 # Generation is finished.
                 break
@@ -470,7 +472,7 @@ class koPublishingSyncOperation(koPublishingOperation):
                                                 getService(components.interfaces.koIRemoteConnectionService)
                                     filecheck_connection = rfSvc.getConnectionUsingUriNoCache(self.publish_settings.remote_uri)
                                 rdata = filecheck_connection.readFile(remotepath)
-                                ldata = file(localpath, "rb").read()
+                                ldata = open(localpath, "rb").read()
                                 if rdata != ldata:
                                     self._foundChange(SYNC_CONFLICT_BOTH_MODIFIED,
                                                       rjoin(relpath, name))
@@ -507,7 +509,7 @@ class koPublishingSyncOperation(koPublishingOperation):
                 self.publish_settings.saveSyncData()
                 try:
                     filecheck_connection.close()
-                except Exception, ex:
+                except Exception as ex:
                     log.warn("Error closing the filecheck connection: %r", ex)
             numFilesChecked = float(1)
             filesToCheckLen = len(set_local_dirs)
@@ -549,7 +551,7 @@ class koPublishingSyncOperation(koPublishingOperation):
                         change_types.append(SYNC_LOCAL_FILE_ADDED)
                         change_paths.append(rjoin(relpath, name))
                 self._batchFoundChanges(change_types, change_paths)
-        except Exception, ex:
+        except Exception as ex:
             if not isinstance(ex, COMException):
                 log.exception("koPublishingSyncOperation error")
             raise
@@ -566,7 +568,7 @@ class koPublishingSyncOperation(koPublishingOperation):
             self.callback.notifySyncItem(action, path)
 
     def _batchFoundChanges(self, actions, paths):
-        self._changes += zip(actions, paths)
+        self._changes += list(zip(actions, paths))
         if self.callback:
             # The callback is an instance of ProxiedSynchronizationCallback, so
             # we don't need to worry about proxying - the callback instance will
@@ -601,7 +603,7 @@ class koPublishingSyncOperation(koPublishingOperation):
             if self._connection:
                 try:
                     self._connection.close()
-                except Exception, ex:
+                except Exception as ex:
                     log.warn("Error closing the sync connection: %r", ex)
 
 
@@ -732,7 +734,7 @@ class koFilePushOperation(threading.Thread):
                     if self._connection:
                         try:
                             self._connection.close()
-                        except Exception, ex:
+                        except Exception as ex:
                             log.warn("Error closing the connection: %r", ex)
 
         koRemoteTransSvc = components.classes["@activestate.com/koRemoteTransferService;1"]. \

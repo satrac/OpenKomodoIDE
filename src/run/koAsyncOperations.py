@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # Copyright (c) 2000-2007 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -81,7 +81,7 @@ class koAsyncService(object):
                 aOp.status = self.STATUS_RUNNING
                 data = aOp.run()
                 log.debug("operation run finished, return data: %r", data)
-            except Exception, ex:
+            except Exception as ex:
                 if aOpCallback:
                     log.debug("operation: %r raised exception: %r", aOp, ex)
                     #################################
@@ -102,14 +102,14 @@ class koAsyncService(object):
                     # calling to the callback handler. Fix that here. It's
                     # likely this is due to the callback argument being of
                     # XPCOM type nsIVariant, see bug 81444.
-                    if isinstance(data, unicode) and data == u"": data = ""
+                    if isinstance(data, str) and data == "": data = ""
                     try:
                         #print "\n%s: making callback\n" % (name, )
                         if aOp.status == self.STATUS_STOPPING:
                             self.notifyCallback(aOpCallback, self.RESULT_STOPPED, data)
                         else:
                             self.notifyCallback(aOpCallback, self.RESULT_SUCCESSFUL, data)
-                    except Exception, ex:
+                    except Exception as ex:
                         log.debug("callback for %r failed: %r", name, ex)
         finally:
             # Remove the operation from the list
@@ -155,10 +155,10 @@ class koAsyncService(object):
             return [x[1] for x in self._runningOperations]
 
     def getAllRunningUris(self):
-        return self._affectedUris.keys()
+        return list(self._affectedUris.keys())
 
     def getAllLockedUris(self):
-        return self._lockedUris.keys()
+        return list(self._lockedUris.keys())
 
     def uriHasPendingOperation(self, uri):
         return uri in self._affectedUris

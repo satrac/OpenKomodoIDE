@@ -206,7 +206,7 @@ class koPreferenceSetBase(object):
 
     def __getstate__(self):
         prefs = {}
-        for id, (val, typ) in self.prefs.items():
+        for id, (val, typ) in list(self.prefs.items()):
             if typ=="object":
                 try:
                     val = UnwrapObject(val)
@@ -232,7 +232,7 @@ class koPreferenceSetBase(object):
             self.idref = ""
             self.preftype = ""
 
-        for key, (pref, typ) in self.prefs.items()[:]:
+        for key, (pref, typ) in list(self.prefs.items())[:]:
             if getattr(pref, "_is_shadow", False):
                 del self.prefs[key]
             elif hasattr(pref, "container"):
@@ -307,14 +307,14 @@ class koPreferenceSetBase(object):
 
     def reset(self):
         # All preferences get dropped.
-        ids = self.prefs.keys()
+        ids = list(self.prefs.keys())
         self.prefs = {}
         for id in ids:
             self._notifyPreferenceChange(id)
 
     def getPrefIds(self):
         names = set()
-        for name, (pref, typ) in self.prefs.items():
+        for name, (pref, typ) in list(self.prefs.items()):
             if typ == "object" and pref._is_shadow:
                 continue # skip shadow prefs
             names.add(name)
@@ -349,7 +349,7 @@ class koPreferenceSetBase(object):
             
             try:
                 isValid = eval(validation, _validationNamespace)
-            except Exception, ex:
+            except Exception as ex:
                 exstr = str(ex)
                 if exstr.startswith("invalid syntax"):
                     log.debug("Validation failed due to invalid syntax")
@@ -398,7 +398,7 @@ class koPreferenceSetBase(object):
             try:
                 try:
                     isValid = eval(validation, _validationNamespace)
-                except Exception, ex:
+                except Exception as ex:
                     exstr = str(ex)
                     if exstr.startswith("invalid syntax"):
                         msg = ("The validation expression for pref '%s' is "
@@ -451,12 +451,12 @@ class koPreferenceSetBase(object):
     @components.ProxyToMainThreadAsync
     def setString(self, prefName, pref):
         self._checkPrefType(prefName, "string", 0, pref)
-        self._setPrefValue(prefName, "string", unicode(pref))
+        self._setPrefValue(prefName, "string", str(pref))
         
     @components.ProxyToMainThreadAsync
     def setLong(self, prefName, pref):
         self._checkPrefType(prefName, "long", 0, pref)
-        self._setPrefValue(prefName, "long", long(pref))
+        self._setPrefValue(prefName, "long", int(pref))
     
     @components.ProxyToMainThreadAsync
     def setDouble(self, prefName, pref):
@@ -555,10 +555,10 @@ class koPreferenceSetBase(object):
         return self._getPref(prefName, "object")
 
     def getStringPref(self, prefName):
-        return unicode(self._getPref(prefName, "string"))
+        return str(self._getPref(prefName, "string"))
     
     def getLongPref(self, prefName):
-        return long(self._getPref(prefName, "long"))
+        return int(self._getPref(prefName, "long"))
 
     def getDoublePref(self, prefName):
         return float(self._getPref(prefName, "double"))
@@ -567,10 +567,10 @@ class koPreferenceSetBase(object):
         return operator.truth(self._getPref(prefName, "boolean"))
 
     def getString(self, prefName, defaultValue=""):
-        return unicode(self._getPref(prefName, "string", defaultValue))
+        return str(self._getPref(prefName, "string", defaultValue))
     
     def getLong(self, prefName, defaultValue=0):
-        return long(self._getPref(prefName, "long", defaultValue))
+        return int(self._getPref(prefName, "long", defaultValue))
 
     def getDouble(self, prefName, defaultValue=0.0):
         return float(self._getPref(prefName, "double", defaultValue))
@@ -605,7 +605,7 @@ class koPreferenceSetBase(object):
     def deletePref(self, prefName):
         """Remove a preference from the preference set.
         prefName is the name of the preference to be removed."""
-        if self.prefs.has_key(prefName):
+        if prefName in self.prefs:
             del self.prefs[prefName]
             self._notifyPreferenceChange(prefName)
 
@@ -698,7 +698,7 @@ class koPreferenceSetBase(object):
                     new_val = source.getPref(id)
                     changed = True
             else:
-                raise TypeError, "Unknown child of type '%s'" % (typ,)
+                raise TypeError("Unknown child of type '%s'" % (typ,))
             # XXX - may need better equality semantics here!?!?
             if changed:
                 #print "notifying pref change %r of %r, new %r existing %r" % (self.id, id, new_val, existing_val)
@@ -717,7 +717,7 @@ class koPreferenceSetBase(object):
         if inheritFrom:
             buf.append('%s  inheritFrom=%r' % ("  " * indent, inheritFrom))
 
-        for id, (val, typ) in self.prefs.items():
+        for id, (val, typ) in list(self.prefs.items()):
             if typ == "object":
                 container = getattr(UnwrapObject(val), "container", None)
                 if container not in (None, self):
@@ -739,7 +739,7 @@ class koPreferenceSetBase(object):
             try:
                 self._observerService.notifyObservers(prefset, self.id, pref_id)
                 self._observerService.notifyObservers(prefset, "__all__", pref_id)
-            except COMException, e:
+            except COMException as e:
                 pass # no one is listening
 
         # Notify observers, but only if we've already ran the getter once. (Otherwise nobody could
@@ -748,7 +748,7 @@ class koPreferenceSetBase(object):
             try:
                 self.prefObserverService.notifyObservers(prefset, pref_id, self.id)
                 self.prefObserverService.notifyObservers(prefset, "__all__", pref_id)
-            except COMException, e:
+            except COMException as e:
                 pass # no one is listening
 
         container = getattr(self, "container", None)
@@ -772,7 +772,7 @@ class koPreferenceRoot(koPreferenceSetBase):
         ret.id = self.id
         ret.idref = getattr(self, "idref", "")
         ret.inheritFrom = self.inheritFrom
-        for name, (val, typ) in self.prefs.items():
+        for name, (val, typ) in list(self.prefs.items()):
             if typ == "object":
                 if val._is_shadow:
                     # No point in cloning shadow prefs.
@@ -843,7 +843,7 @@ class koPreferenceChild(koPreferenceSetBase):
 
         log.debug("Unshadowing %r ", self.id)
         new_prefs = {}
-        for prefid, (pref, typ) in self.inheritFrom.prefs.items():
+        for prefid, (pref, typ) in list(self.inheritFrom.prefs.items()):
             if typ == "object":
                 # We have to unshadow all child preference sets.
                 pref = self.getPref(prefid)
@@ -891,7 +891,7 @@ class koPreferenceChild(koPreferenceSetBase):
         ret.id = self.id
         ret.idref = getattr(self, "idref", "")
         ret.inheritFrom = self.inheritFrom
-        for name, (val, typ) in self.prefs.items():
+        for name, (val, typ) in list(self.prefs.items()):
             if typ == "object":
                 if val._is_shadow:
                     # No point in cloning shadow prefs.
@@ -927,7 +927,7 @@ class koPrefSupportsString(object):
     def data(self):
         return self.pref._get_data()
     def toString(self):
-        return unicode(self.pref)
+        return str(self.pref)
 
 
 ###################################################
@@ -1054,7 +1054,7 @@ class koOrderedPreference(object):
 
     @_detaches
     def appendString(self, pref):
-        self._collection.append((unicode(pref), "string"))
+        self._collection.append((str(pref), "string"))
 
     @_detaches
     def appendLong(self, pref):
@@ -1320,8 +1320,8 @@ class koPreferenceCache(object):
     # serializing.
     def __getstate__(self):
         pref_map = {}
-        for id, (val, index) in self.pref_map.items():
-            if type(val) == types.InstanceType:
+        for id, (val, index) in list(self.pref_map.items()):
+            if not isinstance(val, (str, int, float, bool, bytes, list, dict, tuple, type(None))):
                 try:
                     val = UnwrapObject(val)
                 except COMException:
@@ -1347,7 +1347,7 @@ class koPreferenceCache(object):
         """Serializes the preference set to a stream."""
         id = self.id or ''
         stream.write('<preference-cache id="%s" max_length="%s">%s' % (cgi_escape(id),self._maxsize, newl))
-        indexes = self.index_map.keys()
+        indexes = list(self.index_map.keys())
         indexes.sort()
         for index in indexes:
             id = self.index_map[index]
@@ -1374,7 +1374,7 @@ class koPreferenceCache(object):
         buf = []
         buf.append("%sPreference Set Cache: id = '%s'" %
                    ("  " * indent, self.id))
-        indexes = self.index_map.keys()
+        indexes = list(self.index_map.keys())
         indexes.sort()
         indent += 1
         for index in indexes:
@@ -1388,7 +1388,7 @@ class koPreferenceCache(object):
         return buf
 
     def _is_sane(self):
-        return len(self.pref_map.keys()) == len(self.index_map.keys())
+        return len(list(self.pref_map.keys())) == len(list(self.index_map.keys()))
 
     def setPref(self, pref):
         assert self._is_sane()
@@ -1405,9 +1405,9 @@ class koPreferenceCache(object):
         self.index_map[self.index_small] = id
         # Do we need to pop the top?
         if self._maxsize > 0:
-            while len(self.pref_map.keys()) > self._maxsize:
+            while len(list(self.pref_map.keys())) > self._maxsize:
                 index_look = self.index_big
-                while not self.index_map.has_key(index_look):
+                while index_look not in self.index_map:
                     index_look-=1
                 pop_id = self.index_map[index_look]
                 del self.index_map[index_look]
@@ -1434,7 +1434,7 @@ class koPreferenceCache(object):
     
     def hasPref( self, id):
         assert self._is_sane()
-        return self.pref_map.has_key(id)
+        return id in self.pref_map
 
     @property
     def length(self):
@@ -1451,7 +1451,7 @@ class koPreferenceCache(object):
         self._maxsize = size
 
     def enumPreferences(self):
-        indexes = self.index_map.keys()
+        indexes = list(self.index_map.keys())
         indexes.sort()
         ret = []
         for index in indexes:
@@ -1550,7 +1550,7 @@ class koGlobalPrefService(object):
                           .getService(components.interfaces.nsIIdleService))
 
     def _setupGlobalPreference(self, prefName):
-        if not self.pref_map.has_key(prefName):
+        if prefName not in self.pref_map:
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, "No well-known preference set with name '%s'" % (prefName,))
 
         existing, defn = self.pref_map[prefName]
@@ -1657,7 +1657,7 @@ class koGlobalPrefService(object):
             sharedPrefs.set_parent(defaultPrefs)
         
     def getPrefs(self, name):
-        if not self.pref_map.has_key(name):
+        if name not in self.pref_map:
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, "No preference set with name '%s'" % (name,) )
         if self.pref_map[name][0] is None:
             self._setupGlobalPreference(name)
@@ -1665,7 +1665,7 @@ class koGlobalPrefService(object):
         return self.pref_map[name][0]
 
     def resetPrefs(self, prefName):
-        if not self.pref_map.has_key(prefName):
+        if prefName not in self.pref_map:
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, "No well-known preference set with name '%s'" % (prefName,))
 
         existing, defn = self.pref_map[prefName]

@@ -17,7 +17,7 @@ A quick example:
 """
 
 from pprint import pprint, pformat
-from urllib import urlencode
+from urllib.parse import urlencode
 import datetime
 
 from activeapis2 import utils, dateutils

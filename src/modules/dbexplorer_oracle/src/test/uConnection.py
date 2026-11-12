@@ -9,7 +9,7 @@ class TestConnection(TestCase):
         connection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry, threaded = True)
         cursor = connection.cursor()
-        cursor.execute(u"select count(*) from TestNumbers")
+        cursor.execute("select count(*) from TestNumbers")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 10)
 
@@ -37,14 +37,14 @@ class TestConnection(TestCase):
         self.failUnlessRaises(cx_Oracle.DatabaseError, cx_Oracle.connect,
                 self.username)
         self.failUnlessRaises(cx_Oracle.DatabaseError, cx_Oracle.connect,
-                self.username + u"@" + self.tnsentry)
+                self.username + "@" + self.tnsentry)
         self.failUnlessRaises(cx_Oracle.DatabaseError, cx_Oracle.connect,
-                self.username + u"@" + self.tnsentry + u"/" + self.password)
+                self.username + "@" + self.tnsentry + "/" + self.password)
 
     def testBadPassword(self):
         "connection to database with bad password"
         self.failUnlessRaises(cx_Oracle.DatabaseError, cx_Oracle.connect,
-                self.username, self.password + u"X", self.tnsentry)
+                self.username, self.password + "X", self.tnsentry)
 
     def testExceptionOnClose(self):
         "confirm an exception is raised after closing a connection"
@@ -55,15 +55,15 @@ class TestConnection(TestCase):
 
     def testMakeDSN(self):
         "test making a data source name from host, port and sid"
-        formatString = u"(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=" \
-                u"(PROTOCOL=TCP)(HOST=%s)(PORT=%d)))(CONNECT_DATA=(SID=%s)))"
-        args = (u"hostname", 1521, u"TEST")
+        formatString = "(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=" \
+                "(PROTOCOL=TCP)(HOST=%s)(PORT=%d)))(CONNECT_DATA=(SID=%s)))"
+        args = ("hostname", 1521, "TEST")
         result = cx_Oracle.makedsn(*args)
         self.failUnlessEqual(result, formatString % args)
 
     def testSingleArg(self):
         "connection to database with user, password, TNS together"
-        connection = cx_Oracle.connect(u"%s/%s@%s" % \
+        connection = cx_Oracle.connect("%s/%s@%s" % \
                 (self.username, self.password, self.tnsentry))
         self.verifyArgs(connection)
 
@@ -71,20 +71,20 @@ class TestConnection(TestCase):
         "connection version is a string"
         connection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry)
-        self.failUnless(isinstance(connection.version, unicode))
+        self.failUnless(isinstance(connection.version, str))
 
     def testRollbackOnClose(self):
         "connection rolls back before close"
         connection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry)
         cursor = connection.cursor()
-        cursor.execute(u"truncate table TestExecuteMany")
+        cursor.execute("truncate table TestExecuteMany")
         otherConnection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry)
         otherCursor = otherConnection.cursor()
-        otherCursor.execute(u"insert into TestExecuteMany (IntCol) values (1)")
+        otherCursor.execute("insert into TestExecuteMany (IntCol) values (1)")
         otherConnection.close()
-        cursor.execute(u"select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestExecuteMany")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 
@@ -93,14 +93,14 @@ class TestConnection(TestCase):
         connection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry)
         cursor = connection.cursor()
-        cursor.execute(u"truncate table TestExecuteMany")
+        cursor.execute("truncate table TestExecuteMany")
         otherConnection = cx_Oracle.connect(self.username, self.password,
                 self.tnsentry)
         otherCursor = otherConnection.cursor()
-        otherCursor.execute(u"insert into TestExecuteMany (IntCol) values (1)")
+        otherCursor.execute("insert into TestExecuteMany (IntCol) values (1)")
         del otherCursor
         del otherConnection
-        cursor.execute(u"select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestExecuteMany")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 

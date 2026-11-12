@@ -20,7 +20,7 @@ def new_guid():
 
 def main():
     for filepath in sys.argv[1:]:
-        print "changing GUIDs in '%s':" % filepath
+        print("changing GUIDs in '%s':" % filepath)
 
         fin = open(filepath, 'r')
         original = content = fin.read()
@@ -31,23 +31,23 @@ def main():
             start, end = match.start(1), match.end(1)
             guid = new_guid()
             assert (end-start) == len(guid)
-            print "  s/%s/%s/" % (content[start:end], guid)
+            print("  s/%s/%s/" % (content[start:end], guid))
             content = content[:start] + guid + content[end:]
 
         if content == original:
-            print "  no changes, leaving alone"
+            print("  no changes, leaving alone")
         else:
             bakpath = filepath+".bak"
-            print "  backing up original to '%s'" % bakpath
+            print("  backing up original to '%s'" % bakpath)
             if exists(bakpath):
-                os.chmod(bakpath, 0777)
+                os.chmod(bakpath, 0o777)
                 os.remove(bakpath)
             shutil.copy2(filepath, bakpath)
 
             try:
                 fout = open(filepath, 'w')
-            except EnvironmentError, ex:
-                print "  p4 edit %s" % filepath
+            except EnvironmentError as ex:
+                print("  p4 edit %s" % filepath)
                 os.system("p4 edit %s" % filepath)
                 fout = open(filepath, 'w')
             fout.write(content)

@@ -23,7 +23,7 @@ class TestIntervalVar(BaseTestCase):
     def testBindInterval(self):
         "test binding in an interval"
         self.cursor.setinputsizes(value = cx_Oracle.INTERVAL)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestIntervals
                 where IntervalCol = :value""",
                 value = datetime.timedelta(days = 5, hours = 5, minutes = 10,
@@ -33,7 +33,7 @@ class TestIntervalVar(BaseTestCase):
     def testBindNull(self):
         "test binding in a null"
         self.cursor.setinputsizes(value = cx_Oracle.INTERVAL)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestIntervals
                 where IntervalCol = :value""",
                 value = None)
@@ -42,7 +42,7 @@ class TestIntervalVar(BaseTestCase):
     def testBindOutSetInputSizes(self):
         "test binding out with set input sizes defined"
         vars = self.cursor.setinputsizes(value = cx_Oracle.INTERVAL)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := to_dsinterval('8 09:24:18.123789');
                 end;""")
@@ -53,7 +53,7 @@ class TestIntervalVar(BaseTestCase):
     def testBindInOutSetInputSizes(self):
         "test binding in/out with set input sizes defined"
         vars = self.cursor.setinputsizes(value = cx_Oracle.INTERVAL)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := :value + to_dsinterval('5 08:30:00');
                 end;""",
@@ -64,7 +64,7 @@ class TestIntervalVar(BaseTestCase):
     def testBindOutVar(self):
         "test binding out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.INTERVAL)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := to_dsinterval('15 18:35:45.586');
                 end;""",
@@ -77,7 +77,7 @@ class TestIntervalVar(BaseTestCase):
         "test binding in/out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.INTERVAL)
         var.setvalue(0, datetime.timedelta(days = 1, minutes = 50))
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := :value + to_dsinterval('8 05:15:00');
                 end;""",
@@ -87,7 +87,7 @@ class TestIntervalVar(BaseTestCase):
 
     def testCursorDescription(self):
         "test cursor description is accurate"
-        self.cursor.execute(u"select * from TestIntervals")
+        self.cursor.execute("select * from TestIntervals")
         self.failUnlessEqual(self.cursor.description,
                 [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
                   ('INTERVALCOL', cx_Oracle.INTERVAL, -1, 11, 0, 0, 0),
@@ -95,13 +95,13 @@ class TestIntervalVar(BaseTestCase):
 
     def testFetchAll(self):
         "test that fetching all of the data returns the correct results"
-        self.cursor.execute(u"select * From TestIntervals order by IntCol")
+        self.cursor.execute("select * From TestIntervals order by IntCol")
         self.failUnlessEqual(self.cursor.fetchall(), self.rawData)
         self.failUnlessEqual(self.cursor.fetchall(), [])
 
     def testFetchMany(self):
         "test that fetching data in chunks returns the correct results"
-        self.cursor.execute(u"select * From TestIntervals order by IntCol")
+        self.cursor.execute("select * From TestIntervals order by IntCol")
         self.failUnlessEqual(self.cursor.fetchmany(3), self.rawData[0:3])
         self.failUnlessEqual(self.cursor.fetchmany(2), self.rawData[3:5])
         self.failUnlessEqual(self.cursor.fetchmany(4), self.rawData[5:9])
@@ -110,7 +110,7 @@ class TestIntervalVar(BaseTestCase):
 
     def testFetchOne(self):
         "test that fetching a single row returns the correct results"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select *
                 from TestIntervals
                 where IntCol in (3, 4)

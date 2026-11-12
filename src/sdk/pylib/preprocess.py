@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2002-2008 ActiveState Software Inc.
 # License: MIT License (http://www.opensource.org/licenses/mit-license.php)
 
@@ -131,6 +131,12 @@ import getopt
 import types
 import re
 import pprint
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 
 
@@ -193,14 +199,14 @@ _commentGroups = {
 #---- internal logging facility
 
 class _Logger:
-    DEBUG, INFO, WARN, ERROR, CRITICAL = range(5)
+    DEBUG, INFO, WARN, ERROR, CRITICAL = list(range(5))
     def __init__(self, name, level=None, streamOrFileName=sys.stderr):
         self._name = name
         if level is None:
             self.level = self.WARN
         else:
             self.level = level
-        if type(streamOrFileName) == types.StringType:
+        if type(streamOrFileName) == bytes:
             self.stream = open(streamOrFileName, 'w')
             self._opennedStream = 1
         else:
@@ -261,7 +267,7 @@ def _evaluate(expr, defines):
     #interpolated = _interpolate(s, defines)
     try:
         rv = eval(expr, {'defined':lambda v: v in defines}, defines)
-    except Exception, ex:
+    except Exception as ex:
         msg = str(ex)
         if msg.startswith("name '") and msg.endswith("' is not defined"):
             # A common error (at least this is presumed:) is to have
@@ -351,12 +357,12 @@ def preprocess(infile, outfile=sys.stdout, defines={},
     #       # #else
     #       ...
     #       # #endif
-    stmts = ['#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
-             '#\s*(?P<op>else|endif)',
-             '#\s*(?P<op>error)\s+(?P<error>.*?)',
-             '#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
-             '#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)',
-             '#\s*(?P<op>include)\s+"(?P<fname>.*?)"',
+    stmts = [r'#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
+             r'#\s*(?P<op>else|endif)',
+             r'#\s*(?P<op>error)\s+(?P<error>.*?)',
+             r'#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
+             r'#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)',
+             r'#\s*(?P<op>include)\s+"(?P<fname>.*?)"',
              r'#\s*(?P<op>include)\s+(?P<var>[^\s]+?)',
             ]
     patterns = []
@@ -382,16 +388,16 @@ def preprocess(infile, outfile=sys.stdout, defines={},
     fin = open(infile, 'r')
     lines = fin.readlines()
     fin.close()
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if force and os.path.exists(outfile):
-            os.chmod(outfile, 0777)
+            os.chmod(outfile, 0o777)
             os.remove(outfile)
         fout = open(outfile, 'w')
     else:
         fout = outfile
 
     defines['__FILE__'] = infile
-    SKIP, EMIT = range(2) # states
+    SKIP, EMIT = list(range(2)) # states
     states = [(EMIT,   # a state is (<emit-or-skip-lines-in-this-section>,
                0,      #             <have-emitted-in-this-if-block>,
                0)]     #             <have-seen-'else'-in-this-if-block>)
@@ -703,7 +709,7 @@ class ContentTypesRegistry:
         basename = os.path.basename(path)
         contentType = None
         # Try to determine from the path.
-        if not contentType and self.filenameMap.has_key(basename):
+        if not contentType and basename in self.filenameMap:
             contentType = self.filenameMap[basename]
             log.debug("Content type of '%s' is '%s' (determined from full "\
                       "path).", path, contentType)
@@ -713,13 +719,13 @@ class ContentTypesRegistry:
             if sys.platform.startswith("win"):
                 # Suffix patterns are case-insensitive on Windows.
                 suffix = suffix.lower()
-            if self.suffixMap.has_key(suffix):
+            if suffix in self.suffixMap:
                 contentType = self.suffixMap[suffix]
                 log.debug("Content type of '%s' is '%s' (determined from "\
                           "suffix '%s').", path, contentType, suffix)
         # Try to determine from the registered set of regex patterns.
         if not contentType:
-            for regex, ctype in self.regexMap.items():
+            for regex, ctype in list(self.regexMap.items()):
                 if regex.search(basename):
                     contentType = ctype
                     log.debug("Content type of '%s' is '%s' (matches regex '%s')",
@@ -760,7 +766,7 @@ except NameError:
         identity = lambda x: x
         key_func = (key or identity)
         sseq = list(seq)
-        sseq.sort(lambda self, other: cmp(key_func(self), key_func(other)))
+        sseq.sort(key=cmp_to_key(lambda self, other: _cmp(key_func(self), key_func(other))))
         for item in sseq:
             yield item
 
@@ -772,7 +778,7 @@ def main(argv):
         optlist, args = getopt.getopt(argv[1:], 'hVvo:D:fkI:sc:',
             ['help', 'version', 'verbose', 'force', 'keep-lines',
              'substitute', 'content-types-path='])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("preprocess: error: %s. Your invocation was: %s\n"\
                          % (msg, argv))
         sys.stderr.write("See 'preprocess --help'.\n")
@@ -827,7 +833,7 @@ def main(argv):
         contentTypesRegistry = ContentTypesRegistry(contentTypesPaths)
         preprocess(infile, outfile, defines, force, keepLines, includePath,
                    substitute, contentTypesRegistry=contentTypesRegistry)
-    except PreprocessError, ex:
+    except PreprocessError as ex:
         if log.isDebugEnabled():
             import traceback
             traceback.print_exc(file=sys.stderr)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Augmented Cmd class -- see the class docs strings
 #
@@ -116,7 +116,7 @@ class AugmentedListCmd(cmd.Cmd):
             return self.default(argv)
         try:
             return func(argv)
-        except (TypeError, CmdError), err:
+        except (TypeError, CmdError) as err:
             out.write("*** %s %s: %s\n" % (self.name, cmdName, str(err)))
             out.write("(Try `%s help %s'.)\n" % (self.name, cmdName))
             usage = self.doc_usage(func.__doc__)
@@ -185,7 +185,7 @@ class AugmentedListCmd(cmd.Cmd):
             for cmd in dir(aclass):
                 cmdDict[cmd] = 1
             del classes[0]
-        cmds = cmdDict.keys()
+        cmds = list(cmdDict.keys())
         # remove non-do_*() methods
         doCmds = []
         for cmd in cmds:
@@ -290,7 +290,7 @@ class AugmentedListCmd(cmd.Cmd):
             return None
         else:
             usageLines = []
-            allWhitespaceRe = re.compile('^\s*$')
+            allWhitespaceRe = re.compile(r'^\s*$')
             for line in docLines[2:]:
                 if allWhitespaceRe.search(line):
                     break
@@ -305,7 +305,7 @@ class AugmentedListCmd(cmd.Cmd):
         if len(docLines) < 3:
             return None
         else:
-            allWhitespaceRe = re.compile('^\s*$')
+            allWhitespaceRe = re.compile(r'^\s*$')
             for line in docLines[2:]:
                 if allWhitespaceRe.search(line):
                     return None

@@ -52,7 +52,7 @@ def getWordUnderCursor():
     import re
     from komodo import editor
     
-    wordCharPattern = re.compile("\w")
+    wordCharPattern = re.compile(r"\w")
     def isWordCharacter(ch):
         return wordCharPattern.match(ch) is not None
     
@@ -118,7 +118,7 @@ def interpolate(s, bracketed=0):
                                                fileName, lineNum, word,
                                                selection, projectFile,
                                                prefSet, lineText)
-    except COMException, ex:
+    except COMException as ex:
         lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"].\
                        getService(components.interfaces.koILastErrorService)
         errmsg = lastErrorSvc.getLastErrorMessage()

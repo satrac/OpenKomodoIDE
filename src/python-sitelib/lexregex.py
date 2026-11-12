@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2003-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -138,9 +138,10 @@ def isquantifier(regex, pos):
     return 0
 
 
-def _validateRange((startState, startToken, startIndex),
-                   (endState, endToken, endIndex)):
+def _validateRange(xxx_todo_changeme, xxx_todo_changeme1):
     """Raise an exception if the given range is illegal."""
+    (startState, startToken, startIndex) = xxx_todo_changeme
+    (endState, endToken, endIndex) = xxx_todo_changeme1
     log.debug("_validateRange((%r, %r, %r), (%r, %r, %r))",
               startState, startToken, startIndex,
               endState, endToken, endIndex)
@@ -176,7 +177,7 @@ def _validateGroupRef(groups, groupNumOrName, startIndex, endIndex):
             group = qualified_groups[groupNumOrName]
         except IndexError:
             group = None
-    elif isinstance(groupNumOrName, (str, unicode)):
+    elif isinstance(groupNumOrName, str):
         for group in groups:
             if groupNumOrName == group.get("name"):
                 break
@@ -513,7 +514,7 @@ def lexregex(regex, language="python", verbose=0):
                 pos += 1
                 if pos >= lengthRegex:
                     break # let group termination check catch the error here
-                validOptionLetters = _option_letters_for_language.get(language, string.letters)
+                validOptionLetters = _option_letters_for_language.get(language, string.ascii_letters)
                 if regex[pos] in validOptionLetters + '-':
                     if language == "javascript":
                         raise LexRegexError("invalid quantifier", pos)
@@ -899,7 +900,7 @@ def lexreplacement(replacement, language="python"):
             # Note: I don't know if the (0)* accepted by sre is a Python-only
             #       idiosyncracy.
             refFirstCharPos = pos
-            if replacement[pos:pos+2] == "\\g":
+            if replacement[pos:pos+2] == "\\\\g":
                 pos += 2
                 if pos >= lengthReplacement:
                     raise LexRegexError("group reference is not terminated", pos-2, pos)
@@ -1035,7 +1036,7 @@ class LexRegexTestCase(unittest.TestCase):
         """
         try:
             list(lexregex(regex, language=language))
-        except ex_class, ex:
+        except ex_class as ex:
             if strict:
                 if ex.startIndex:
                     self.assertEqual(ex.startIndex, ex_startIndex,
@@ -1264,7 +1265,7 @@ class LexRegexTestCase(unittest.TestCase):
             [("operator", 0), ("comment", 5), ("operator", 6), ("text", 9)])
         self._assertRegexLexesTo("^{b}", "python",
             [("special", 0), ("text", 3)])
-        self._assertRegexLexesTo("\w{b}", "python",
+        self._assertRegexLexesTo(r"\w{b}", "python",
             [("charclass", 1), ("text", 4)])
         self._assertRegexLexesTo("(a){b}", "python",
             [("operator", 0), ("text", 1),
@@ -1294,7 +1295,7 @@ class LexRegexTestCase(unittest.TestCase):
         self._assertRegexLexesTo("foo(?#)bar", "python",
             [("text", 2), ("operator", 3), ("comment", 5),
              ("operator", 6), ("text", 9)])
-        self._assertRegexLexesTo("(?#(foo\)bar)", "python",
+        self._assertRegexLexesTo(r"(?#(foo\)bar)", "python",
             [("operator", 0), ("comment", 11), ("operator", 12)])
         self._assertRegexLexRaises("(?#foo", "python", LexRegexError, 0, 6)
 
@@ -1556,8 +1557,8 @@ class LexRegexTestCase(unittest.TestCase):
                                                strict=0)
                 else:
                     self._assertRegexLexSucceeds(pattern, "python")
-            except LexRegexError, ex:
-                print "pattern: '%s'" % pattern
+            except LexRegexError as ex:
+                print("pattern: '%s'" % pattern)
                 raise
             #except:
             #    print "XXX exc info: %s" % sys.exc_info()
@@ -1597,20 +1598,20 @@ def _sreparse(regex):
     import sre_parse
     parsed = sre_parse.parse(regex)
     #pprint.pprint(parsed)
-    print "["
+    print("[")
     for part in parsed:
         s = pprint.pformat(part)
         s = ' ' + ' '.join(s.splitlines(1)) + ','
         #sys.stdout.write(s)
-        print s
-    print "]"
+        print(s)
+    print("]")
     
 def main(argv):
     logging.basicConfig()
     try:
         optlist, args = getopt.getopt(argv[1:], "hVvtsR",
             ["help", "version", "verbose", "test", "sre", "replacement"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         log.error("%s. Your invocation was: %s", msg, argv)
         log.error("Try 'lexregex --help'.")
         return 1
@@ -1621,7 +1622,7 @@ def main(argv):
             sys.stdout.write(__doc__)
             return
         elif opt in ("-V", "--version"):
-            print "lexregex %s" % '.'.join([str(i) for i in _version_])
+            print("lexregex %s" % '.'.join([str(i) for i in _version_]))
             return
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -1642,15 +1643,15 @@ def main(argv):
     try:
         if mode == "lexregex":
             for token in lexregex(pattern, language):
-                print token
+                print(token)
         elif mode == "lexreplacement":
             for token in lexreplacement(pattern, language):
-                print token
+                print(token)
         elif mode == "sreparse":
             _sreparse(regex)
         else:
             raise LexRegexError("unknown processing mode: '%s'" % mode)
-    except LexRegexError, ex:
+    except LexRegexError as ex:
         if log.isEnabledFor(logging.DEBUG):
             log.exception("error in lexregex()")
         else:

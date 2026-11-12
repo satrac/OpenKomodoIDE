@@ -29,7 +29,7 @@ include_directories(
 )
 
 # Load SRC Variable from file
-file(READ ${FILELIST} SRC)
+open(READ ${FILELIST} SRC)
 string(REGEX REPLACE  "#.*$"  ""  SRC  ${SRC})
 string(REPLACE        "\n"    ";" SRC  ${SRC})
 

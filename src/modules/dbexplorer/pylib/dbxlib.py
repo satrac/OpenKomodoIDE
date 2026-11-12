@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -49,7 +49,7 @@ class KoTableConnector(object):
         try:
             self.infoRows = self._db.getColumnInfo(self._table_name)
             return [row.name for row in self.infoRows]
-        except self._dbxModule.OperationalError, ex:
+        except self._dbxModule.OperationalError as ex:
             log.error("Failed: %r", ex)
             return ["Error: %s" % (ex,)]
 

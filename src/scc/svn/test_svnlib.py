@@ -52,7 +52,7 @@ Checksum: /3L38YwzhT93BWvgpdF6Zw==""".split("\n")
         output="""svn: The log message file is under version control
 svn: Log message file is a versioned file; use '--force-log' to override
 """.split("\n")
-        hits, res = svnlib._parseHits(output, _raw=1, _exp='^(?P<action>\w)\s+(?P<path>.*)$')
+        hits, res = svnlib._parseHits(output, _raw=1, _exp=r'^(?P<action>\w)\s+(?P<path>.*)$')
         assert hits==[]
         
     def test_commitParse(self):
@@ -60,7 +60,7 @@ svn: Log message file is a versioned file; use '--force-log' to override
 Transmitting file data .
 Committed revision 5.
 """.split("\n")
-        hits, res = svnlib._parseHits(output, _raw=1, _exp='(?P<action>\w+)\s+(?P<path>.*)')
+        hits, res = svnlib._parseHits(output, _raw=1, _exp=r'(?P<action>\w+)\s+(?P<path>.*)')
         hitexpect = [{'action': 'Sending', 'path': 'foo.c'}, {'action': 'Transmitting', 'path': 'file data .'}, {'action': 'Committed', 'path': 'revision 5.'}]
         assert hits==hitexpect
 
@@ -84,7 +84,7 @@ class testCheckout(unittest.TestCase):
 
 class testAddNewFile(unittest.TestCase):
     def _createTestFile(self, fn, content):
-        f = file(fn,'w')
+        f = open(fn,'w')
         f.write(content)
         f.close()
 
@@ -146,7 +146,7 @@ class testCommitFile(unittest.TestCase):
 
 class testDiffFile(unittest.TestCase):
     def test_diff(self):
-        expect = ''.join("""@@ -1 +1,3 @@
+        expect = ''.join(r"""@@ -1 +1,3 @@
 -this is a test file
 \ No newline at end of file
 +this is a test file
@@ -156,7 +156,7 @@ class testDiffFile(unittest.TestCase):
 """.splitlines())
         # create a small file
         fn = test_filename
-        f = file(fn,'a')
+        f = open(fn,'a')
         f.write('\n\nanother line')
         f.close()
         svn = svnlib.SVN(subversionClient)
@@ -174,7 +174,7 @@ class testStatusFile(unittest.TestCase):
         tempfile.tempdir = os.path.dirname(test_filename)
         try:
             name = tempfile.mktemp("test")
-            f = file(name,'w')
+            f = open(name,'w')
             f.write("a temporary file")
             f.close()
             return name
@@ -224,7 +224,7 @@ class testStatusFile(unittest.TestCase):
         finally:
             try:
                 os.unlink(test_fn)
-            except OSError, e:
+            except OSError as e:
                 pass
 
 class testConflictFile(unittest.TestCase):
@@ -233,19 +233,19 @@ class testConflictFile(unittest.TestCase):
         unittest.TestCase.__init__(self, methodName)
         
     def _createTestFile(self, fn, content):
-        f = file(fn,'w')
+        f = open(fn,'w')
         f.write(content)
         f.close()
 
     def _appendTestFile(self, fn, content):
-        f = file(fn,'a')
+        f = open(fn,'a')
         f.write(content)
         f.close()
         
     def _add(self, fn):
         # create a small file
         if os.path.exists(fn):
-            print "file already exists"
+            print("file already exists")
             return
         self._createTestFile(fn, 'this is a test file')
         add, out = self.svn.add(fn, _raw=1)
@@ -266,7 +266,7 @@ class testConflictFile(unittest.TestCase):
             r1, out1 = self._append(test1_filename, "\nsome extra text")
             try:
                 r2, out2 = self._append(test2_filename, "\nsome different text")
-            except svnlib.SVNLibError, e:
+            except svnlib.SVNLibError as e:
                 if 'out of date' not in str(e).lower():
                     raise
             # we know were out of date, lets update and see the status
@@ -283,13 +283,13 @@ class testConflictFile(unittest.TestCase):
                     self.svn.delete(test1_filename, force=1)
                     self.svn.commit(test1_filename, message="force delete")
             except svnlib.SVNLibError:
-                print "unable to delete %s"%test1_filename
+                print("unable to delete %s"%test1_filename)
             try:
                 if os.path.exists(test2_filename):
                     self.svn.delete(test2_filename, force=1)
                     self.svn.commit(test2_filename, message="force delete")
             except svnlib.SVNLibError:
-                print "unable to delete %s"%test2_filename
+                print("unable to delete %s"%test2_filename)
         
 
 #---- mainline
@@ -348,7 +348,7 @@ def clean():
     try:
         rmdir(os.path.join(cwd,'test1'))
         rmdir(os.path.join(cwd,'test2'))
-    except Exception, e:
+    except Exception as e:
         pass
 
 def test_main(cleanup=1):
@@ -367,7 +367,7 @@ if __name__ == "__main__":
         import getopt
         optlist, args = getopt.getopt(sys.argv[1:], 'r:c:s:',
             ['repository','cleanup','subversion'])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("test_svnlib: error: %s\n", str(msg))
         sys.exit(1)
     

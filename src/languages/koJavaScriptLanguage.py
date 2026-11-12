@@ -78,7 +78,7 @@ class koJavaScriptLanguage(koJSLikeLanguage, KoLanguageBaseDedentMixin):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue']
     searchURL = "https://developer.mozilla.org/en/JavaScript/Reference"
     
     # matches:
@@ -226,10 +226,10 @@ class koCoffeeScriptLanguage(koJSLikeLanguage):
         "markup": "*",
     }
     _indent_open_chars = "{[(:"
-    _indenting_keywords = [u'if', u'while', u'else', u'for', u'try', u'catch',
-                           u'catch', u'finally', u'switch', u'when']
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue']
-    _indenting_statements = [u'case']
+    _indenting_keywords = ['if', 'while', 'else', 'for', 'try', 'catch',
+                           'catch', 'finally', 'switch', 'when']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue']
+    _indenting_statements = ['case']
     searchURL = "http://coffeescript.org/#language"
     
     # matches:
@@ -277,7 +277,7 @@ chkrange {name:'five', value:5}, 7, 12
         #log.debug("Found %s if ... no then here, no dedent", kwd)
         return None
     
-    _initial_word_re = re.compile("\s*(\w+)")
+    _initial_word_re = re.compile(r"\s*(\w+)")
     def _shouldIndent(self, scimoz, pos, style_info):
         """ Override KoLanguageBase._shouldIndent to handle -> at EOL
         See comments in koLanguageServiceBase.py

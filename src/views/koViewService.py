@@ -39,7 +39,7 @@ class koViewService:
         # everything we know to see if it belongs to that nsIXULWindow and
         # remove everything that matches (usually just one).
         ci = components.interfaces
-        for window in self._viewMgr.keys():
+        for window in list(self._viewMgr.keys()):
             xw = window.QueryInterface(ci.nsIInterfaceRequestor).\
                         getInterface(ci.nsIWebNavigation).\
                         QueryInterface(ci.nsIDocShellTreeItem).\
@@ -72,7 +72,7 @@ class koViewService:
 
     def getAllViews(self, viewtype=""):
         all_views = []
-        for viewMgr in self._viewMgr.values():
+        for viewMgr in list(self._viewMgr.values()):
             # Bug 91744: if no views, getAllViews() returns None, not []
             all_views += (viewMgr.getAllViews(viewtype) or [])
         return all_views
@@ -95,4 +95,4 @@ class koViewService:
         return count, leaked
 
     def getAllViewMgrs(self):
-        return self._viewMgr.values()
+        return list(self._viewMgr.values())

@@ -9,7 +9,12 @@ import sys
 import tempfile
 import time
 import unittest
-from distutils.version import LooseVersion
+try:
+    from version_compat import LooseVersion
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "util")))
+    from version_compat import LooseVersion
+    sys.path.pop(0)
 from xpcom import COMException
 from xpcom.components import classes as Cc, interfaces as Ci
 from xpcom.server import UnwrapObject
@@ -91,7 +96,7 @@ class GitTestCaseBase(unittest.TestCase):
             message = r_stderr.strip() or r_stdout.strip()
             if not message:
                 message = "<no output from git>"
-            self.assertEquals(proc.returncode, 0,
+            self.assertEqual(proc.returncode, 0,
                               "Calling %r failed with %r:\n%s" % (
                                     args, proc.returncode, message))
         if stderr is not None:
@@ -139,7 +144,7 @@ class GitTestCaseBase(unittest.TestCase):
                             os.rmdir(d)
                     os.rmdir(repo)
                     break
-                except Exception, ex:
+                except Exception as ex:
                     if try_num < total_tries - 1:
                         log.warn("Failed deleting, retrying: %s", ex)
                         t = Cc["@mozilla.org/thread-manager;1"].getService().currentThread
@@ -152,7 +157,7 @@ class GitTestCaseBase(unittest.TestCase):
 class GitTestCase(GitTestCaseBase):
     """ Test cases that do not want a default repo """
     def test_basics(self):
-        self.assertEquals(self._svc.name, "git")
+        self.assertEqual(self._svc.name, "git")
         self.assertTrue(self._svc.isEnabled, "git SCC disabled")
         self.assertFalse(self._svc.executable is None, "No executable")
         self.assertTrue(self._svc.isFunctional, "git not functional")
@@ -161,19 +166,19 @@ class GitTestCase(GitTestCaseBase):
         self._svc.redetermineIfFunctional() # shouldn't throw
         for cmd in ("add", "checkout", "commit", "diff", "history", "remove",
                     "revert", "status", "update", "push"):
-            self.assertEquals(self._svc.getValue("supports_command", cmd), "Yes",
+            self.assertEqual(self._svc.getValue("supports_command", cmd), "Yes",
                               "git should support command '%s'" % (cmd,))
         for cmd in ("pants",):
-            self.assertNotEquals(self._svc.getValue("supports_command", cmd),
+            self.assertNotEqual(self._svc.getValue("supports_command", cmd),
                                  "Yes",
                                  "git should not support command '%s'" % (cmd,))
         for protocol in ("git", "ssh"):
-            self.assertEquals(self._svc.getValue("supports_checkout_url",
+            self.assertEqual(self._svc.getValue("supports_checkout_url",
                                                  "%s://localhost/hello.git" % (protocol,)),
                               "Yes",
                               "git should support protocol '%s'" % (protocol,))
         for protocol in ("pserver", "svn"):
-            self.assertNotEquals(self._svc.getValue("supports_checkout_url",
+            self.assertNotEqual(self._svc.getValue("supports_checkout_url",
                                                     "%s://localhost/hello" % (protocol,)),
                                  "Yes",
                                  "git should not support protocol '%s'" % (protocol,))
@@ -369,11 +374,11 @@ class GitRepoTestCase(GitTestCaseBase):
             if not line:
                 continue # empty line
             data, name = line[:2], line[3:]
-            self.assertEquals(data, expected.get(name),
+            self.assertEqual(data, expected.get(name),
                               'Unexpected status "%s" for "%s"' % (data, name))
             del expected[name]
         self.assertEqual(len(expected), 0,
-                         "Unexpected remaining items: %s" % (expected.keys()))
+                         "Unexpected remaining items: %s" % (list(expected.keys())))
         files = [os.path.join(self._repo, "%s %s" % (prefix, suffix)) for prefix, suffix in
                     itertools.product(["staged", "unstaged"], ["added", "modified", "removed"])]
         with spinner:
@@ -391,7 +396,7 @@ class GitRepoTestCase(GitTestCaseBase):
             self.assertEqual(expected.get(item.relativePath, -1), item.status,
                              "item '%s' has unexpected status %r" % (item.relativePath, item.status))
             expected[item.relativePath] = None
-        bad = [k for k, v in expected.items() if v is not None]
+        bad = [k for k, v in list(expected.items()) if v is not None]
         self.assertEqual(len(bad), 0, "Missing status for %s" % (bad,))
 
     @git_version(">=1.7")
@@ -500,11 +505,11 @@ class GitRepoTestCase(GitTestCaseBase):
                     "unstaged_removed":  " D"}
         for line in stdout.splitlines():
             data, name = line[:2], line[3:]
-            self.assertEquals(data, expected.get(name),
+            self.assertEqual(data, expected.get(name),
                               'Unexpected status "%s" for "%s"' % (data, name))
             del expected[name]
         self.assertEqual(len(expected), 0,
-                         "Unexpected remaining items: %s" % (expected.keys()))
+                         "Unexpected remaining items: %s" % (list(expected.keys())))
         files = [os.path.join(self._repo, "%s_%s" % (prefix, suffix)) for prefix, suffix in
                     itertools.product(["staged", "unstaged"], ["added", "modified", "removed"])]
         with spinner:
@@ -555,11 +560,11 @@ class GitRepoTestCase(GitTestCaseBase):
                     "unstaged_removed/file.txt":  " D"}
         for line in stdout.splitlines():
             data, name = line[:2], line[3:]
-            self.assertEquals(data, expected.get(name),
+            self.assertEqual(data, expected.get(name),
                               'Unexpected status "%s" for "%s"' % (data, name))
             del expected[name]
         self.assertEqual(len(expected), 0,
-                         "Unexpected remaining items: %s" % (expected.keys()))
+                         "Unexpected remaining items: %s" % (list(expected.keys())))
         files = [os.path.join(self._repo, "%s_%s" % (prefix, suffix)) for prefix, suffix in
                     itertools.product(["staged", "unstaged"], ["added", "modified", "removed"])]
         with spinner:
@@ -576,12 +581,12 @@ class GitRepoTestCase(GitTestCaseBase):
                     itertools.product(["staged", "unstaged"], ["modified", "removed"])]
         for filename in files:
             with open(filename, "r") as f:
-                self.assertEquals(f.read(), "!",
+                self.assertEqual(f.read(), "!",
                                   "Unexpected content in %s" % (filename,))
         for filename in [os.path.join(self._repo, "%s_added/file.txt" % (prefix,))
                          for prefix in ("staged", "unstaged")]:
             with open(filename, "r") as f:
-                self.assertEquals(f.read(), "@@",
+                self.assertEqual(f.read(), "@@",
                                   "Unexpected content in %s" % (filename,))
 
     @git_version(">=1.7")
@@ -679,12 +684,12 @@ class GitRepoTestCase(GitTestCaseBase):
                     itertools.product(["staged", "unstaged"], ["modified", "removed"])]
         for filename in files:
             with open(filename, "r") as f:
-                self.assertEquals(f.read(), "!",
+                self.assertEqual(f.read(), "!",
                                   "Unexpected content in %s" % (filename,))
         for filename in [os.path.join(self._repo, "%s_added" % (prefix,))
                          for prefix in ("staged", "unstaged")]:
             with open(filename, "r") as f:
-                self.assertEquals(f.read(), "@@",
+                self.assertEqual(f.read(), "@@",
                                   "Unexpected content in %s" % (filename,))
 
     @git_version("<1.7")
@@ -841,7 +846,7 @@ class GitRepoTestCase(GitTestCaseBase):
         line = lines.pop(0)
         self.assertEqual(line, "Index: %s" % (fileName,), "Unexpected index line")
         line = lines.pop(0)
-        match = re.match("""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
+        match = re.match(r"""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
         self.assertTrue(match is not None, "Unexpected hash line %r" % (line,))
         expected = [
             r"--- a/hello.txt",
@@ -852,7 +857,7 @@ class GitRepoTestCase(GitTestCaseBase):
             r"+1111",
             r"\ No newline at end of file",
             ]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))
 
     def test_diffRelative(self):
@@ -873,7 +878,7 @@ class GitRepoTestCase(GitTestCaseBase):
         self.assertEqual(line, "Index: %s" % (os.path.join(self._repo, fileName),),
                          "Unexpected index line:\n%s" % (line,))
         line = lines.pop(0)
-        match = re.match("""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
+        match = re.match(r"""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
         self.assertTrue(match is not None, "Unexpected hash line %r" % (line,))
         expected = [
             r"--- a/hello.txt",
@@ -884,7 +889,7 @@ class GitRepoTestCase(GitTestCaseBase):
             r"+1111",
             r"\ No newline at end of file",
             ]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))
 
     def test_history(self):
@@ -904,13 +909,13 @@ class GitRepoTestCase(GitTestCaseBase):
                          (len(spinner.data), spinner.data))
         items = list(reversed(spinner.data))
         for index, item in enumerate(items):
-            self.assertEquals(len(item.version), 40,
+            self.assertEqual(len(item.version), 40,
                               "Unexpected hash %s" % (item.version,))
-            self.assertEquals("", item.change,
+            self.assertEqual("", item.change,
                               "Unexpected change %s" % (item.change,))
-            self.assertEquals("", item.action,
+            self.assertEqual("", item.action,
                               "Unexpected action %s" % (item.action,))
-            self.assertEquals("commit %s\n" % (index,), item.message,
+            self.assertEqual("commit %s\n" % (index,), item.message,
                               "Unexpected message %s" % (item.message,))
 
         with spinner:
@@ -924,7 +929,7 @@ class GitRepoTestCase(GitTestCaseBase):
         self.assertEqual(line, "diff --git a/hello.txt b/hello.txt",
                          "Unexpected index line:\n%s" % (line,))
         line = lines.pop(0)
-        match = re.match("""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
+        match = re.match(r"""index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$""", line)
         self.assertTrue(match is not None, "Unexpected hash line %r" % (line,))
         expected = [
             r"--- a/hello.txt",
@@ -935,5 +940,5 @@ class GitRepoTestCase(GitTestCaseBase):
             r"+6666666666",
             r"\ No newline at end of file",
             ]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))

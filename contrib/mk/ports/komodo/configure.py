@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 from os.path import dirname, abspath, expanduser, join
@@ -11,7 +11,7 @@ try:
     from configurelib import main, ConfigVar, ConfigureError, Profile
 except ImportError:
     # `mk' supports an option to help find the configurelib package.
-    configurelib_path = os.popen("mk --configurelib-path").read().strip()
+    configurelib_path = subprocess.Popen("mk --configurelib-path").read().strip()
     sys.path.insert(0, configurelib_path)
     from configurelib import main, ConfigVar, ConfigureError, Profile
     del configurelib_path

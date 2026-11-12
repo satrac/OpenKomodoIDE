@@ -54,7 +54,7 @@ class koFileService(object):
                 components.classes["@activestate.com/koFileEx;1"] \
                 .createInstance(components.interfaces.koIFileEx)
             kofile.URI = uri
-        except Exception, e:
+        except Exception as e:
             log.error("Invalid URL parsed: %r", uri)
             raise ServerException(nsError.NS_ERROR_FAILURE, str(e))
         self._files[uri] = WeakReference(kofile)
@@ -80,14 +80,14 @@ class koFileService(object):
                 components.classes["@activestate.com/koFileEx;1"] \
                 .createInstance(components.interfaces.koIFileEx)
             kofile.URI = uri
-        except Exception, e:
+        except Exception as e:
             log.error("Invalid URL parsed: %r", uri)
             raise ServerException(nsError.NS_ERROR_FAILURE, str(e))
         return kofile
 
     def getFilesInBaseURI(self, baseURI):
         L = []
-        for uri,wr in self._files.items():
+        for uri,wr in list(self._files.items()):
             if uri.startswith(baseURI):
                 try:
                     o = wr()
@@ -104,7 +104,7 @@ class koFileService(object):
     #                 out PRUint32 count);
     def getAllFiles(self):
         L = []
-        for uri,wr in self._files.items():
+        for uri,wr in list(self._files.items()):
             try:
                 o = wr()
             except:
@@ -117,7 +117,7 @@ class koFileService(object):
     
     def getStatusCheckFiles(self):
         L = []
-        for uri,wr in self._statuscheck_files.items():
+        for uri,wr in list(self._statuscheck_files.items()):
             try:
                 o = wr()
             except:
@@ -153,7 +153,7 @@ class koFileService(object):
             error_message = "no error available"
             try:
                 os.unlink(fname)
-            except OSError, error_message:
+            except OSError as error_message:
                 pass
             if os.path.exists(fname):
                 msg = "TempFile: File still exists after deleting '%s' - '%s'" % (fname,error_message)
@@ -165,7 +165,7 @@ class koFileService(object):
             self._tmpfiles.pop(fname, None)
     
     def deleteAllTempFiles(self):
-         for fname in self._tmpfiles.keys():
+         for fname in list(self._tmpfiles.keys()):
                 self.deleteTempFile(fname, 0)
     
     def observe(self, service, topic, extra):
@@ -218,7 +218,7 @@ class koFileService(object):
         self._tmpdirs.pop(dname, None)
 
     def deleteAllTempDirs(self):
-        for dname in self._tmpdirs.keys():
+        for dname in list(self._tmpdirs.keys()):
             shutil.rmtree(dname, ignore_errors=True)
         self._tmpdirs = {}
 

@@ -124,7 +124,7 @@ class WatchdogFileNotificationService(object):
     def stopNotificationService(self):
         # Shut down all the observer monitors; this prevents attempts to notify
         # changes after the target thread has gone away.
-        for handler, _ in self._handler_and_watch_map.values():
+        for handler, _ in list(self._handler_and_watch_map.values()):
             handler.observer_monitor.shutdown()
         self._observer.stop()
         log.debug("Stopped notification service")
@@ -143,4 +143,4 @@ class WatchdogFileNotificationService(object):
         return True
 
     def dump(self):
-        print(self._handler_and_watch_map)
+        print((self._handler_and_watch_map))

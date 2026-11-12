@@ -21,7 +21,7 @@ def unused():
         #print path
         cpath = path.replace("\\", "/") # canonicalize
         if cpath not in conscript:
-            print "`%s' not in images Conscript: unused?" % cpath
+            print("`%s' not in images Conscript: unused?" % cpath)
     
     
     

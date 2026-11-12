@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from os.path import abspath, dirname, join, normpath
 import sys
@@ -11,7 +11,7 @@ sys.path.append(join(dirname(                        # src
                        dirname(                        # mercurial
                         dirname(abspath(__file__))))),  #pylib
                       "python-sitelib"))
-print sys.path[-1]
+print(sys.path[-1])
 import hglib
 
 class MercurialTest(hglib.HG):
@@ -43,14 +43,14 @@ C tests/test-status
         #pprint(result)
         files = result.get('files', {})
         self.assertEqual(len(files), len(output.splitlines()), "Incorrect number of files: %r" % (len(files), ))
-        for path, expected_status in {
+        for path, expected_status in list({
                             normpath(join(cwd, 'file.txt')): '?',
                             normpath(join(cwd, 'CONTRIBUTORS')): 'R',
                             normpath(join(cwd, 'README')): 'M',
                             normpath(join(cwd, 'COPYING')): '!',
                             normpath(join(cwd, 'something')): 'C',
                             normpath(join(cwd, 'tests/test-status')): 'C',
-                    }.items():
+                    }.items()):
             self.assertTrue(path in files, "File was not found: %r" % (path, ))
             status = files[path]['status']
             self.assertEqual(status, expected_status, "File %r has incorrect status: %r" % (path, status, ))

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # See the accompanying LICENSE file.
 
@@ -430,10 +430,10 @@ class fetch(Command):
             import io
             bytesio=io.BytesIO
         else:
-            import urllib2
-            urlopen=urllib2.urlopen
-            import cStringIO
-            bytesio=cStringIO.StringIO
+            import urllib.request, urllib.error, urllib.parse
+            urlopen=urllib.request.urlopen
+            import io
+            bytesio=io.StringIO
 
         write("    Fetching", url)
         count=0
@@ -643,7 +643,7 @@ class apsw_build_ext(beparent):
             if sys.version_info>=(2, 6):
                 # if posix is true then quotes get stripped such as from -Dfoo="bar"
                 kwargs["posix"]=False
-            for part in shlex.split(os.popen("icu-config --cppflags", "r").read(), **kwargs):
+            for part in shlex.split(subprocess.Popen("icu-config --cppflags", "r").read(), **kwargs):
                 if part.startswith("-I"):
                     ext.include_dirs.append(part[2:])
                     foundicu=True
@@ -656,7 +656,7 @@ class apsw_build_ext(beparent):
                     ext.define_macros.append(part)
                     foundicu=True
 
-            for part in shlex.split(os.popen("icu-config --ldflags", "r").read(), **kwargs):
+            for part in shlex.split(subprocess.Popen("icu-config --ldflags", "r").read(), **kwargs):
                 if part.startswith("-L"):
                     ext.library_dirs.append(part[2:])
                     foundicu=True

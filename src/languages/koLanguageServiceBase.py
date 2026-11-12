@@ -5,7 +5,7 @@
 """Base classes for languages and language services"""
 
 import copy, re, types, eollib
-import Queue
+import queue
 import logging
 import json
 
@@ -39,14 +39,14 @@ def sendStatusMessage(msg, timeout=3000, highlight=1):
     sm.highlight = highlight # boolean, whether or not to highlight
     try:
         observerSvc.notifyObservers(sm, "status_message", None)
-    except COMException, e:
+    except COMException as e:
         # do nothing: Notify sometimes raises an exception if (???)
         # receivers are not registered?
         pass
 
 #---- language services implementations
 
-class _QueueOfOne(Queue.Queue):
+class _QueueOfOne(queue.Queue):
     """A thread-safe queue where an item always replaces any existing one.
     I.e. there will only ever be zero or one (the latest) items on the queue.
     """
@@ -90,7 +90,7 @@ class KoLexerLanguageService:
         for i in range(len(self._keywords)):
             scimoz.setKeyWords(i, " ".join(self._keywords[i]))
 
-        for prop in self._properties.keys():
+        for prop in list(self._properties.keys()):
             scimoz.setProperty(prop, self._properties[prop])
 
 #---- base commenting language service classes
@@ -156,7 +156,7 @@ class KoCommenterLanguageService:
                     posns.append((selStart, selEnd))
             posns.reverse()
             prefix = delimiterInfo[0]
-            if type(prefix) == types.TupleType:
+            if type(prefix) == tuple:
                 prefix, suffix = prefix
             else:
                 suffix = ''
@@ -199,7 +199,7 @@ class KoCommenterLanguageService:
             self._commentLinesInRectangleSelection(scimoz, self.delimiterInfo["line"])
             return
         if self.DEBUG:
-            print "'line' autocomment: %s-%s" % (startIndex, endIndex)
+            print("'line' autocomment: %s-%s" % (startIndex, endIndex))
         xOffset = scimoz.xOffset
         selStart = scimoz.selectionStart
         selEnd = scimoz.selectionEnd
@@ -228,7 +228,7 @@ class KoCommenterLanguageService:
             workingEndIndex = endIndex
         original = scimoz.getTextRange(startIndex, workingEndIndex)
         prefix = self.delimiterInfo["line"][0]
-        if type(prefix) == types.TupleType:
+        if type(prefix) == tuple:
             prefix, suffix = prefix
         else:
             suffix = ''
@@ -236,7 +236,7 @@ class KoCommenterLanguageService:
         startCursorColumn += len(prefix)
         endCursorColumn += len(prefix)
         if self.DEBUG:
-            print "original text: %r" % original
+            print("original text: %r" % original)
 
         # For easier line terminator handling turn this:
         #      original = 'asdf\nqwer\r\nzxcv\rasdf'
@@ -252,14 +252,14 @@ class KoCommenterLanguageService:
                 originalLines.append( (lines[i], '') )
         if self.DEBUG:
             import pprint
-            print "original text (as lines for easier processing):"
+            print("original text (as lines for easier processing):")
             pprint.pprint(originalLines)
 
         # Find the maximum common whitespace offset of all the lines (comment
         # delimiters will be indented to this level). Skip blank lines
         # when determining this.
         linesToGetIndent = [line[0] for line in originalLines if line[0].strip()]
-        indentRe = re.compile("^(?P<indent>\s+).*$")
+        indentRe = re.compile(r"^(?P<indent>\s+).*$")
         if len(linesToGetIndent) > 0:
             indentMatch = indentRe.search(linesToGetIndent[0])
             if indentMatch:
@@ -282,7 +282,7 @@ class KoCommenterLanguageService:
                 commonIndent = ""
                 break
         if self.DEBUG:
-            print "common indent: %r" % commonIndent
+            print("common indent: %r" % commonIndent)
 
         # make the replacments
         replacementLines = []
@@ -290,7 +290,7 @@ class KoCommenterLanguageService:
             r = commonIndent + prefix + line[0][len(commonIndent):] \
                 + suffix + line[1]
             if self.DEBUG:
-                print "%r -> %r" % (line[0], r)
+                print("%r -> %r" % (line[0], r))
             replacementLines.append(r)
         replacement = "".join(replacementLines)
         #log.debug("line comment: '%s' -> '%s'" % (original, replacement))
@@ -304,16 +304,16 @@ class KoCommenterLanguageService:
             # apply the commenting change one line at a time in order to
             # preserve line markers (bookmarks, breakpoints, etc.)
             scimoz.beginUndoAction()
-            for i in xrange(len(replacementLines)):
+            for i in range(len(replacementLines)):
                 scimoz.targetStart = scimoz.positionFromLine(startIndexLine + i)
                 scimoz.targetEnd = scimoz.getLineEndPosition(startIndexLine + i)
                 replacementLine = replacementLines[i].rstrip('\r\n')
                 scimoz.replaceTarget(len(replacementLine), replacementLine)
             scimoz.endUndoAction()
             if self.DEBUG:
-                print "replacement length: naive=%r encoding-aware=%r"\
+                print("replacement length: naive=%r encoding-aware=%r"\
                       % (len(replacement),
-                         self._sysUtilsSvc.byteLength(replacement))
+                         self._sysUtilsSvc.byteLength(replacement)))
 
             # restore the selection and cursor position
             if scimoz.selectionMode == scimoz.SC_SEL_LINES:
@@ -351,7 +351,7 @@ class KoCommenterLanguageService:
             self._commentLinesInRectangleSelection(scimoz, self.delimiterInfo["block"])
             return
         if self.DEBUG:
-            print "'block' autocomment: %s-%s" % (startIndex, endIndex)
+            print("'block' autocomment: %s-%s" % (startIndex, endIndex))
         xOffset = scimoz.xOffset
         original = scimoz.getTextRange(startIndex, endIndex)
         prefix, suffix = self.delimiterInfo["block"][0]
@@ -469,14 +469,14 @@ class KoCommenterLanguageService:
         firstLine = True
         for line in originalLines:
             for prefix in prefixes:
-                if type(prefix) == types.TupleType: # block comments
+                if type(prefix) == tuple: # block comments
                     prefix, suffix = prefix
-                    commentRe = re.compile("^(\s*)(%s)(.*)(%s)(\s*)$"
+                    commentRe = re.compile(r"^(\s*)(%s)(.*)(%s)(\s*)$"
                                            % (re.escape(prefix),
                                               re.escape(suffix)))
                 else: # line comments
                     suffix = None
-                    commentRe = re.compile("^(\s*)(%s)(.*)()()$" % re.escape(prefix))
+                    commentRe = re.compile(r"^(\s*)(%s)(.*)()()$" % re.escape(prefix))
                 commentMatch = commentRe.search(line[0])
                 if commentMatch:
                     replacementLines.append(commentMatch.group(1) +
@@ -506,7 +506,7 @@ class KoCommenterLanguageService:
             # apply the commenting change one line at a time in order to
             # preserve line markers (bookmarks, breakpoints, etc.)
             scimoz.beginUndoAction()
-            for i in xrange(len(replacementLines)):
+            for i in range(len(replacementLines)):
                 scimoz.targetStart = scimoz.positionFromLine(startIndexLine + i)
                 scimoz.targetEnd = scimoz.getLineEndPosition(startIndexLine + i)
                 replacementLine = replacementLines[i].rstrip('\r\n')
@@ -695,14 +695,14 @@ class KoCommenterLanguageService:
             preferBlockCommenting = 1
 
         if self.DEBUG:
-            print "prefer block commenting? %s"\
-                  % (preferBlockCommenting and "yes" or "no")
-            print "comment delimiter info: %s" % self.delimiterInfo
+            print("prefer block commenting? %s"\
+                  % (preferBlockCommenting and "yes" or "no"))
+            print("comment delimiter info: %s" % self.delimiterInfo)
 
         # do the commenting/uncommenting
         if (self.delimiterInfo.get("block", None)
             and (preferBlockCommenting
-                 or (not self.delimiterInfo.has_key("line")
+                 or ("line" not in self.delimiterInfo
                      and selStart < selEnd))):
             workers["block"](scimoz, selStart, selEnd)
         elif self.delimiterInfo.get("line", None):
@@ -738,7 +738,7 @@ class KoCommenterLanguageService:
         }
         if self.DEBUG:
             import sciutils
-            print
+            print()
             sciutils._printBanner("autocomment (before)")
             sciutils._printBufferContext(
                 0, # offset
@@ -770,12 +770,12 @@ class KoCommenterLanguageService:
 class koLangSvcStyleInfo_Base:
     def clone(self, **attrs):
         cobj = copy.copy(self)
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             setattr(cobj, k, attrs[k])
         return cobj
     
     def update(self, **attrs):
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             setattr(self, k, attrs[k])
 
 
@@ -818,7 +818,7 @@ class koLangSvcStyleInfo_Default(koLangSvcStyleInfo_Base):
 class koLangSvcStyleInfo(koLangSvcStyleInfo_Default):
     def __init__(self, **attrs):
         koLangSvcStyleInfo_Default.__init__(self)
-        for k in attrs.keys():
+        for k in list(attrs.keys()):
             setattr(self, k, attrs[k])
 
 _softCharDecorator = components.interfaces.koILintResult.DECORATOR_SOFT_CHAR
@@ -866,7 +866,7 @@ class FastCharData(object):
         self.skippable_chars = dict([(closeCharStyle,
                                        [ord(c) for c in closeChars])
                                       for (closeCharStyle, closeChars)
-                                      in skippable_chars_by_style.items()])
+                                      in list(skippable_chars_by_style.items())])
         self.for_check = for_check
         
     _ends_with_for_re = re.compile(r'\bfor\s*\Z')
@@ -1226,7 +1226,7 @@ class KoLanguageBase:
         return orig_style
 
     def getLanguageService(self, iid):
-        if self._svcdict.has_key(iid):
+        if iid in self._svcdict:
             return getattr(self, self._svcdict[iid])()
         return None
 
@@ -1301,7 +1301,7 @@ class KoLanguageBase:
         return 0
 
     def getMatchingChar(self, ch):
-        if self.matchingSoftChars.has_key(ch):
+        if ch in self.matchingSoftChars:
             return self.matchingSoftChars[ch][0]
         else:
             return None
@@ -1355,7 +1355,7 @@ class KoLanguageBase:
                 if indentWidth and ((guess and indentWidth < guess) or not guess):
                     guess = indentWidth
                     
-                    if '\t' in indentation or u'\t' in indentation:
+                    if '\t' in indentation or '\t' in indentation:
                         usesTabs = 1
 
         return guess, usesTabs # if guess is 0 caller will decide instead
@@ -1904,7 +1904,7 @@ class KoLanguageBase:
         """ This function looks to see if the line we just ended ends
         with a continuation symbol ('\' in all languages AFAIK).
         
-        If yes, it looks to see if the line _before_ ours ends in a \
+        If yes, it looks to see if the line _before_ ours ends in a \\
         as well, and if so, returns that line's indent.
         
         If not, it looks at the beginning of the current _logical_ line
@@ -1969,7 +1969,7 @@ class KoLanguageBase:
         if firstCharStyle in style_info._comment_styles or firstCharStyle in style_info._string_styles:
             return None
 
-        wordMatch = self.firstWordRE.match(unicode(curLine))
+        wordMatch = self.firstWordRE.match(str(curLine))
         if wordMatch and wordMatch.group(1) in self._indenting_statements:
             return 1
         if wordMatch and wordMatch.group(1) in self._dedenting_statements:
@@ -2363,7 +2363,7 @@ class KoLanguageBase:
                 and scimoz.getLineEndPosition(currentLineNo) == pos
                 and (scimoz.getFoldLevel(currentLineNo) & 0x3ff) > 0):
                 return self._getIndentForLine(scimoz, currentLineNo - 1)
-        except Exception, e:
+        except Exception as e:
             log.warn("Got exception computing indent", exc_info=1)
             return ''
         
@@ -2749,7 +2749,7 @@ class KoLanguageBase:
                                         tagStartPos_Buf,
                                         beforeText, beforeStyles):
                     return self._getIndentForLine(scimoz, currentLine)
-                whitespaceRe = re.compile('(\S+)(\s*)')
+                whitespaceRe = re.compile(r'(\S+)(\s*)')
                 # Is there a space between the "<" and the current index position ?
                 firstSpaceMatch = whitespaceRe.search(beforeText, tagStartPos_Buf, index_Buf)
                 if not firstSpaceMatch:
@@ -2936,7 +2936,7 @@ class KoLanguageBase:
                 targetEnd = scimoz.targetEnd
                 searchFlags = scimoz.searchFlags
                 try:
-                    for i in xrange(scimoz.selections):
+                    for i in range(scimoz.selections):
                         selectionPos = scimoz.getSelectionNCaret(i)
                         scimoz.targetStart = selectionPos
                         scimoz.searchFlags = 0
@@ -3134,7 +3134,7 @@ class KoLanguageBase:
             if tuple[1] is None:
                 self.matchingSoftChars["{"] = (tuple[0],
                                                self._acceptUnlessNextLineIsIndented)
-        except KeyError, ex:
+        except KeyError as ex:
             log.exception(ex)
 
     def _acceptUnlessNextLineIsIndented(self, scimoz, charPos, style_info, candidate):
@@ -3251,13 +3251,13 @@ class KoLanguageBaseDedentMixin(object):
     def __init__(self):
         # Override the defaults from KoLanguageBase
         self._dedent_chars = ":"   # Only when line starts with 'case' or 'default'
-        self._indenting_statements = [u'case', u'default']
+        self._indenting_statements = ['case', 'default']
     
     _caseOrDefaultStmtRE = re.compile(r'^(\s*)(?:case\b.+|default)\s*:(.*)$')
     def getIndentBasedOnDedentChar(self, scimoz, charPos, style_info):
         """
-        If current line matches ^\s+case.*:$ or default
-        and the previous line matches ^\s+case\b or default
+        If current line matches ^\\s+case.*:$ or default
+        and the previous line matches ^\\s+case\b or default
         do a dedent
         """
         currLineNo = self._statementStartingLineFromPos(scimoz, charPos-1, style_info)

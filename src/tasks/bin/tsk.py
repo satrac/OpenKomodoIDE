@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 r"""Command-line dev/test front end for Komodo's Tasks backend."""
 
@@ -101,9 +101,9 @@ class TskShell(cmdln.Cmdln):
                            % (repo_type, ', '.join(known_repo_types)))
 
         if opts.nickname:
-            print "  Nickname: %s" % opts.nickname
-        print "  Repository type: %s" % repo_type
-        print "  Base URL: %s" % repo_url
+            print("  Nickname: %s" % opts.nickname)
+        print("  Repository type: %s" % repo_type)
+        print("  Base URL: %s" % repo_url)
         
         # Username/password and authentication.
         # Note: currently we are presuming Basic HTTP auth.
@@ -112,7 +112,7 @@ class TskShell(cmdln.Cmdln):
             default_username = getpass.getuser()
             username = _query("  Username", getpass.getuser())
         else:
-            print "  Username: %s" % username
+            print("  Username: %s" % username)
         password = getpass.getpass("  Password (for '%s' %s user): " % (
             username, repo_type.capitalize()))
         
@@ -130,17 +130,17 @@ class TskShell(cmdln.Cmdln):
         mgr = _get_mgr()
         for i, repo in enumerate(mgr.gen_repos()):
             if i != 0:
-                print
+                print()
             nickname_str = (" (%s)" % repo.nickname) if repo.nickname else ""
-            print "repository: %d%s" % (repo.id, nickname_str)
-            print "base_url: %s" % repo.base_url
-            print "username: %s" % repo.username
+            print("repository: %d%s" % (repo.id, nickname_str))
+            print("base_url: %s" % repo.base_url)
+            print("username: %s" % repo.username)
             for q in repo.gen_queries():
-                print
+                print()
                 nickname_str = (" (%s)" % q.nickname) if q.nickname else ""
-                print "  query: %d%s" % (q.id, nickname_str)
-                print "  title: %s" % q.title
-                print "  conds: %s" % ', '.join(q.conds)
+                print("  query: %d%s" % (q.id, nickname_str))
+                print("  title: %s" % q.title)
+                print("  conds: %s" % ', '.join(q.conds))
 
     def do_rmrepo(self, subcmd, opts, repo_id):
         """${cmd_name}: Remove a repository.
@@ -154,7 +154,7 @@ class TskShell(cmdln.Cmdln):
         except ValueError:
             raise TskError("invalid repo id: %r (must be an integer)", repo_id)
         mgr.remove_repo(repo_id)
-        print "repository %d removed" % repo_id
+        print("repository %d removed" % repo_id)
 
     @option("-t", "--title", help="A display title for the query.")
     @option("-n", "--nickname", help="A unique nickname for the query.")
@@ -190,13 +190,13 @@ class TskShell(cmdln.Cmdln):
         
         # Print given information.
         if not opts.test:
-            print "  Repository: %s" % repo
+            print("  Repository: %s" % repo)
             if nickname:
-                print "  Nickname: %s" % nickname
+                print("  Nickname: %s" % nickname)
             if title:
-                print "  Title: %s" % title
+                print("  Title: %s" % title)
             for cond in conds:
-                print "  Condition: %s" % cond
+                print("  Condition: %s" % cond)
         
         # If no conds given, interactively ask for some data.
         if not conds and opts.interactive is not False:
@@ -205,15 +205,15 @@ class TskShell(cmdln.Cmdln):
                     nickname = _query("  Nickname")
                 if not title:
                     title = _query("  Title")
-            print "Enter some query conditions ('?' for query help)."
+            print("Enter some query conditions ('?' for query help).")
             is_done = False
             while not is_done:
                 answer, is_done = _query_field_in_set("Condition",
                     prompt_indent="  ", disallow_empty=True)
                 if answer == "?":
-                    print "* * *"
-                    print repo.hook_query_help_text()
-                    print "* * *"
+                    print("* * *")
+                    print(repo.hook_query_help_text())
+                    print("* * *")
                     continue
                 if is_done:
                     break
@@ -223,7 +223,7 @@ class TskShell(cmdln.Cmdln):
         q = repo.create_query(conds, nickname=nickname, title=title)
         if opts.test:
             for task in repo.tasks_from_query(q):
-                print task
+                print(task)
         else:
             repo.add_query(q)
             log.info("%s added to %s", q, repo)
@@ -240,7 +240,7 @@ class TskShell(cmdln.Cmdln):
         mgr = _get_mgr()
         q = mgr.query_from_qid(qid)
         q.repo.remove_query(q.id)
-        print "%s removed from %s" % (q, q.repo)
+        print("%s removed from %s" % (q, q.repo))
 
     @alias("add")
     @option("-i", "--interactive", dest="interactive", action="store_const",
@@ -283,10 +283,10 @@ class TskShell(cmdln.Cmdln):
         #pprint(fields)
         
         # Show all the current data fields.
-        print "  Repository: %s" % repo
+        print("  Repository: %s" % repo)
         for field in fields:
             if field.name in data2:
-                print "  %s: %s" % (field.label, data2[field.name])
+                print("  %s: %s" % (field.label, data2[field.name]))
         
         # Query for extra data, if necessary.
         have_queried = False
@@ -328,9 +328,9 @@ class TskShell(cmdln.Cmdln):
             pass
         mgr = _get_mgr()
         repo = mgr.repo_from_id(repo_id)
-        print repo
+        print(repo)
         for field in repo.task_fields():
-            print '   ', field
+            print('   ', field)
     
     def help_ids(self):
         """Help on specifying repository, query and task ids."""
@@ -366,7 +366,7 @@ class TskShell(cmdln.Cmdln):
         mgr = _get_mgr()
         q = mgr.query_from_qid(qid)
         for task in q.tasks:
-            print task
+            print(task)
 
     @alias("up")
     def do_update(self, subcmd, opts, *ids):
@@ -399,7 +399,7 @@ def _query(question, default=None):
     if default:
         s += " [%s]" % default
     s += ": "
-    answer = raw_input(s)
+    answer = input(s)
     answer = answer.strip()
     if not answer:
         return default
@@ -443,7 +443,7 @@ def _query_field_in_set(label, default=None, is_required=False, options=None,
     while True:
         sys.stdout.write(prompt)
         sys.stdout.flush()
-        answer = raw_input().lower()
+        answer = input().lower()
         is_done = False
         if answer == '.':
             answer = None
@@ -495,10 +495,10 @@ def _query_yes_no(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "\
@@ -586,7 +586,7 @@ def main(argv=None):
             log.error(exc_info[0])
         if not skip_it:
             if log.isEnabledFor(logging.DEBUG):
-                print
+                print()
                 traceback.print_exception(*exc_info)
             sys.exit(1)
     else:

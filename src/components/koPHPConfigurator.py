@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -119,7 +119,7 @@ class koPHPConfigurator:
                     if not os.path.exists(source_extension):
                         raise _PHPConfigException("No such file: %s" %
                                                   (source_extension,))
-                except _PHPConfigException, ex:
+                except _PHPConfigException as ex:
                     log.error(ex.message)
                     # Go do the pre-ko-5.2 method of finding ver/php_xdebug.dll
         else:
@@ -199,7 +199,7 @@ cgi.force_redirect = 0
             ini.write(newcontents)
             ini.close()
             if sys.platform[:3] != 'win':
-                os.chmod(ininame,0644)
+                os.chmod(ininame,0o644)
         except:
             msg = 'Unable to write ini at [%s]' % inipath
             log.warn(msg)
@@ -219,7 +219,7 @@ cgi.force_redirect = 0
             try:
                 shutil.copyfile(source_extension,dest)
                 if sys.platform[:3] != 'win':
-                    os.chmod(dest,0755)
+                    os.chmod(dest,0o755)
             except:
                 msg = 'Unable to copy [%s] to [%s]'%(source_extension,dest)
                 log.warn(msg)

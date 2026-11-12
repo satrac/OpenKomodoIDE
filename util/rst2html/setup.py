@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 
 """Distutils setup script for 'rst2html.py'."""
@@ -19,7 +19,7 @@ setup(name="rst2html",
       author="Trent Mick",
       author_email="trentm@activestate.com",
       platforms=["Windows", "Linux", "Mac OS X", "Unix"],
-      long_description="""\
+      long_description=r"""\
 A quicky Python module/script for converting ReST markup to HTML.
 Requires the docutils package.
 

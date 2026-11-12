@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2006 ActiveState Software Inc.
 # Author:
 #   Trent Mick (TrentM@ActiveState.com)
@@ -142,7 +142,7 @@ import glob
 import traceback
 import logging
 from optparse import OptionParser
-import cgi
+import html
 
 
 sys.path.insert(0, dirname(__file__))
@@ -166,9 +166,9 @@ class Error(Exception):
 log = logging.getLogger("wax")
 
 # Be restrictive of feature names.
-PATTERN_FEATURE = re.compile("^\w+$")
+PATTERN_FEATURE = re.compile(r"^\w+$")
 # A legal 8.3 filename.
-PATTERN_8_3_NAME = re.compile("^(\w){1,8}(\.(\w){1,3})?$")
+PATTERN_8_3_NAME = re.compile(r"^(\w){1,8}(\.(\w){1,3})?$")
 
 
 
@@ -383,8 +383,8 @@ class Guru:
         # Get a clean, uppercase, and 8.3 "base" and "ext" -> our "key"
         base, ext = splitext(basename)
         ext = ext[1:]               # drop '.' in ext
-        base = re.sub("[^\w]", "", base)[:8].upper() or "FILE"
-        ext = re.sub("[^\w]", "", ext)[:3].upper()
+        base = re.sub(r"[^\w]", "", base)[:8].upper() or "FILE"
+        ext = re.sub(r"[^\w]", "", ext)[:3].upper()
         if ext: ext = '.' + ext     # put the '.' back in ext
         key = base + ext
 
@@ -521,7 +521,7 @@ class Accumulator(list):
         s = indent + item
         list.append(self, s)
         if log.isEnabledFor(logging.DEBUG):
-            print s
+            print(s)
 
     def has_content(self):
         return bool(self)
@@ -627,10 +627,10 @@ class Accumulator(list):
         name, longname = self.guru.get_path_names(basename(src))
         attrs = 'Id="%s" Name="%s"' % (id, name)
         if longname:
-            attrs += ' LongName="%s"' % cgi.escape(longname, True)
+            attrs += ' LongName="%s"' % html.escape(longname, True)
         if vital:
             attrs += ' Vital="%s"' % (vital and "yes" or "no")
-        attrs += ' src="%s"' % cgi.escape(normpath(src), True)
+        attrs += ' src="%s"' % html.escape(normpath(src), True)
         self.add('<File %s/>' % attrs)
 
 ##        attrs = {"Id": id, "Name": name, "src": src}
@@ -742,7 +742,7 @@ def main(argv):
         optlist, args = getopt.getopt(argv[1:], "h?Vvqp:wfb:",
             ["help", "version", "verbose", "quiet", "self-test",
              "project-file=", "write-files", "force"])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         raise Error(str(ex))
         return 1
     help = False
@@ -752,10 +752,10 @@ def main(argv):
     base_image_dir = os.curdir
     for opt, optarg in optlist:
         if opt in ("-h", "-?", "--help"):
-            print __doc__
+            print(__doc__)
             return 0
         elif opt in ("-V", "--version"):
-            print "wax %s" % __version__
+            print("wax %s" % __version__)
             return 0
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -799,7 +799,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

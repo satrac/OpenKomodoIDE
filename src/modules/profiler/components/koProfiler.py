@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2000-2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -20,7 +20,7 @@ except ImportError:
             self.URI = None
             self.file = None
         def open(self, mode):
-            self.file = file(self.URI, mode)
+            self.file = open(self.URI, mode)
         def read(self, amount):
             return self.file.read(amount)
         def close(self):
@@ -163,9 +163,9 @@ class koPythonProfiler(object):
             # Komodo uses cPickle for storing profiling stats, but the Python
             # stdlib will use marshal - marshal is considered insecure. We try
             # pickle first and if that fails, then we fallback to marshal.
-            import cPickle
-            self.stats = cPickle.loads(self.rawdata)
-        except cPickle.UnpicklingError:
+            import pickle
+            self.stats = pickle.loads(self.rawdata)
+        except pickle.UnpicklingError:
             import marshal
             self.stats = marshal.loads(self.rawdata)
 
@@ -173,7 +173,7 @@ class koPythonProfiler(object):
         self.name = name
         from pstats import Stats
 
-        if isinstance(data, unicode):
+        if isinstance(data, str):
             # We need bytes - not unicode.
             data = data.encode("utf-8")
 
@@ -186,7 +186,7 @@ class koPythonProfiler(object):
         stats = self.prof.stats
         self.top_funcs = []
         #for func in (self.prof.fcn_list or stats):
-        for func, callees in self.prof.all_callees.items():
+        for func, callees in list(self.prof.all_callees.items()):
             #path, line, name = func_tuple
             callers = stats[func][-1]
             if not callers and callees:
@@ -198,14 +198,14 @@ class koPythonProfiler(object):
             callees = self.prof.all_callees[func]
             if filename == '<string>' and line == 1 and name == '<module>' and \
                len(callees) == 1:
-                cfunc = callees.keys()[0]
+                cfunc = list(callees.keys())[0]
                 cfilename, cline, cname = cfunc
                 ccallees = self.prof.all_callees[cfunc]
                 if cfilename == '~' and cline == 0 and cname == '<execfile>':
                     self.top_funcs = ccallees
 
     def save(self, filepath):
-        file(filepath, "wb").write(self.rawdata)
+        open(filepath, "wb").write(self.rawdata)
 
     def get_total_cpu_time(self):
         if self.prof is None:
@@ -235,11 +235,11 @@ class koPythonProfiler(object):
         else:
             numcalls, totalcalls, totaltime, cumultime, callers = self.prof.stats[func]
         spacer = " " * depth
-        print "%s %8.3f %s (%s:%d): %r" % (spacer, cumultime, name, filename, line, data[:4])
-        print "%s      factor: %r" % (spacer, factor, )
+        print("%s %8.3f %s (%s:%d): %r" % (spacer, cumultime, name, filename, line, data[:4]))
+        print("%s      factor: %r" % (spacer, factor, ))
         #print "%s callers: %r" % (spacer, callers.items(), )
         #print "%s      callees: %r" % (spacer, self.prof.all_callees[func].items(), )
-        print
+        print()
         already_walked[func] = 1
         for callee in self.prof.all_callees[func]:
             if callee not in already_walked:
@@ -252,12 +252,12 @@ class koPythonProfiler(object):
 
     def dump(self):
         from pstats import func_std_string, func_strip_path
-        print "Profile info"
+        print("Profile info")
 
-        print 'top_level: %r' % (self.prof.top_level, )
-        print 'total_calls: %r' % (self.prof.total_calls, )
-        print 'prim_calls: %r' % (self.prof.prim_calls, )
-        print "total_tt: %.3f CPU seconds" % (self.prof.total_tt, )
+        print('top_level: %r' % (self.prof.top_level, ))
+        print('total_calls: %r' % (self.prof.total_calls, ))
+        print('prim_calls: %r' % (self.prof.prim_calls, ))
+        print("total_tt: %.3f CPU seconds" % (self.prof.total_tt, ))
 
         #stats = self.prof.stats
         #for func in (self.prof.fcn_list or stats):
@@ -347,7 +347,7 @@ class CallgrindFunction(object):
 
     @property
     def callees(self):
-        return self._callee_cache.values()
+        return list(self._callee_cache.values())
 
 class koCallgrindProfilerItem(object):
     _reg_clsid_ = "{1ec846a8-621c-4862-8142-0d85755cd3e1}"
@@ -538,7 +538,7 @@ class koCallgrindProfiler(object):
                 lineno -= 1
                 break
             # Else, it's the data for cost line.
-            cost_items = map(int, line.split())
+            cost_items = list(map(int, line.split()))
             # Pad any missing cost items with 0
             cost_diff = len(self._cost_names) - len(cost_items)
             if cost_diff >= 0:
@@ -557,7 +557,7 @@ class koCallgrindProfiler(object):
             108 164
         """
         # Else, it's the data for cost line.
-        cost_items = map(int, line.split())
+        cost_items = list(map(int, line.split()))
         # Pad any missing cost items with 0
         cost_diff = len(self._cost_names) - len(cost_items)
         if cost_diff >= 0:
@@ -635,7 +635,7 @@ class koCallgrindProfiler(object):
                     self._current_callee_fn = fn
                     #caller_line = None
                     try:
-                        sp = map(int, item_data.split())
+                        sp = list(map(int, item_data.split()))
                         self._callee_call_count = sp[0]
                         #if len(sp) >= 2:
                         #    caller_line = sp[1]
@@ -698,7 +698,7 @@ class koCallgrindProfiler(object):
         all_callers = collections.defaultdict(list)
         secondary_fns = []
         cgfunc_from_name = {}
-        for cachekey, cgfunc in self._fn_from_cache_key.items():
+        for cachekey, cgfunc in list(self._fn_from_cache_key.items()):
             if not cgfunc.isPrimaryDefition:
                 secondary_fns.append(cgfunc)
             else:
@@ -708,7 +708,7 @@ class koCallgrindProfiler(object):
                 callers = all_callers[callee_cgfunc.cachekey]
                 callers.append(cgfunc)
         
-        for cachekey, cgfunc in self._fn_from_cache_key.items():
+        for cachekey, cgfunc in list(self._fn_from_cache_key.items()):
             callers_of_cgfunc = all_callers.get(cachekey)
             if not callers_of_cgfunc:
                 self.top_funcs.append(cgfunc)
@@ -736,7 +736,7 @@ class koCallgrindProfiler(object):
         # We now have a list of all top-level functions and the total cost.
 
     def save(self, filepath):
-        file(filepath, "wb").write(self.rawdata)
+        open(filepath, "wb").write(self.rawdata)
 
     def get_total_cpu_time(self):
         if not self.top_funcs:
@@ -752,15 +752,15 @@ class koCallgrindProfiler(object):
     def getAllItems(self):
         if not self.top_funcs:
             raise RuntimeError("No profile data is loaded")
-        return sorted([koCallgrindProfilerItem(self, cgfunc, cgfunc.total_calls) for cgfunc in self.all_funcs.values()],
+        return sorted([koCallgrindProfilerItem(self, cgfunc, cgfunc.total_calls) for cgfunc in list(self.all_funcs.values())],
                       key=operator.attrgetter('own_cpu_time_ns'), reverse=True)
 
     def _walk(self, cgfunc, already_walked, depth=0, parent_cgfunc=None, factor=1, callee_data=None):
         spacer = " " * depth
         if callee_data is None:
-            print "%s %8.3f %2d %s (%s:%d)" % (spacer, cgfunc.own_cpu_time, 1, cgfunc.name, cgfunc.path, cgfunc.line)
+            print("%s %8.3f %2d %s (%s:%d)" % (spacer, cgfunc.own_cpu_time, 1, cgfunc.name, cgfunc.path, cgfunc.line))
         else:
-            print "%s %8.3f %2d %s (%s:%d)" % (spacer, callee_data[3][0], callee_data[2], cgfunc.name, cgfunc.path, cgfunc.line)
+            print("%s %8.3f %2d %s (%s:%d)" % (spacer, callee_data[3][0], callee_data[2], cgfunc.name, cgfunc.path, cgfunc.line))
         already_walked[cgfunc] = 1
         for callee_data in sorted(cgfunc.callees, key=operator.itemgetter(0)):
             if callee_data[0] not in already_walked:
@@ -772,9 +772,9 @@ class koCallgrindProfiler(object):
             self._walk(func, already_walked)
 
     def dump(self):
-        print "Profile info"
-        print "total_tt: %.3f CPU seconds" % (self._total_cost, )
-        print 'len(self.getHierachicalItems()): %r' % (len(self.getHierachicalItems()), )
+        print("Profile info")
+        print("total_tt: %.3f CPU seconds" % (self._total_cost, ))
+        print('len(self.getHierachicalItems()): %r' % (len(self.getHierachicalItems()), ))
 
 
 
@@ -832,7 +832,7 @@ class koProfilerService:
             try:
                 prof = fn(*args)
                 result = components.interfaces.koIAsyncCallback.RESULT_SUCCESSFUL
-            except Exception, ex:
+            except Exception as ex:
                 log.warn("LoadProfileDataThread fn %r failed: %r", fn, str(ex))
 
             class CallbackRunnable(object):
@@ -849,7 +849,7 @@ class koProfilerService:
             runnable = CallbackRunnable(callback, (result, prof))
             try:
                 starting_thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
-            except Exception, e:
+            except Exception as e:
                 log.warn("LoadProfileDataThread: callback failed: %s", str(e))
 
         # Start the thread.

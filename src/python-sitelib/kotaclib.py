@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2007 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -84,7 +84,7 @@ class KoTACSearch(object):
 
 
 class KoTACMatch(object):
-    """A class representing a single textbox autocomplete hit/match.
+    r"""A class representing a single textbox autocomplete hit/match.
 
     These are used by a koIAutoCompleteResult like this:
 

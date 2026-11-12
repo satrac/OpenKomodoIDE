@@ -70,7 +70,7 @@ def cleanup(max_age_seconds=60, limit=30):
     max_age = timedelta(seconds=max_age_seconds)
     count = komob.lib.cleanup_views(max_age=max_age, limit=limit)
     if count > 0:
-        print("Deleted %d views" % count)
+        print(("Deleted %d views" % count))
     else:
         print("Did not delete any views")
 

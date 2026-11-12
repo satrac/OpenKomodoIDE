@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -47,14 +47,14 @@ class KoObserverService:
         self.cv = threading.Condition()
 
     def dump(self, topics=None):
-        print
-        print "KoObserverService"
+        print()
+        print("KoObserverService")
         if topics is None:
-            topics = self._topics.keys()
+            topics = list(self._topics.keys())
         for topic in topics:
             observers = self._getLiveObservers(topic)
-            print "  %r (%d observers)" % (topic, len(observers))
-        print
+            print("  %r (%d observers)" % (topic, len(observers)))
+        print()
 
     # Returns list of observers that are not dead. Maintains a 1-1 match for
     # the returned observers to the "self._topics[topic]" weak references.

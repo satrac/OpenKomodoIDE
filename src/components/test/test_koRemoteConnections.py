@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ################################################################################
 #               Testing for remote connections and remote files
 ################################################################################
 
 import os
+import subprocess
 import time
 import logging
 import socket
@@ -29,7 +30,7 @@ test_hosts = [
 procotcols, hostname, port, username, password, home_dir, privatekey = test_hosts[0]
 passive = False
 
-filedata = """
+filedata = r"""
         # Creating an actual Komodo file object to be used by buffer
         #file = components.classes["@activestate.com/koFileEx;1"].\ 
         #             createInstance(components.interfaces.koIFileEx)
@@ -79,11 +80,11 @@ class TestConnection(unittest.TestCase):
             #       setup correctly (i.e. when "password is None").
             if self._password is None:
                 ssh_command = "ssh %s@%s rm -rf %s" % (self._username, self._hostname, self._dirPath)
-                print ssh_command
-                p = os.popen(ssh_command)
+                print(ssh_command)
+                p = subprocess.Popen(ssh_command)
                 p.read()
                 p.close()
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -92,7 +93,7 @@ class TestConnection(unittest.TestCase):
         """test 05: Checking home directory"""
         try:
             self.assertEqual(self._home_dir, self._connection.getHomeDirectory(), "Home directory is not correct '%s' != '%s'." % (self._home_dir, self._connection.getHomeDirectory()))
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -100,10 +101,10 @@ class TestConnection(unittest.TestCase):
     def test10_createDirectory(self):
         """test 10: Creating a remote directory"""
         try:
-            self._connection.createDirectory(self._dirPath, 0755)
+            self._connection.createDirectory(self._dirPath, 0o755)
             global createdDirs
             createdDirs.append(self._dirPath)
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -112,7 +113,7 @@ class TestConnection(unittest.TestCase):
         """test 15: Checking parent path (dependants: 10)"""
         try:
             self.assertEqual(self._home_dir, self._connection.getParentPath(self._dirPath), "Parent path is not correct '%s' != '%s'." % (self._home_dir, self._connection.getParentPath(self._dirPath)))
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -121,7 +122,7 @@ class TestConnection(unittest.TestCase):
         """test 18: Checking list of directory (dependants: 10)"""
         try:
             self.assert_(self._connection.list(self._dirPath, 1) is not None, "Directory listing does not work")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -132,7 +133,7 @@ class TestConnection(unittest.TestCase):
             self._connection.writeFile(self._filePath, filedata)
             global createdFiles
             createdFiles.append(self._filePath)
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -141,7 +142,7 @@ class TestConnection(unittest.TestCase):
         """test 22: Reading the written file (dependants: 10, 20)"""
         try:
             self.assertEqual(filedata, self._connection.readFile(self._filePath), "File created does not match the file that was read")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -176,7 +177,7 @@ class TestConnection(unittest.TestCase):
             self.assertEqual(file_rfinfo.getFilename(), os.path.basename(self._filePath), "List filename not the same as the created filename.")
             self.assert_(file_rfinfo.isReadable(), "File is not readable.")
             self.assert_(file_rfinfo.isWriteable(), "File is not writeable.")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -186,21 +187,21 @@ class TestConnection(unittest.TestCase):
         try:
             dir_rfinfo = self._connection.list(self._dirPath, 0)# No refresh
             orig_dir_mode = dir_rfinfo.mode
-            self._connection.chmod(self._dirPath, 0700)
-            self.assertEqual(dir_rfinfo.mode, 0700, "Chmod failed on directory")
+            self._connection.chmod(self._dirPath, 0o700)
+            self.assertEqual(dir_rfinfo.mode, 0o700, "Chmod failed on directory")
             dir_rfinfo = self._connection.list(self._dirPath, 1) # Refresh
-            self.assertEqual(dir_rfinfo.mode, 0700, "Chmod failed on directory, the refresh produced a different result")
+            self.assertEqual(dir_rfinfo.mode, 0o700, "Chmod failed on directory, the refresh produced a different result")
             self._connection.chmod(self._dirPath, orig_dir_mode)
 
             file_rfinfo = self._connection.list(self._filePath, 0)  # No refresh
             orig_file_mode = file_rfinfo.mode
-            self._connection.chmod(self._filePath, 0600)
-            self.assertEqual(file_rfinfo.mode, 0600, "Chmod failed on file")
+            self._connection.chmod(self._filePath, 0o600)
+            self.assertEqual(file_rfinfo.mode, 0o600, "Chmod failed on file")
             dir_rfinfo = self._connection.list(self._dirPath, 1) # Refresh
-            self.assertEqual(file_rfinfo.mode, 0600, "Chmod failed on file, the refresh produced a different result")
+            self.assertEqual(file_rfinfo.mode, 0o600, "Chmod failed on file, the refresh produced a different result")
             self._connection.chmod(self._dirPath, orig_file_mode)
 
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -212,13 +213,13 @@ class TestConnection(unittest.TestCase):
         try:
             for dirnameToTest in ("spaces in dirname", '"double_quoted"', "'single_quoted'", "quote'in_me"):
                 newDirPath = "%s/%s" % (self._dirPath, dirnameToTest)
-                self._connection.createDirectory(newDirPath, 0755)
+                self._connection.createDirectory(newDirPath, 0o755)
                 createdDirs.append(newDirPath)
                 dir_rfinfo = self._connection.list(newDirPath, 1)
                 self.assert_(dir_rfinfo is not None, "Cannot get listing of directory: '%s'" % (dirnameToTest))
                 self.assertEqual(dir_rfinfo.getFilename(), dirnameToTest)
             # File name with spaces in it
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -237,7 +238,7 @@ class TestConnection(unittest.TestCase):
                 self.assert_(file_rfinfo is not None, "Cannot get listing of filename: '%s'" % (filenameToTest))
                 self.assertEqual(file_rfinfo.getFilename(), filenameToTest)
                 self.assertEqual(filedata, self._connection.readFile(newFilePath), "File created does not match the file that was read")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -263,7 +264,7 @@ class TestConnection(unittest.TestCase):
             dir_rfinfo = self._connection.list(self._dirPath, 0)
             self.assert_(dir_rfinfo is not None, "Cannot get listing of renamed original directory")
             self.assert_(dir_rfinfo.getFilepath() == self._dirPath, "Directory incorrect after renamed back to original")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -283,7 +284,7 @@ class TestConnection(unittest.TestCase):
             file_rfinfo = self._connection.list(self._filePath, 0)
             self.assert_(file_rfinfo is not None, "Cannot get listing of renamed original file")
             self.assert_(file_rfinfo.getFilepath() == self._filePath, "Filename incorrect after renamed back to original")
-        except COMException, ex:
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -299,7 +300,7 @@ class TestConnection(unittest.TestCase):
                     self._connection.removeFile(filePath)
                     file_rfinfo = self._connection.list(filePath, 0)
                     self.assert_(file_rfinfo is None, "File still exists or is still cached")
-            except COMException, ex:
+            except COMException as ex:
                 lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                                .getService(components.interfaces.koILastErrorService)
                 self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -316,7 +317,7 @@ class TestConnection(unittest.TestCase):
                     self._connection.removeDirectory(dirPath)
                     dir_rfinfo = self._connection.list(dirPath, 0)
                     self.assert_(dir_rfinfo is None, "Directory still exists or is still cached")
-            except COMException, ex:
+            except COMException as ex:
                 lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                                .getService(components.interfaces.koILastErrorService)
                 self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -373,7 +374,7 @@ class TestMiscellaneous(unittest.TestCase):
                 password = "test"
                 c = RFService.getConnection(protocol, host, port,
                                             username, password, '', '')
-            except COMException, ex:
+            except COMException as ex:
                 lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                                .getService(components.interfaces.koILastErrorService)
                 last_error = lastErrorSvc.getLastErrorMessage()
@@ -424,7 +425,7 @@ def _test():
     for test_host in test_hosts:
     #for test_host in test_hosts[2:3]:
         procotcols, hostname, port, username, password, home_dir = test_host
-        print "*** Testing procotcols %s on server %s@%s" % (procotcols, username, hostname)
+        print("*** Testing procotcols %s on server %s@%s" % (procotcols, username, hostname))
         runner.run(_suite())
 
     # Run miscellaneous tests

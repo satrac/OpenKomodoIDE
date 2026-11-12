@@ -20,20 +20,20 @@ class koTclLanguage(KoLanguageBase):
 
     accessKey = 't'
     shebangPatterns = [
-        re.compile(ur'\A#!.*tclsh.*$', re.IGNORECASE | re.MULTILINE),
-        re.compile(ur'\A#!.*wish.*$', re.IGNORECASE | re.MULTILINE),
-        re.compile(ur'\A#!.*expect.*$', re.IGNORECASE | re.MULTILINE),
+        re.compile(r'\A#!.*tclsh.*$', re.IGNORECASE | re.MULTILINE),
+        re.compile(r'\A#!.*wish.*$', re.IGNORECASE | re.MULTILINE),
+        re.compile(r'\A#!.*expect.*$', re.IGNORECASE | re.MULTILINE),
         # As suggested here: http://www.tcl.tk/man/tcl8.4/UserCmd/tclsh.htm
         # Make sure we properly catch shebang lines like this:
         #   #!/bin/sh
         #   # the next line restarts using tclsh \
         #   exec tclsh "$0" "$@"
-        re.compile(ur'\A#!.*^exec [^\r\n|\n|\r]*?tclsh', re.IGNORECASE | re.MULTILINE | re.DOTALL),
-        re.compile(ur'\A#!.*^exec [^\r\n|\n|\r]*?wish', re.IGNORECASE | re.MULTILINE | re.DOTALL),
-        re.compile(ur'\A#!.*^exec [^\r\n|\n|\r]*?expect', re.IGNORECASE | re.MULTILINE | re.DOTALL),
+        re.compile(r'\A#!.*^exec [^\r\n|\n|\r]*?tclsh', re.IGNORECASE | re.MULTILINE | re.DOTALL),
+        re.compile(r'\A#!.*^exec [^\r\n|\n|\r]*?wish', re.IGNORECASE | re.MULTILINE | re.DOTALL),
+        re.compile(r'\A#!.*^exec [^\r\n|\n|\r]*?expect', re.IGNORECASE | re.MULTILINE | re.DOTALL),
     ]
     primary = 1
-    namedBlockRE = "^[ \t;]*(proc|class|method)\s+[\w:]+(.*\{\n)?"
+    namedBlockRE = "^[ \t;]*(proc|class|method)\\s+[\\w:]+(.*\\{\n)?"
     namedBlockDescription = 'Tcl procedures and [incr Tcl] classes'
     defaultExtension = ".tcl"
 
@@ -42,7 +42,7 @@ class koTclLanguage(KoLanguageBase):
     commentDelimiterInfo = { "line": [ "#" ]  }
     variableIndicators = '$'
     supportsSmartIndent = "brace"
-    _dedenting_statements = [u'error', u'return', u'break', u'continue']
+    _dedenting_statements = ['error', 'return', 'break', 'continue']
 
     importPref = "tclExtraPaths"
 
@@ -195,19 +195,19 @@ class koTclDBGPInitHandler:
     
                 try:
                     session.featureGet('instrument_set')
-                except Exception, e:
+                except Exception as e:
                     # not supported, dont bother
                     return
                 
                 modules = self._parse(tclInstrument)
-                for module, enabled in modules.items():
+                for module, enabled in list(modules.items()):
                     if enabled.lower() == 'true':
                         enabled='1'
                     else:
                         enabled='0'
                     command = ['instrument_set', '-d', module, '-e', enabled]
                     session.sendCommand(command, None)
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
 # #endif
 

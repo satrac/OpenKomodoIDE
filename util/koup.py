@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2007 ActiveState Software Inc.
 # Contributors:
 #   Trent Mick (TrentM@ActiveState.com)
@@ -26,8 +26,9 @@ __version__ = '.'.join(map(str, __version_info__))
 import os
 from os.path import exists, join, basename, expanduser, splitext
 from posixpath import basename as ubasename
-from urlparse import urljoin
-import urllib2
+from urllib.parse import urljoin
+import urllib.request, urllib.error, urllib.parse
+import subprocess
 import sys
 import re
 from pprint import pprint
@@ -35,13 +36,13 @@ from glob import glob
 import traceback
 import logging
 import optparse
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import socket
-import urlparse
+import urllib.parse
 import tempfile
 from fnmatch import fnmatch
 if sys.platform == "win32":
-    import _winreg
+    import winreg
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -105,8 +106,8 @@ def koup(seeker, channel=None, dry_run=False):
                         seeker)
                     _set_update_channel(install_dir, channel)
                 return
-        except Error, ex:
-            preamble = """\
+        except Error as ex:
+            preamble = r"""\
 -------------
 There was an error determining if your currently installed Komodo is
 actually older than the %s %s.
@@ -294,8 +295,8 @@ class KomodoDevbuildPackageSeeker(PackageSeeker):
         url_dir = "http://komodo.nas1.activestate.com/builds/%s/DevBuilds/" % self.version_cond
 
         build_dir_re = {
-            "komodoedit": re.compile("^oksvn-[^-]+-(\d+)/$"),
-            "komodoide": re.compile("^assvn-[^-]+-(\d+)/$"),
+            "komodoedit": re.compile(r"^oksvn-[^-]+-(\d+)/$"),
+            "komodoide": re.compile(r"^assvn-[^-]+-(\d+)/$"),
         }[self.product]
         build_nums_and_dirs = []
         for name in _links_from_url(url_dir):
@@ -351,21 +352,20 @@ class KomodoNightlyPackageSeeker(PackageSeeker):
 _a_pat = re.compile(r'<a href="(.*?)">.*?</a>')
 def _links_from_url(url):
     try:
-        html = urllib2.urlopen(url).read()
-    except urllib2.HTTPError, ex:
+        html = urllib.request.urlopen(url).read()
+    except urllib.error.HTTPError as ex:
         if ex.code == 404:
             raise Error("`%s' not found (HTTP 404)" % url)
         raise
-    except urllib2.URLError, ex:
+    except urllib.error.URLError as ex:
         if ex.args and ex.args[0] and ex.args[0][0] == 7:
             # socket error: No address associated with nodename
-            raise Error("can't resolve %s" % urlparse.urlparse(url)[1])
+            raise Error("can't resolve %s" % urllib.parse.urlparse(url)[1])
         raise
     links = set(href for href in _a_pat.findall(html))
     return links
 
 def _capture_status(argv):
-    import subprocess
     p = subprocess.Popen(argv,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
@@ -376,7 +376,7 @@ def _capture_status(argv):
 
 # Recipe: query_user (0.2+) in /home/trentm/tm/recipes/cookbook
 def _query_user(preamble, default=None, prompt="> ", validate=None):
-    """Ask the user a question using raw_input() and looking something
+    r"""Ask the user a question using raw_input() and looking something
     like this:
 
         <preamble>
@@ -403,7 +403,7 @@ def _query_user(preamble, default=None, prompt="> ", validate=None):
             If not specified the default validator is used -- which just
             ensures that a non-empty value is entered.
     """
-    if isinstance(validate, (str, unicode)):
+    if isinstance(validate, str):
         if validate == "notempty":
             def validate_notempty(answer):
                 if not answer:
@@ -413,7 +413,7 @@ def _query_user(preamble, default=None, prompt="> ", validate=None):
             def validate_yes_or_no(answer):
                 normalized = {'y': 'yes', 'ye': 'yes', 'yes': 'yes',
                               'n': 'no',  'no': 'no'}
-                if answer.lower() not in normalized.keys():
+                if answer.lower() not in list(normalized.keys()):
                     return "Please enter 'yes' or 'no'."
             validate = validate_yes_or_no
         else:
@@ -432,7 +432,7 @@ def _query_user(preamble, default=None, prompt="> ", validate=None):
 ##""" % indented(default or "<empty>"))
     while True:
         if True:
-            answer = raw_input(prompt)
+            answer = input(prompt)
         else:
             sys.stdout.write(prompt)
             sys.stdout.flush()
@@ -481,14 +481,14 @@ def _is_wanted_komodo_different(ver_info, pretty_product, install_info):
 
     # Get the version of the currently installed Komodo.
     cmd = '"%s" --xml-version' % komodo_exe_path
-    o = os.popen(cmd)
-    ver_xml = o.read()
-    retval = o.close()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
+    ver_xml, _ = p.communicate()
+    retval = p.returncode
     if retval:
         raise Error("error running '%s'" % cmd)
     try:
         dom = minidom.parseString(ver_xml)
-    except ExpatError, ex:
+    except ExpatError as ex:
         raise Error("could not determine version from `komodo --xml-version` "
                     "output: %r (%s)" % (ver_xml, ex))
     version_node = dom.getElementsByTagName("version")[0]
@@ -595,7 +595,7 @@ def _install_komodo(seeker, install_info=None, dry_run=False, channel=None):
                     _run('rd /s/q "%s"' % tmp_dir, log.debug)
                 else:
                     _run('rm -rf "%s"' % tmp_dir, log.debug)
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 log.warn("could not remove temp working dir '%s': %s",
                          tmp_dir, ex)
 
@@ -650,16 +650,17 @@ def _reporthook(numblocks, blocksize, filesize, url=None):
 
 def _download_url(url, dst):
     if sys.stdout.isatty():
-        urllib.urlretrieve(url, dst,
+        urllib.request.urlretrieve(url, dst,
                            lambda nb, bs, fs, url=url: _reporthook(nb,bs,fs,url))
         sys.stdout.write('\n')
     else:
-        urllib.urlretrieve(url, dst)
+        urllib.request.urlretrieve(url, dst)
 
 def _capture_output(cmd):
-    o = os.popen(cmd)
-    output = o.read()
-    retval = o.close()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    output, _ = p.communicate()
+    retval = p.returncode
     if retval:
         raise Error("error capturing output of `%s': %r" % (cmd, retval))
     return output
@@ -672,9 +673,9 @@ def _find_installed_komodo_registry_id(ver, product):
     candidate_registry_ids = [ver, "%s-%s" % (ver, short_product)]
     for registry_id in candidate_registry_ids:
         keyName = r"Software\ActiveState\Komodo\%s" % registry_id
-        for base in (_winreg.HKEY_LOCAL_MACHINE, _winreg.HKEY_CURRENT_USER):
+        for base in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
             try:
-                key = _winreg.OpenKey(base, keyName)
+                key = winreg.OpenKey(base, keyName)
                 return registry_id
             except EnvironmentError:
                 pass
@@ -719,7 +720,7 @@ def _is_komodo_installed(ver, product, pretty_product):
         }
         try:
             return product_code_from_registry_id[registry_id]
-        except KeyError, ex:
+        except KeyError as ex:
             raise Error("don't know MSI ProductCode for %s %s: "
                         "you'll need to manually uninstall your Komodo "
                         "and then re-run this script"
@@ -855,7 +856,7 @@ def _split_full_ver(ver_str):
     def _isdigit(ch):
         return '0' <= ch <= '9'
     def split_quality(s):
-        for i in reversed(range(1, len(s)+1)):
+        for i in reversed(list(range(1, len(s)+1))):
             if not _isdigit(s[i-1]):
                 break
         if i == len(s):
@@ -884,7 +885,7 @@ def _split_full_ver(ver_str):
                 bits.append(0)
     return tuple(bits)
 
-_short_ver_re = re.compile("(\d+)(\.\d+)*([a-z](\d+)?)?")
+_short_ver_re = re.compile(r"(\d+)(\.\d+)*([a-z](\d+)?)?")
 def _split_short_ver(ver_str, intify=False, pad_zeros=None):
     """Parse the given version into a tuple of "significant" parts.
 
@@ -924,7 +925,7 @@ def _split_short_ver(ver_str, intify=False, pad_zeros=None):
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if bit == '.':
             continue
         if intify:
@@ -1085,7 +1086,7 @@ def main(argv):
         elif args[1] == "release":
             seeker = KomodoReleasePackageSeeker(canon_product, version)
         elif args[1].lower().startswith("rc"):
-            assert re.match("rc\d*", args[1].lower()), \
+            assert re.match(r"rc\d*", args[1].lower()), \
                 "invalid 'rc[N]' designator: %r" % args[1]
             if len(args[1]) > 2:
                 rc_num = int(args[1][2:])
@@ -1112,7 +1113,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

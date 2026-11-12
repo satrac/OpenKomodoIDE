@@ -187,7 +187,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         import traceback
-        print
+        print()
         traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

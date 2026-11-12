@@ -10,6 +10,7 @@ import sys
 import logging
 from xpcom import components
 import sciutils
+import importlib
 
 
 
@@ -259,6 +260,6 @@ class KoSciUtils:
             return "unknown"
 
     def test_scimoz(self, scimoz):
-        reload(sciutils)  # reload so we can re-test w/o re-starting Komodo
+        importlib.reload(sciutils)  # reload so we can re-test w/o re-starting Komodo
         testCases = [sciutils.SciUtilsTestCase]
         sciutils.runSciMozTests(testCases, scimoz)

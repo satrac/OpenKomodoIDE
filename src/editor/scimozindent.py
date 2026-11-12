@@ -441,7 +441,7 @@ def tagEndFromStartViaMatchingName(scimoz, startTagPos, lastVisiblePos):
                 style = scimoz.getStyleAt(nextStartTagPos)
                 if style == 0 and canColourise:
                     if lastVisiblePos is not None and nextStartTagPos > lastVisiblePos:
-                        print "searching for end, got start-tag at %d past pos %d" % (nextStartTagPos, lastVisiblePos)
+                        print("searching for end, got start-tag at %d past pos %d" % (nextStartTagPos, lastVisiblePos))
                         return None
                     if lastVisiblePos is None:
                         scimoz.colourise(startTagPos, -1)

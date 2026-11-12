@@ -251,7 +251,7 @@ class koRFConnection:
                 fileinfo, rf.encoding, bom = self._encodingSvc.getUnicodeEncodedString(fileinfo)
                 self.log.debug("Had to decode filelisting(%s): %s" % (rf.encoding, fileinfo))
                 result = rf.initFromDirectoryListing(dirname, fileinfo)
-            except Exception, e:
+            except Exception as e:
                 # No go, we assume it was not found in this string
                 self.log.debug("Error '%s' decoding filelisting: '%s'" % (e, fileinfo))
                 return None
@@ -341,7 +341,7 @@ class koRFConnection:
         for af_type in (socket.AF_UNSPEC, socket.AF_INET):
             try:
                 address_info = socket.getaddrinfo(self.server, self.port, af_type, socket.SOCK_STREAM)
-            except socket.error, msg:
+            except socket.error as msg:
                 self.log.warn("socket.getaddrinfo raised exception: %r", msg)
                 continue
             for res in address_info:
@@ -350,7 +350,7 @@ class koRFConnection:
                     s = socket.socket(af, socktype, proto)
                     s.settimeout(self._socket_timeout)
                     s.connect(sa)
-                except socket.error, msg:
+                except socket.error as msg:
                     if s:
                         s.close()
                     s = None
@@ -359,7 +359,7 @@ class koRFConnection:
             if s is not None:
                 break
         if not s:
-            raise socket.error, msg
+            raise socket.error(msg)
         return s
 
     #
@@ -796,13 +796,13 @@ class koRemoteSSH(koRFConnection):
                     try:
                         self._connection.auth_publickey(self.username, key)
                         #self._connection.auth_publickey(self.username, key, event)
-                    except paramiko.SSHException, e:
+                    except paramiko.SSHException as e:
                         # the authentication failed (raised when no event passed in)
                         pass
                     if self._connection.is_authenticated():
                         self.log.debug('Agent authentication was successful!')
                         return 1
-        except paramiko.BadAuthenticationType, e:
+        except paramiko.BadAuthenticationType as e:
             # Likely if public-key authentication isn't allowed by the server
             self._lasterror = e.args[-1]
             self.log.error("SSH AGENT AUTH ERROR: %s", self._lasterror)
@@ -830,16 +830,16 @@ class koRemoteSSH(koRFConnection):
             try:
                 self._connection.auth_publickey(self.username, key)
                 #self._connection.auth_publickey(self.username, key, event)
-            except paramiko.SSHException, e:
+            except paramiko.SSHException as e:
                 # the authentication failed (raised when no event passed in)
                 pass
             if self._connection.is_authenticated():
                 self.log.debug('Private key authentication was successful!')
                 return 1
-        except (IOError, InvalidPrivateKeyException), e:
+        except (IOError, InvalidPrivateKeyException) as e:
             self._lasterror = e.args[-1]
             self._raiseServerException("Private key authentication error.\nKey file: '%s'\nReason: %s" % (privatekey, self._lasterror))
-        except paramiko.BadAuthenticationType, e:
+        except paramiko.BadAuthenticationType as e:
             # Likely if public-key authentication isn't allowed by the server
             self._lasterror = e.args[-1]
             self.log.error("SSH AGENT AUTH ERROR: %s", self._lasterror)
@@ -859,7 +859,7 @@ class koRemoteSSH(koRFConnection):
             if self._use_time_delay:
                 time.sleep(0.1)
             return 1
-        except paramiko.BadAuthenticationType, e:
+        except paramiko.BadAuthenticationType as e:
             # Likely if this type of authentication isn't allowed by the server
             # or it was just a bad username/password
             e = self._connection.get_exception() or e
@@ -871,7 +871,7 @@ class koRemoteSSH(koRFConnection):
                 # Password authentication not allowed on this server
                 self._raiseServerException("Remote SSH server does not allow password authentication. Allowed types are: %r" % (", ".join(e.allowed_types)))
             # else, bad username/password
-        except paramiko.SSHException, e:
+        except paramiko.SSHException as e:
             # Username/Password failed
             e = self._connection.get_exception() or e
             self.log.warn("do_authenticateWithPassword:: SSHException: %s", e)
@@ -911,7 +911,7 @@ class koRemoteSSH(koRFConnection):
             event.wait(self._socket_timeout)
             if not event.isSet():
                 self._raiseTimeoutException()
-        except (paramiko.SSHException, socket.error), e:
+        except (paramiko.SSHException, socket.error) as e:
             self._raiseServerException(e.args[-1])
 
     def do_close(self):
@@ -920,7 +920,7 @@ class koRemoteSSH(koRFConnection):
             self.log.debug("Closing SSH connection")
             if self._connection and self._connection.is_active:
                 self._connection.close()
-        except paramiko.SSHException, e:
+        except paramiko.SSHException as e:
             self._lasterror = e.args[-1]
             self.log.error("SSH CLOSE ERROR: %s", self._lasterror)
             # XXX - Raise an exception... ??
@@ -940,7 +940,7 @@ class koRemoteSSH(koRFConnection):
                     self.log.debug("Checking that the SSH connection is alive")
                     self.do_getPathInfo("/")
                     self._last_verified_time = current_time
-        except Exception, e:
+        except Exception as e:
             if isinstance(e, socket.timeout):
                 self._raiseWithException(e)
             else:
@@ -983,7 +983,7 @@ class koRemoteSSH(koRFConnection):
                 status = channel.recv_exit_status()
             finally:
                 channel.close()
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
         stdout = ''.join(stdout_segments)
         stderr = ''.join(stderr_segments)
@@ -1033,7 +1033,7 @@ class koRemoteSSH(koRFConnection):
                 status = channel.recv_exit_status()
             finally:
                 channel.close()
-        except Exception, e:
+        except Exception as e:
             self.log.exception(e)
 
     @components.ProxyToMainThreadAsync
@@ -1045,7 +1045,7 @@ def debug_dirCache(log, cache):
     if log.level == logging.DEBUG:
         log.debug("*" * 40)
         log.debug("Directory cache:")
-        for ckey in cache.keys():
+        for ckey in list(cache.keys()):
             value = cache[ckey]
             if isinstance(value, list):
                 s = ["%s:" % ckey]

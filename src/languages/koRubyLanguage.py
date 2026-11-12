@@ -58,9 +58,9 @@ class KoRubyLanguage(KoLanguageKeywordBase):
     primary = 1
     defaultExtension = ".rb"
     extraFileAssociations = ["*.mab"] # .mab is Markaby
-    shebangPatterns = [ re.compile(ur'\A#!.*ruby.*$', re.IGNORECASE | re.MULTILINE),]
+    shebangPatterns = [ re.compile(r'\A#!.*ruby.*$', re.IGNORECASE | re.MULTILINE),]
 
-    _lineup_chars = u"()[]"
+    _lineup_chars = "()[]"
     _lineup_open_chars = "(["
     _lineup_close_chars = ")]"
     
@@ -81,8 +81,8 @@ class KoRubyLanguage(KoLanguageKeywordBase):
         log.debug("Ruby indent style: %s", self._indent_style)
         try:
             self._prefs.prefObserverService.addObserver(self, "editAutoIndentStyle", 0)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
         
         self._keyword_letters = string.ascii_letters
              
@@ -152,7 +152,7 @@ class KoRubyLanguage(KoLanguageKeywordBase):
         "line": [ "#" ],
     }
     variableIndicators = '$@'  # Won't find @@ class variables
-    namedBlockRE = "^[ \t]*((?:def|module|class)\s+\w+)"
+    namedBlockRE = "^[ \t]*((?:def|module|class)\\s+\\w+)"
     namedBlockDescription = 'Ruby classes and methods'
     
     leading_ws_re = re.compile(r'^(\s*)')
@@ -803,13 +803,13 @@ class KoRubyCompileLinter:
                 fout = open(tmpFileName, 'wb')
                 fout.write(text)
                 fout.close()
-            except (OSError, IOError), ex:
+            except (OSError, IOError) as ex:
                 tmpFileName = None
         if not tmpFileName:
             # Fallback to using a tmp dir if cannot write in cwd.
             try:
                 tmpFileName = str(tempfile.mktemp())
-            except OSError, ex:
+            except OSError as ex:
                 # Sometimes get this error but don't know why:
                 # OSError: [Errno 13] Permission denied: 'C:\\DOCUME~1\\trentm\\LOCALS~1\\Temp\\~1324-test'
                 errmsg = "error determining temporary filename for "\
@@ -836,7 +836,7 @@ class KoRubyCompileLinter:
             rubyExtraPaths = prefset.getStringPref("rubyExtraPaths")
             if rubyExtraPaths:
                 if sys.platform.startswith("win"):
-                    rubyExtraPaths = string.replace(rubyExtraPaths, '\\', '/')
+                    rubyExtraPaths = rubyExtraPaths.replace('\\', '/')
                     rubyExtraPaths = [x for x in rubyExtraPaths.split(os.pathsep) if x.strip()]
                     rubyExtraPaths.insert(0, '.')
             else:
@@ -879,7 +879,7 @@ class KoRubyCompileLinter:
 
     def _add_if_new(self, results, result, reported, err_hash):
         k = "%s:%s" % (err_hash['file'], err_hash['line'])
-        if not reported.has_key(k):
+        if k not in reported:
             results.addResult(result)
             reported[k] = None
         
@@ -1017,7 +1017,7 @@ class KoRubyCompileLinter:
             remainder = after
     
         # the remainder are ruby arguments
-        tokens = re.split("(-\*|- |\s+)", remainder)
+        tokens = re.split(r"(-\*|- |\s+)", remainder)
         while len(tokens) > 0:
             token = tokens[0]
             if token == "":
@@ -1026,7 +1026,7 @@ class KoRubyCompileLinter:
                 # "-*" and "- " are ignored for Emacs-style mode lines
                 result += token
                 tokens = tokens[1:]
-            elif re.match("^\s+$", token):
+            elif re.match(r"^\s+$", token):
                 # skip whitespace
                 result += token
                 tokens = tokens[1:]

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # See the accompanying LICENSE file.
 
@@ -10,6 +10,7 @@ import apsw
 import sys
 import os
 import codecs
+import importlib
 
 write=sys.stdout.write
 
@@ -73,7 +74,7 @@ import getpass
 if py3:
     import queue as Queue
 else:
-    import Queue
+    import queue
 import traceback
 import re
 import gc
@@ -125,7 +126,7 @@ if not py3:
         if len(args)>1:
             raise TypeError("bad args")
         try:
-            return iterator.next()
+            return iterator.__next__()
         except StopIteration:
             if len(args):
                 return args[0]
@@ -186,7 +187,7 @@ def randomstring(length):
 # C api PyObject_IsTrue
 class BadIsTrue(int):
     # py2 does this
-    def __nonzero__(self):
+    def __bool__(self):
         1/0
     # py3 does this
     def __bool__(self):
@@ -201,7 +202,7 @@ class ThreadRunner(threading.Thread):
         self.callable=callable
         self.args=args
         self.kwargs=kwargs
-        self.q=Queue.Queue()
+        self.q=queue.Queue()
         self.started=False
 
     def start(self):
@@ -246,7 +247,7 @@ def bgdel():
             if os.path.exists(name):
                 time.sleep(0.1)
 
-bgdelq=Queue.Queue()
+bgdelq=queue.Queue()
 bgdelthread=threading.Thread(target=bgdel)
 bgdelthread.setDaemon(True)
 bgdelthread.start()
@@ -458,7 +459,7 @@ class APSW(unittest.TestCase):
         "Test Connection.config function"
         self.assertRaises(TypeError, self.db.config)
         self.assertRaises(TypeError, self.db.config, "three")
-        x=long(0x7fffffff)
+        x=int(0x7fffffff)
         self.assertRaises(OverflowError, self.db.config, x*x*x*x*x)
         self.assertRaises(ValueError, self.db.config, 82397)
         self.assertRaises(TypeError, self.db.config, apsw.SQLITE_DBCONFIG_ENABLE_FKEY, "banana")
@@ -516,7 +517,7 @@ class APSW(unittest.TestCase):
         vals=(
             ("(?,?,?)", (1,2,3)),
             ("(?,?,?)", [1,2,3]),
-            ("(?,?,?)", range(1,4)),
+            ("(?,?,?)", list(range(1,4))),
             ("(:a,$b,:c)", {'a': 1, 'b': 2, 'c': 3}),
             ("(1,?,3)", (2,)),
             ("(1,$a,$c)", {'a': 2, 'b': 99, 'c': 3}),
@@ -767,10 +768,10 @@ class APSW(unittest.TestCase):
         # playing with default encoding and non-ascii strings - py2 only
         if py3: return
         enc=sys.getdefaultencoding()
-        reload(sys) # gets setdefaultencoding function back
+        importlib.reload(sys) # gets setdefaultencoding function back
         try:
             for v in vals:
-                if type(v)!=unicode:
+                if type(v)!=str:
                     continue
                 def encoding(*args):
                     return v.encode("utf8") # returns as str not unicode
@@ -812,10 +813,10 @@ class APSW(unittest.TestCase):
         for vin, vout in vals:
             if not py3:
                 if isinstance(vin, str):
-                    vin=unicode(vin)
+                    vin=str(vin)
             out=apsw.format_sql_value(vin)
             if not py3:
-                self.assertEqual(out, unicode(vout))
+                self.assertEqual(out, str(vout))
             else:
                 self.assertEqual(out, vout)
         # Errors
@@ -883,7 +884,7 @@ class APSW(unittest.TestCase):
         # this should fail
         self.assertRaises(TypeError, self.db.setauthorizer, 12) # must be callable
         self.db.setauthorizer(authorizer)
-        for val in apsw.SQLITE_DENY, long(apsw.SQLITE_DENY), 0x800276889000212112:
+        for val in apsw.SQLITE_DENY, int(apsw.SQLITE_DENY), 0x800276889000212112:
             retval=val
             if val<100:
                 self.assertRaises(apsw.AuthError, c.execute, "create table privatetwo(x)")
@@ -1352,7 +1353,7 @@ class APSW(unittest.TestCase):
             if values[0]<values[1]:
                 return -1 # return an int
             if values[0]>values[1]:
-                return long(1) # and a long
+                return int(1) # and a long
             return 0
 
         self.assertRaises(TypeError, self.db.createcollation, "twelve", strnumcollate, 12) # wrong # params
@@ -1852,7 +1853,7 @@ class APSW(unittest.TestCase):
         vals=("a simple string",
               "a simple string\0with a null",
               "a string\0with two\0nulls",
-              "or even a \0\0\0\0\0\0sequence\0\0\0\0\of them",
+              "or even a \0\0\0\0\0\0sequence\0\0\0\0\\of them",
               u(r"a \u1234 unicode \ufe54 string \u0089"),
               u(r"a \u1234 unicode \ufe54 string \u0089\0and some text"),
               u(r"\N{BLACK STAR} \N{WHITE STAR} \N{LIGHTNING} \N{COMET}\0more\0than you\0can handle"),
@@ -1941,7 +1942,7 @@ class APSW(unittest.TestCase):
             }
 
         c.execute("create virtual table test using fts3(name, ingredients)")
-        c.executemany("insert into test values(?,?)", data.items())
+        c.executemany("insert into test values(?,?)", list(data.items()))
 
         def check(pattern, expectednames):
             names=[n[0] for n in c.execute("select name from test where ingredients match ?", (pattern,))]
@@ -2053,12 +2054,12 @@ class APSW(unittest.TestCase):
 
             def Create2(self, *args):
                 e=apsw.IOError()
-                e.extendedresult=long(apsw.SQLITE_IOERR_ACCESS)
+                e.extendedresult=int(apsw.SQLITE_IOERR_ACCESS)
                 raise e
 
             def Create3(self, *args):
                 e=apsw.IOError()
-                e.extendedresult=(long("0x80")<<32)+apsw.SQLITE_IOERR_ACCESS # bigger than 32 bits
+                e.extendedresult=(int("0x80")<<32)+apsw.SQLITE_IOERR_ACCESS # bigger than 32 bits
                 raise e
 
         if not hasattr(self.db, "createmodule"): return
@@ -2081,7 +2082,7 @@ class APSW(unittest.TestCase):
             if sys.version_info<(2,4):
                 return
 
-            self.assertEqual(value.extendedresult& ((long(0xffff)<<16)|long(0xffff)), apsw.SQLITE_IOERR_ACCESS)
+            self.assertEqual(value.extendedresult& ((int(0xffff)<<16)|int(0xffff)), apsw.SQLITE_IOERR_ACCESS)
 
     def testVtables(self):
         "Test virtual table functionality"
@@ -2244,7 +2245,7 @@ class APSW(unittest.TestCase):
                 return ( (0, 1, (2, BadIsTrue()), 3, 4), )
 
             def BestIndex7(self, constraints, orderbys):
-                return (None, long(77), "foo", BadIsTrue(), 99)
+                return (None, int(77), "foo", BadIsTrue(), 99)
 
             _bestindexreturn=99
 
@@ -2253,7 +2254,7 @@ class APSW(unittest.TestCase):
                 cl.sort()
                 assert allconstraintsl == cl
                 assert orderbys == ( (2, False), )
-                retval=( [long(4),(3,True),[long(2),False],1, (0, False)], 997, u(r"\N{LATIN SMALL LETTER E WITH CIRCUMFLEX}"), False, 99)[:self._bestindexreturn]
+                retval=( [int(4),(3,True),[int(2),False],1, (0, False)], 997, u(r"\N{LATIN SMALL LETTER E WITH CIRCUMFLEX}"), False, 99)[:self._bestindexreturn]
                 return retval
 
             def BestIndexGood(self, constraints, orderbys):
@@ -3474,7 +3475,7 @@ class APSW(unittest.TestCase):
         for i,line in enumerate(lines):
             if "PYSQLITE_CALL" in line and "Py" in line:
                 self.fail("%s: %s() line %d - Py call while GIL released - %s" % (filename, name, i, line.strip()))
-            for k,v in self.calls.items():
+            for k,v in list(self.calls.items()):
                 if v.get('skipfiles', None) and v['skipfiles'].match(filename):
                     continue
                 mo=v['match'].search(line)
@@ -3601,13 +3602,13 @@ class APSW(unittest.TestCase):
 
         # check the lines
         for i,line in enumerate(lines):
-            for k,v in checker["req"].items():
+            for k,v in list(checker["req"].items()):
                 v=v % format
                 if v in line and found[k] is None:
                     found[k]=i
 
         # check they are present
-        for k,v in checker["req"].items():
+        for k,v in list(checker["req"].items()):
             if found[k] is None:
                 v=v%format
                 self.fail(filename+": "+k+" "+v+" missing in "+name)
@@ -3685,13 +3686,13 @@ class APSW(unittest.TestCase):
             self.assertRaises(TypeError, apsw.config)
             self.assertRaises(TypeError, apsw.config, "chicken")
             apsw.config(apsw.SQLITE_CONFIG_SINGLETHREAD)
-            apsw.config(long(apsw.SQLITE_CONFIG_SINGLETHREAD))
+            apsw.config(int(apsw.SQLITE_CONFIG_SINGLETHREAD))
             self.assertRaises(TypeError, apsw.config, apsw.SQLITE_CONFIG_SINGLETHREAD, 2)
             self.assertRaises(TypeError, apsw.config, apsw.SQLITE_CONFIG_MEMSTATUS)
             apsw.config(apsw.SQLITE_CONFIG_MEMSTATUS, True)
             apsw.config(apsw.SQLITE_CONFIG_MEMSTATUS, False)
             self.assertRaises(TypeError, apsw.config, 89748937)
-            x=long(0x7fffffff)
+            x=int(0x7fffffff)
             self.assertRaises(OverflowError, apsw.config, x*x*x*x)
             self.assertTrue(apsw.config(apsw.SQLITE_CONFIG_PCACHE_HDRSZ)>=0);
             apsw.config(apsw.SQLITE_CONFIG_PMASZ, -1)
@@ -3712,7 +3713,7 @@ class APSW(unittest.TestCase):
         apsw.softheaplimit(0)
         self.assertRaises(TypeError, apsw.releasememory, 1, 2)
         res=apsw.releasememory(0x7fffffff)
-        self.assertTrue(type(res) in (int, long))
+        self.assertTrue(type(res) in (int, int))
         apsw.softheaplimit(l("0x1234567890abc"))
         self.assertEqual(l("0x1234567890abc"), apsw.softheaplimit(l("0x1234567890abe")))
 
@@ -3729,7 +3730,7 @@ class APSW(unittest.TestCase):
     def testSqlite3Pointer(self):
         "Verify getting underlying sqlite3 pointer"
         self.assertRaises(TypeError, self.db.sqlite3pointer, 7)
-        self.assertTrue(type(self.db.sqlite3pointer()) in (int,long))
+        self.assertTrue(type(self.db.sqlite3pointer()) in (int,int))
         self.assertEqual(self.db.sqlite3pointer(), self.db.sqlite3pointer())
         self.assertNotEqual(self.db.sqlite3pointer(), apsw.Connection(":memory:").sqlite3pointer())
 
@@ -3739,7 +3740,7 @@ class APSW(unittest.TestCase):
             import pickle
             self.testPickle(pickle)
             try:
-                import cPickle
+                import pickle
                 self.testPickle(cPickle)
             except ImportError:
                 pass
@@ -3748,8 +3749,8 @@ class APSW(unittest.TestCase):
         import pickle
         PicklingError=pickle.PicklingError
         try:
-            import cPickle
-            PicklingError=(PicklingError, cPickle.PicklingError)
+            import pickle
+            PicklingError=(PicklingError, pickle.PicklingError)
         except ImportError:
             pass
 
@@ -3770,7 +3771,7 @@ class APSW(unittest.TestCase):
             if py3: return True
             # Python <= 2.5 wide builds screws up unicode codepoints
             # above 0xffff with pickle
-            if sys.version_info<(2,6) and isinstance(val, unicode):
+            if sys.version_info<(2,6) and isinstance(val, str):
                 for a in val:
                     if ord(a)>0xffff:
                         return False
@@ -4352,8 +4353,8 @@ class APSW(unittest.TestCase):
                 assert(isinstance(name, apsw.URIFilename) or name is None or type(name)==type(u("")))
                 assert(type(flags)==type([]))
                 assert(len(flags)==2)
-                assert(type(flags[0]) in (int,long))
-                assert(type(flags[1]) in (int,long))
+                assert(type(flags[0]) in (int,int))
+                assert(type(flags[1]) in (int,int))
                 return super(TestVFS, self).xOpen(name, flags)
 
             def xOpen100(self, name, flags):
@@ -4411,7 +4412,7 @@ class APSW(unittest.TestCase):
                 return l("0xffffffffffffffff10")
 
             def xDlSym99(self, handle, name):
-                assert(type(handle) in (int,long))
+                assert(type(handle) in (int,int))
                 assert(type(name) == type(u("")))
                 res=super(TestVFS, self).xDlSym(handle, name)
                 if not iswindows and _ctypes:
@@ -4429,7 +4430,7 @@ class APSW(unittest.TestCase):
                 return super(TestVFS, self).xDlClose("three")
 
             def xDlClose99(self, handle):
-                assert(type(handle) in (int,long))
+                assert(type(handle) in (int,int))
                 super(TestVFS,self).xDlClose(handle)
 
             def xDlError1(self, bad, number, of, arguments):
@@ -4472,7 +4473,7 @@ class APSW(unittest.TestCase):
                 return l("0xffffffffeeeeeeee0")
 
             def xSleep99(self, microseconds):
-                assert(type(microseconds) in (int, long))
+                assert(type(microseconds) in (int, int))
                 return super(TestVFS, self).xSleep(microseconds)
 
             def xCurrentTime1(self, bad, args):
@@ -5032,7 +5033,7 @@ class APSW(unittest.TestCase):
             self.assertRaises(TypeError, vfs.xGetSystemCall)
             self.assertRaises(TypeError, vfs.xGetSystemCall, 3)
             self.assertEqual(None, vfs.xGetSystemCall("a name that won't exist"))
-            self.assertTrue(isinstance(vfs.xGetSystemCall("open"), (int,long)))
+            self.assertTrue(isinstance(vfs.xGetSystemCall("open"), int))
 
             TestVFS.xGetSystemCall=TestVFS.xGetSystemCall1
             self.assertRaisesUnraisable(TypeError, vfs2.xGetSystemCall, "open")
@@ -5302,7 +5303,7 @@ class APSW(unittest.TestCase):
             s=(len(s)-len(s.lstrip(" ")))*" "+prefix+s
             l=locals().copy()
             l["self"]=self
-            for k,v in kwargs.items():
+            for k,v in list(kwargs.items()):
                 l[k]=v
             # now remove indentation
             s=s.split("\n")
@@ -5915,7 +5916,7 @@ class APSW(unittest.TestCase):
             # py 3 barfs with any codepoints above 0xffff whining
             # about surrogates not being allowed.  If only it
             # implemented unicode properly.
-            cmd(u("create table if not exists nastydata(x,y); insert into nastydata values(null,'xxx\\u1234\\uabcdyyy\r\n\t\"this \\is nasty\u0001stuff!');"))
+            cmd(u("create table if not exists nastydata(x,y); insert into nastydata values(null,'xxx\\u1234\\uabcdyyy\r\n\t\"this \\\\is nasty\\u0001stuff!');"))
             s.cmdloop()
             isempty(fh[1])
             isempty(fh[2])
@@ -6503,7 +6504,7 @@ class APSW(unittest.TestCase):
         s.db.cursor().execute("pragma user_version=0")
         # some nasty stuff
         reset()
-        cmd(u("create table nastydata(x,y); insert into nastydata values(null,'xxx\\u1234\\uabcd\\U00012345yyy\r\n\t\"this \\is nasty\u0001stuff!');"
+        cmd(u("create table nastydata(x,y); insert into nastydata values(null,'xxx\\u1234\\uabcd\\U00012345yyy\r\n\t\"this \\\\is nasty\\u0001stuff!');"
               'create table "table"([except] int); create table [](""); create table [using]("&");'
               ))
         s.cmdloop()
@@ -7216,7 +7217,7 @@ shell.write(shell.stdout, "hello world\\n")
         ### Unicode output with all output modes
         ###
         colname=u(r"\N{BLACK STAR}8\N{WHITE STAR}")
-        val=u('xxx\\u1234\\uabcdyyy this\" is nasty\u0001stuff!')
+        val=u('xxx\\u1234\\uabcdyyy this\" is nasty\\u0001stuff!')
         noheadermodes=('insert',)
         # possible ways val can be represented (eg csv doubles up double quotes)
         outputs=(val, val.replace('"', '""'), val.replace('"', '&quot;'), val.replace('"', '\\"'))
@@ -8250,10 +8251,10 @@ test_types_vals=("a simple string",  # "ascii" string
           97, # integer
           2147483647,   # numbers on 31 bit boundary (32nd bit used for integer sign), and then
           -2147483647,  # start using 32nd bit (must be represented by 64bit to avoid losing
-          long(2147483648),  # detail)
-          long(-2147483648),
-          long(2147483999),
-          long(-2147483999),
+          int(2147483648),  # detail)
+          int(-2147483648),
+          int(2147483999),
+          int(-2147483999),
           992147483999,
           -992147483999,
           9223372036854775807,

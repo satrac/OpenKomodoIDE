@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """A small library for talking to fireflyhub.com.
    WARNING: this API is under heavy development and *will* change.
@@ -7,7 +7,7 @@
 import os
 import logging
 from pprint import pprint, pformat
-from urllib import urlencode
+from urllib.parse import urlencode
 
 if __name__ == "__main__":
     # Magic to allow command line usage.
@@ -83,7 +83,7 @@ class FireflyHubAPI(object): #(apibase.HttpAPIBase):
         @returns {str} A node creation job id.
         @raises {HubError} The node creation process has not been started.
         """
-        res = ''.join(self.ssh('sudo /firefly/hub/bin/hub mknode %d "%s"' % (long(sso_id),
+        res = ''.join(self.ssh('sudo /firefly/hub/bin/hub mknode %d "%s"' % (int(sso_id),
                                                                              username)))
         if res != 'OK\n':
             raise HubError(res)
@@ -94,14 +94,14 @@ class FireflyHubAPI(object): #(apibase.HttpAPIBase):
 def main(argv):
     """Usage: ./fireflyhubapi.py METHOD ARGS"""
     from os.path import exists, expanduser
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
     
     # Gather configuration info -- in particular "username/password"
     # credentials required for `api.notify(...)`.
     kwargs = {}
     conf_path = expanduser("~/.fireflyhubapi.ini")
     if exists(conf_path):
-        conf = SafeConfigParser()
+        conf = ConfigParser()
         conf.read(conf_path)
         section = os.environ.get("FIREFLYHUB_API_URL",
                                  FireflyHubAPI._api_url)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
     try:
         sys.exit(main(sys.argv))
-    except Exception, e:
+    except Exception as e:
         logging.exception('Error: %r', e)
         sys.exit(-1)
 

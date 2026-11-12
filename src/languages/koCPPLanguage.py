@@ -32,7 +32,7 @@ class koCPPLanguage(KoLanguageBase, KoLanguageBaseDedentMixin):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue']
     supportsSmartIndent = "brace"
     sample = """#include <windows.h>
 #include <iostream>
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     def __init__(self):
         KoLanguageBase.__init__(self)
         KoLanguageBaseDedentMixin.__init__(self)
-        self._indenting_statements = [u'case', u'default', u'protected', u'private', u'public']
+        self._indenting_statements = ['case', 'default', 'protected', 'private', 'public']
         self._style_info.update(
             _block_comment_styles = [sci_constants.SCE_C_COMMENT,
                                      sci_constants.SCE_C_COMMENTDOC,
@@ -271,7 +271,7 @@ class KoCPPCompileLinter:
         except ex:
             raise Exception("Unable to save temporary file for C/C++ linting: %s", str(ex))
 
-        if cc.startswith('cl') or cc.lower().endswith("\\cl.exe"):
+        if cc.startswith('cl') or cc.lower().endswith("\\\\cl.exe"):
             argv = [cc, '-c']
             isGCC = False
             # ms cl errors

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Corp.
 
 """mozupdate -- a tool for working with Mozilla update system packages
@@ -20,6 +20,7 @@ TODO:
 """
 
 import os
+import subprocess
 from os.path import exists, isdir, isfile, abspath, basename, splitext, \
                     dirname, normpath, expanduser, join, islink
 import sys
@@ -136,7 +137,7 @@ class Shell(cmdln.Cmdln):
 
         try:
             _run_in_dir('%s -x "%s"' % (mar, abspath(mar_path)), opts.dir)
-        except OSError, ex:
+        except OSError as ex:
             # A -1 from mar.exe can indicate a path that is too long
             # (the _open() call used internally on Windows seems to fail
             # with ENOENT if the file path is >= ~256 characters).
@@ -715,7 +716,7 @@ def _get_mar():
     if exists(config_path):
         try:
             config = _module_from_path(config_path)
-        except ImportError, ex:
+        except ImportError as ex:
             pass
         else:
             exe = (sys.platform == "win32" and ".exe" or "")
@@ -731,10 +732,10 @@ def _get_mar():
     # Use the first one found on the path, if any.
     try:
         return which.which("mar")
-    except which.WhichError, ex:
+    except which.WhichError as ex:
         pass
 
-    raise Error(_dedent("""\
+    raise Error(_dedent(r"""\
         No 'mar' (Mozilla ARchiver) executable could be found. You can:
         - set a MAR envvar pointing to one
         - put a mar executable directory on your PATH
@@ -748,7 +749,7 @@ def _get_mbsdiff():
 
     try:
         return which.which("mbsdiff")
-    except which.WhichError, ex:
+    except which.WhichError as ex:
         pass
 
     # If this is a Komodo-devel tree, attempt to use the configured
@@ -757,7 +758,7 @@ def _get_mbsdiff():
     if exists(config_path):
         try:
             config = _module_from_path(config_path)
-        except ImportError, ex:
+        except ImportError as ex:
             pass
         else:
             exe = (sys.platform == "win32" and ".exe" or "")
@@ -766,7 +767,7 @@ def _get_mbsdiff():
             if exists(mbsdiff):
                 return mbsdiff
 
-    raise Error(_dedent("""\
+    raise Error(_dedent(r"""\
         No 'mbsdiff' executable could be found on your PATH.
         Add mbsdiff to your PATH or define a MBSDIFF environment
         variable pointing to one.
@@ -807,17 +808,22 @@ def _assert_mode_equal(a, b):
 
 # Recipe: module_from_path (1.0.1)
 def _module_from_path(path):
-    import imp, os
+    import importlib.machinery, importlib.util, os
+    path = os.path.expanduser(path)
     dir = os.path.dirname(path) or os.curdir
     name = os.path.splitext(os.path.basename(path))[0]
-    iinfo = imp.find_module(name, [dir])
-    return imp.load_module(name, *iinfo)
+    spec = importlib.machinery.PathFinder.find_spec(name, [dir])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named %r in %r" % (name, dir))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 # Recipe: rmtree (0.5)
 def _rmtree_OnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 def _rmtree(dirname):
     import shutil
@@ -825,9 +831,10 @@ def _rmtree(dirname):
 
 
 def _capture_output(cmd):
-    o = os.popen(cmd)
-    output = o.read()
-    retval = o.close()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    output, _ = p.communicate()
+    retval = p.returncode
     if retval:
         raise Error("error capturing output of `%s': %r" % (cmd, retval))
     return output
@@ -847,8 +854,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """
     DEBUG = False
     if DEBUG: 
-        print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
-              % (tabsize, skip_first_line)
+        print("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
+              % (tabsize, skip_first_line))
     indents = []
     margin = None
     for i, line in enumerate(lines):
@@ -865,12 +872,12 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 break
         else:
             continue # skip all-whitespace lines
-        if DEBUG: print "dedent: indent=%d: %r" % (indent, line)
+        if DEBUG: print("dedent: indent=%d: %r" % (indent, line))
         if margin is None:
             margin = indent
         else:
             margin = min(margin, indent)
-    if DEBUG: print "dedent: margin=%r" % margin
+    if DEBUG: print("dedent: margin=%r" % margin)
 
     if margin is not None and margin > 0:
         for i, line in enumerate(lines):
@@ -882,7 +889,7 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 elif ch == '\t':
                     removed += tabsize - (removed % tabsize)
                 elif ch in '\r\n':
-                    if DEBUG: print "dedent: %r: EOL -> strip up to EOL" % line
+                    if DEBUG: print("dedent: %r: EOL -> strip up to EOL" % line)
                     lines[i] = lines[i][j:]
                     break
                 else:
@@ -890,8 +897,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                                      "line %r while removing %d-space margin"
                                      % (ch, line, margin))
                 if DEBUG:
-                    print "dedent: %r: %r -> removed %d/%d"\
-                          % (line, ch, removed, margin)
+                    print("dedent: %r: %r -> removed %d/%d"\
+                          % (line, ch, removed, margin))
                 if removed == margin:
                     lines[i] = lines[i][j+1:]
                     break
@@ -1057,7 +1064,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

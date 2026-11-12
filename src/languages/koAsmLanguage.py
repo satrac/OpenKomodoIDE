@@ -29,7 +29,7 @@ class koAsmLanguage(KoLanguageBase):
         }
     defaultExtension = '.asm'
     commentDelimiterInfo = { "line": [ ";" ]  }
-    _dedenting_statements = [u'.endif']
+    _dedenting_statements = ['.endif']
     
     sample = """
 SAMPLE NOT AVAILABLE

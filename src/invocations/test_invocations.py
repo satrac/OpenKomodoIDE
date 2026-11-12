@@ -1,10 +1,10 @@
 import sys, time
 import threading
-print "Starting with args", sys.argv
+print("Starting with args", sys.argv)
 if __name__=='__main__' and len(sys.argv)>1 and sys.argv[1]=="subtest":
-    print "Executed by test script - sleeping for 4 secs"
+    print("Executed by test script - sleeping for 4 secs")
     time.sleep(4)
-    print "Awake - terminating with exitcode=99"
+    print("Awake - terminating with exitcode=99")
     sys.exit(99)
 
 from xpcom import components
@@ -36,7 +36,7 @@ def TestPerlInvocation():
     invocation.currentCategoryPreferences = cat
     invocation.currentInstancePreferences = inst
     if not inst.getStringPref('executable'):
-        print "** Error - invocation did not default the executable, so I can't continue!"
+        print("** Error - invocation did not default the executable, so I can't continue!")
         return 
     inst.setStringPref('params' ,"subtest")
     inst.setBooleanPref("use-console", 0)
@@ -44,13 +44,13 @@ def TestPerlInvocation():
     # check we fail validation before setting the filename
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if ok:
-        raise RuntimeError, "The preference set did not fail validation without a filename"
+        raise RuntimeError("The preference set did not fail validation without a filename")
 
-    inst.setStringPref('filename', "f:\\temp\\delme.pl")
+    inst.setStringPref('filename', "f:\\temp\\\\delme.pl")
 
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if not ok:
-        raise RuntimeError, "Can not execute test program: the preference %s is invalid - %s" % (pref_id, message)
+        raise RuntimeError("Can not execute test program: the preference %s is invalid - %s" % (pref_id, message))
     DoRun(invocation, "Perl Test")
 
 
@@ -60,9 +60,9 @@ def TestPythonInvocation():
     invocation.currentCategoryPreferences = cat
     invocation.currentInstancePreferences = inst
     if inst.getStringPref('executable'):
-        print "Invocation defaulted executable to '%s' - using it" % (inst.getStringPref('executable'),)
+        print("Invocation defaulted executable to '%s' - using it" % (inst.getStringPref('executable'),))
     else:
-        print "Invocation did not have an executable - using '%s'"
+        print("Invocation did not have an executable - using '%s'")
         inst.setStringPref('executable', sys.executable)
     inst.setStringPref('params' ," subtest")
     inst.setBooleanPref("use-console", 0)
@@ -70,13 +70,13 @@ def TestPythonInvocation():
     # check we fail validation before setting the filename
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if ok:
-        raise RuntimeError, "The preference set did not fail validation without a filename"
+        raise RuntimeError("The preference set did not fail validation without a filename")
 
     inst.setStringPref('filename', sys.argv[0])
 
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if not ok:
-        raise RuntimeError, "Can not execute test program: the preference %s is invalid - %s" % (pref_id, message)
+        raise RuntimeError("Can not execute test program: the preference %s is invalid - %s" % (pref_id, message))
     DoRun(invocation, "Python Test")
 
 def TestCommandInvocation():
@@ -88,7 +88,7 @@ def TestCommandInvocation():
     # check we fail validation before setting the filename
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if ok:
-        raise RuntimeError, "The preference set did not fail validation without a filename"
+        raise RuntimeError("The preference set did not fail validation without a filename")
     
     invocation.currentInstancePreferences.setStringPref("filename", sys.executable)
     params = " -u " + sys.argv[0] + " " + "subtest"
@@ -96,7 +96,7 @@ def TestCommandInvocation():
 
     ok, pref_id, message = invocation.validate(INVOKE_RUN)
     if not ok:
-        raise RuntimeError, "Can not execute test program: the preference %s is invalid - %s" % (pref_id, message)
+        raise RuntimeError("Can not execute test program: the preference %s is invalid - %s" % (pref_id, message))
 
     DoRun(invocation, "Batch Test")
 

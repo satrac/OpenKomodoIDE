@@ -43,11 +43,11 @@ class koBashLanguage(KoLanguageKeywordBase):
     defaultExtension = '.sh'
     commentDelimiterInfo = {"line": [ "#" ],}
     shebangPatterns = [
-        re.compile(ur'\A#!.*/(ba)?sh.*$', re.IGNORECASE | re.MULTILINE),
+        re.compile(r'\A#!.*/(ba)?sh.*$', re.IGNORECASE | re.MULTILINE),
     ]
     
     # Ignore parens due to case statements.
-    _lineup_chars = u"{}"
+    _lineup_chars = "{}"
     _lineup_open_chars = "{"
     _lineup_close_chars = "}"
 
@@ -66,12 +66,12 @@ class koBashLanguage(KoLanguageKeywordBase):
     
     sample = """# build our tags file
 
-find src \( \( -name '*.h' \) -o \\
-           \( -name '*.cpp' \) -o \\
-           \( -name '*.c' \) -o \\
-           \( -name '*.cxx' \) -o \\
-            -exec ls -1 `pwd`/{} \; | 
-sed -e 's@/cygdrive/c@c:@' -e 's@/\./@/@' | 
+find src \\( \\( -name '*.h' \\) -o \\
+           \\( -name '*.cpp' \\) -o \\
+           \\( -name '*.c' \\) -o \\
+           \\( -name '*.cxx' \\) -o \\
+            -exec ls -1 `pwd`/{} \\; | 
+sed -e 's@/cygdrive/c@c:@' -e 's@/\\./@/@' | 
 perl -n -e 'chomp; printf(qq(%c%c%s,1%c), 12, 10, $_, 10);' > TAGS
 """
 

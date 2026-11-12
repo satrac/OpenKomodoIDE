@@ -6,10 +6,10 @@
 Currently this is very limited -- just enough to extract some PuTTY settings.
 """
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import logging
 try:
-    import _winreg
+    import winreg
 except ImportError:
     pass
 
@@ -47,17 +47,17 @@ class PuTTYServer(object):
 
 def server_from_registry(session_name, session_key):
     try:
-        alias = urllib.unquote(session_name)
-        protocol, type = _winreg.QueryValueEx(session_key, "Protocol")
+        alias = urllib.parse.unquote(session_name)
+        protocol, type = winreg.QueryValueEx(session_key, "Protocol")
         if protocol != "ssh":
             return None
-        hostname, type = _winreg.QueryValueEx(session_key, "HostName")
-        username, type = _winreg.QueryValueEx(session_key, "UserName")
+        hostname, type = winreg.QueryValueEx(session_key, "HostName")
+        username, type = winreg.QueryValueEx(session_key, "UserName")
         if not username:
             username = None
-        port, type = _winreg.QueryValueEx(session_key, "PortNumber")
+        port, type = winreg.QueryValueEx(session_key, "PortNumber")
         return PuTTYServer(alias, hostname, port, username=username)
-    except EnvironmentError, ex:
+    except EnvironmentError as ex:
         log.warn("error extracting server info for '%s' PuTTY session: %s",
                  session_name, ex)
         return None
@@ -69,10 +69,10 @@ def gen_putty_servers():
     
     Yields PuTTYServer instances.
     """
-    key_name = "Software\SimonTatham\PuTTY\Sessions"
+    key_name = r"Software\SimonTatham\PuTTY\Sessions"
 
     try:
-        sessions_key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, key_name)
+        sessions_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_name)
     except EnvironmentError:
         pass
     else:
@@ -80,11 +80,11 @@ def gen_putty_servers():
         while 1:
             index += 1
             try:
-                session_name = _winreg.EnumKey(sessions_key, index)
-                if urllib.unquote(session_name) == "Default Settings":
+                session_name = winreg.EnumKey(sessions_key, index)
+                if urllib.parse.unquote(session_name) == "Default Settings":
                     continue
                 try:
-                    session_key = _winreg.OpenKey(sessions_key, session_name)
+                    session_key = winreg.OpenKey(sessions_key, session_name)
                 except EnvironmentError:
                     pass
                 else:
@@ -99,4 +99,4 @@ def gen_putty_servers():
 if __name__ == "__main__":
     logging.basicConfig()
     for server in gen_putty_servers():
-        print server
+        print(server)

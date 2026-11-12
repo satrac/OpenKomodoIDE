@@ -179,7 +179,7 @@ class KoNotificationManager:
     def createNotification(self, aIdentifier, aTags, aContext, aTypes):
         log.debug("createNotification: id=%r tags=%r cxt=%r types=%r",
                   aIdentifier, aTags, aContext, aTypes)
-        context = unicode(aContext) if aContext else None
+        context = str(aContext) if aContext else None
         with self._lock:
             for notification in self._notifications:
                 assert notification == self._wrap(notification), \
@@ -229,16 +229,16 @@ class KoNotificationManager:
         if "actions" in kwargs:
             for action_data in kwargs["actions"]:
                 action = self._wrap(KoNotificationAction())
-                for k, v in action_data.items():
+                for k, v in list(action_data.items()):
                     if not hasattr(action, k):
                         raise COMException(nsError.NS_ERROR_INVALID_ARG,
                                            "invalid action argument %r" % (k,))
                     setattr(action, k, v)
                 notification.updateAction(action)
             del kwargs["actions"]
-        if kwargs.keys():
+        if list(kwargs.keys()):
             log.warning("ko.notifications.add called with unknown arguments %r",
-                        kwargs.keys())
+                        list(kwargs.keys()))
         self.addNotification(notification)
         return notification
 
@@ -271,7 +271,7 @@ class KoNotificationManager:
                 # existing action
                 action = actions[0]
             del action_data["identifier"]
-            for k, v in action_data.items():
+            for k, v in list(action_data.items()):
                 if not hasattr(action, k):
                     raise COMException(nsError.NS_ERROR_INVALID_ARG,
                                        "Unexpected property %r on action %s" %

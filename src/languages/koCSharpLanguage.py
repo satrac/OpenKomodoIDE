@@ -17,7 +17,7 @@ class koCSharpLanguage(KoLanguageBase, KoLanguageBaseDedentMixin):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue']
 
     defaultExtension = ".cs"
     supportsSmartIndent = "brace"

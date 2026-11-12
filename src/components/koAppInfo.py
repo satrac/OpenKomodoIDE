@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -68,7 +68,7 @@ class KoAppInfoEx:
 
         try:
             self._prefs.prefObserverService.addObserver(self, self.defaultInterpreterPrefName, 0)
-        except Exception, e:
+        except Exception as e:
             log.warn("Unable to listen for preference change for: %r",
                      self.defaultInterpreterPrefName)
 
@@ -167,10 +167,10 @@ class KoAppInfoEx:
                 if tuple(versionParts) > self.maxVersionTuple:
                     return False
             return True
-        except AttributeError, ValueError:
+        except AttributeError as ValueError:
             log.exception("Unable to determine version for executable %r", exe)
             return False
-        except ServerException, ex:
+        except ServerException as ex:
             if ex.errno != nsError.NS_ERROR_FILE_NOT_FOUND:
                 raise
         return False
@@ -277,7 +277,7 @@ class KoAppInfoEx:
             try:
                 executables = instance.FindExecutables()
                 result = components.interfaces.koIAsyncCallback.RESULT_SUCCESSFUL
-            except Exception, ex:
+            except Exception as ex:
                 log.warn("FindExecutables failed: %r", str(ex))
 
             class CallbackRunnable(object):
@@ -294,7 +294,7 @@ class KoAppInfoEx:
             runnable = CallbackRunnable(callbackObj, result, executables)
             try:
                 starting_thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
-            except COMException, e:
+            except COMException as e:
                 log.warn("FindExecutables: callback failed: %s", str(e))
 
         # Start the thread.
@@ -365,7 +365,7 @@ class KoPerlInfoEx(KoAppInfoEx):
         # Old perls look like: This is perl, version 5.005_03 built for MSWin32-x86-object
         # New perls look like: This is perl, v5.6.1 built for MSWin32-x86-multi-thread
         patterns = ["This is perl, v(?:ersion )?([0-9._]+)",
-                    "This is perl \d+, version \d+, subversion \d+ \(v([0-9._]+)\)",
+                    r"This is perl \d+, version \d+, subversion \d+ \(v([0-9._]+)\)",
                     ]
         version = ''
         for ptn in patterns:
@@ -381,7 +381,7 @@ class KoPerlInfoEx(KoAppInfoEx):
         argv = [self.get_executablePath(), "-v"]
         p = process.ProcessOpen(argv, stdin=None)
         versionDump, stderr = p.communicate()
-        pattern = re.compile("Binary build (\d+(\.\d+)?)( \[\d+\])? provided by ActiveState")
+        pattern = re.compile(r"Binary build (\d+(\.\d+)?)( \[\d+\])? provided by ActiveState")
         match = pattern.search(versionDump)
         if match:
             return int(match.group(1))
@@ -415,7 +415,7 @@ class KoPerlInfoEx(KoAppInfoEx):
         if not perlExtraPaths:
             return []
         if sys.platform.startswith("win"):
-            perlExtraPaths = string.replace(perlExtraPaths, '\\', '/')
+            perlExtraPaths = perlExtraPaths.replace('\\', '/')
         perlExtraPaths = [x.strip() for x in perlExtraPaths.split(os.pathsep)]
         return [x for x in perlExtraPaths if x]
 
@@ -511,25 +511,25 @@ class KoPythonCommonInfoEx(KoAppInfoEx):
             via `which python`.
         """
         if sys.platform.startswith("win"):
-            import _winreg
+            import winreg
             preferred_version = self.get_version()
             preferred_result = None
             # Versions will be a list of (version, regkey)
             versions = []
             docKeys = ("Main Python Documentation",
                        "Pythonwin Reference")
-            for regkey in ("SOFTWARE\\Python\\PythonCore",
-                           "SOFTWARE\\Wow6432Node\\Python\\PythonCore"):
+            for regkey in ("SOFTWARE\\\\Python\\\\PythonCore",
+                           "SOFTWARE\\\\Wow6432Node\\\\Python\\\\PythonCore"):
                 try:
-                    pythonCoreKey = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                                    "SOFTWARE\\Python\\PythonCore")
+                    pythonCoreKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                                    "SOFTWARE\\\\Python\\\\PythonCore")
                 except EnvironmentError:
                     continue
                 # get a list of each installed version 
                 index = 0
                 while 1:
                     try:
-                        version = _winreg.EnumKey(pythonCoreKey, index)
+                        version = winreg.EnumKey(pythonCoreKey, index)
                         versions.append((version, regkey))
                         if version == preferred_version:
                             preferred_result = (version, regkey)
@@ -548,16 +548,16 @@ class KoPythonCommonInfoEx(KoAppInfoEx):
             versions.reverse()
             for version, regkey in versions:
                 try:
-                    helpFileKeyStr = "%s\\%s\\Help" % (regkey, version)
-                    helpFileKey = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                    helpFileKeyStr = "%s\\%s\\\\Help" % (regkey, version)
+                    helpFileKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                                   helpFileKeyStr)
                     for docKeyStr in docKeys:
                         try:
-                            docKey = _winreg.OpenKey(helpFileKey, docKeyStr)
+                            docKey = winreg.OpenKey(helpFileKey, docKeyStr)
                         except WindowsError:
                             continue
                         try:
-                            helpFile, keyType = _winreg.QueryValueEx(docKey, "")
+                            helpFile, keyType = winreg.QueryValueEx(docKey, "")
                         except WindowsError:
                             continue
                         if os.path.isfile(helpFile):
@@ -647,7 +647,7 @@ class KoRubyInfoEx(KoAppInfoEx):
         argv = [rubyExe, "-v"]
         p = process.ProcessOpen(argv, stdin=None)
         rubyVersionDump, stderr = p.communicate()
-        pattern = re.compile("ruby ([\w\.]+) ")
+        pattern = re.compile(r"ruby ([\w\.]+) ")
         match = pattern.search(rubyVersionDump)
         if match:
             return match.group(1)
@@ -705,7 +705,7 @@ class KoTclInfoEx(KoAppInfoEx):
         p = process.ProcessOpen(argv)
         p.stdin.write("puts [info tclversion]\n")
         stdout, stderr = p.communicate()
-        pattern = re.compile("([\w\.]+)")
+        pattern = re.compile(r"([\w\.]+)")
         match = pattern.search(stdout)
         if match:
             return match.group(1)
@@ -714,7 +714,7 @@ class KoTclInfoEx(KoAppInfoEx):
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, msg)
 
     def get_localHelpFile(self):
-        """Return a path to a launchable local help file, else return None.
+        r"""Return a path to a launchable local help file, else return None.
         Windows:
             If there is a 'HKLM\Software\ActiveState\ActiveTcl\<CurVer>\Help'
             and if the identified file exists.
@@ -723,11 +723,11 @@ class KoTclInfoEx(KoAppInfoEx):
             browser context. XXX Perhaps they *are* in Nautilus? 
         """
         if sys.platform.startswith("win"):
-            import _winreg
+            import winreg
             # get the base ActiveTcl registry key
             try:
-                activeTclKey = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                                               "SOFTWARE\\ActiveState\\ActiveTcl")
+                activeTclKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                               "SOFTWARE\\\\ActiveState\\\\ActiveTcl")
             except EnvironmentError:
                 return None
             # get a list of each installed version 
@@ -735,7 +735,7 @@ class KoTclInfoEx(KoAppInfoEx):
             index = 0
             while 1:
                 try:
-                    versions.append(_winreg.EnumKey(activeTclKey, index))
+                    versions.append(winreg.EnumKey(activeTclKey, index))
                 except EnvironmentError:
                     break
                 index += 1
@@ -745,9 +745,9 @@ class KoTclInfoEx(KoAppInfoEx):
             versions.reverse()
             for version in versions:
                 try:
-                    helpFileKey = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                        "SOFTWARE\\ActiveState\\ActiveTcl\\%s\\Help" % version)
-                    helpFile, keyType = _winreg.QueryValueEx(helpFileKey, "")
+                    helpFileKey = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\\\ActiveState\\\\ActiveTcl\\%s\\\\Help" % version)
+                    helpFile, keyType = winreg.QueryValueEx(helpFileKey, "")
                     if os.path.isfile(helpFile):
                         return helpFile
                 except EnvironmentError:
@@ -787,7 +787,7 @@ class KoPHPInfoInstance(KoAppInfoEx):
         self._info = {}
         try:
             self._prefs.prefObserverService.addObserver(self, "phpConfigFile", 0)
-        except Exception, e:
+        except Exception as e:
             log.warn("Unable to listen for preference change for: 'phpConfigFile'")
 
     def observe(self, subject, topic, data):
@@ -838,7 +838,7 @@ class KoPHPInfoInstance(KoAppInfoEx):
             argv.append(filepath)
             try:
                 p = process.ProcessOpen(argv, cwd=cwd, env=env)
-            except OSError, e:
+            except OSError as e:
                 if e.errno == 0 or e.errno == 32:
                     # this happens if you are playing
                     # in prefs and change the executable, but
@@ -956,7 +956,7 @@ class KoPHPInfoInstance(KoAppInfoEx):
                     return False
             except AttributeError:
                 pass
-            except ServerException, ex:
+            except ServerException as ex:
                 if ex.errno != nsError.NS_ERROR_FILE_NOT_FOUND:
                     raise
         return True
@@ -1153,7 +1153,7 @@ class KoNodeJSInfoEx(KoAppInfoEx):
         argv = [nodejsExe, "-v"]
         p = process.ProcessOpen(argv, stdin=None)
         nodejsVersionDump, stderr = p.communicate()
-        pattern = re.compile("v([\w\.]+)")
+        pattern = re.compile(r"v([\w\.]+)")
         match = pattern.match(nodejsVersionDump)
         if match:
             return match.group(1)
@@ -1249,7 +1249,7 @@ if __name__ == "__main__":
     def getCOMAttribute(obj, property, default = 'not implemented'):
         try:
             return getattr(obj, property)
-        except COMException, e:
+        except COMException as e:
             if e.errno == nsError.NS_ERROR_NOT_IMPLEMENTED:
                 return default
             else:
@@ -1262,27 +1262,27 @@ if __name__ == "__main__":
         installations = appInfoExe.FindInstallationPaths()
         for installation in installations:
             appInfoExe.installationPath = installation
-            print "+------ %s installation: %s" % (app, appInfoExe.installationPath)
-            print "| haveLicense: %s" % getCOMAttribute(appInfoExe, 'haveLicense')
-            print "| executable location: %s" % getCOMAttribute(appInfoExe, 'executablePath')
-            print "| version: %s" % getCOMAttribute(appInfoExe, 'version')
-            print "| localHelpFile: %s" % getCOMAttribute(appInfoExe, 'localHelpFile')
-            print "| webHelpURL: %s" % getCOMAttribute(appInfoExe, 'webHelpURL')
+            print("+------ %s installation: %s" % (app, appInfoExe.installationPath))
+            print("| haveLicense: %s" % getCOMAttribute(appInfoExe, 'haveLicense'))
+            print("| executable location: %s" % getCOMAttribute(appInfoExe, 'executablePath'))
+            print("| version: %s" % getCOMAttribute(appInfoExe, 'version'))
+            print("| localHelpFile: %s" % getCOMAttribute(appInfoExe, 'localHelpFile'))
+            print("| webHelpURL: %s" % getCOMAttribute(appInfoExe, 'webHelpURL'))
             
             if app == "TclPro":
-                print "|\t+------ TclPro extra features ------"
-                print "|\t| tclsh_path: %s" % getCOMAttribute(appInfoExe, 'tclsh_path')
-                print "|\t| wish_path: %s" % getCOMAttribute(appInfoExe, 'wish_path')
-                print "|\t+---------------------------------"
+                print("|\t+------ TclPro extra features ------")
+                print("|\t| tclsh_path: %s" % getCOMAttribute(appInfoExe, 'tclsh_path'))
+                print("|\t| wish_path: %s" % getCOMAttribute(appInfoExe, 'wish_path'))
+                print("|\t+---------------------------------")
             elif app == "PHP":
-                print "|\t+------ PHP extra features ------"
-                print "|\t| cfg_file_path: %s" % appInfoExe.cfg_file_path
-                print "|\t| include_path: %s %s" % (appInfoExe.include_path,
-                                                    appInfoExe.GetIncludePathArray())
-                print "|\t| extension_dir: %s" % appInfoExe.extension_dir
-                print "|\t+---------------------------------"
+                print("|\t+------ PHP extra features ------")
+                print("|\t| cfg_file_path: %s" % appInfoExe.cfg_file_path)
+                print("|\t| include_path: %s %s" % (appInfoExe.include_path,
+                                                    appInfoExe.GetIncludePathArray()))
+                print("|\t| extension_dir: %s" % appInfoExe.extension_dir)
+                print("|\t+---------------------------------")
             
-            print "+---------------------------------"
+            print("+---------------------------------")
     
 
 

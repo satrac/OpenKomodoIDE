@@ -1,6 +1,6 @@
 import logging
 import json
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from flask import g
 
@@ -40,7 +40,7 @@ def parseRequest(data):
     }
   """
 
-  if not isinstance(data, basestring):
+  if not isinstance(data, str):
     # The original author didn't like to use unicode strings without giving
     # specifics why. We allow unicode strings so that our 'M:' protocol line
     # works.
@@ -153,7 +153,7 @@ def doActions(actions):
   last_username = None
   last_filename = None
 
-  for action_index in xrange(len(actions)):
+  for action_index in range(len(actions)):
     # Use an indexed loop in order to peek ahead one step to detect
     # username/filename boundaries.
     action = actions[action_index]
@@ -213,7 +213,7 @@ def doActions(actions):
       try:
         # Text should be composed of a subset of ascii chars, Unicode not
         # required.  If this encode raises UnicodeEncodeError, delta is invalid.
-        data = urllib.unquote(str(action["data"])).decode("utf-8")
+        data = urllib.parse.unquote(str(action["data"])).decode("utf-8")
       except UnicodeError:
         # The user managed to add a binary file to a collaboration session.
         # Skip the raw data chunk. Set delta_ok to False and force an R: reply
@@ -265,7 +265,7 @@ def doActions(actions):
         pass
         LOG.warning("Repeated delta: %d < %d" %
             (action["client_version"], viewobj.shadow_client_version))
-      elif not isinstance(viewobj.shadow, (str, unicode)):
+      elif not isinstance(viewobj.shadow, str):
           viewobj.delta_ok = False
           LOG.warning("Invalid delta, type %r for viewobj '%s'" %
               (type(viewobj.shadow), viewobj))
@@ -289,7 +289,7 @@ def doActions(actions):
                 textobj.save()
                 notify_collaborators = True
 
-    if action.has_key("metadata"):
+    if "metadata" in action:
       viewobj.metadata = action["metadata"]
       notify_collaborators = True
 
@@ -414,7 +414,7 @@ def generateDiffs(viewobj, print_username, print_filename, force):
       # Force overwrite of client.
       text = mastertext
       text = text.encode("utf-8")
-      text = urllib.quote(text, "!~*'();/?:@&=+$,# ")
+      text = urllib.parse.quote(text, "!~*'();/?:@&=+$,# ")
       viewobj.edit_stack.append((viewobj.shadow_server_version,
           "R:%d:%s\n" % (viewobj.shadow_server_version, text)))
       LOG.info("Sent %db raw text: '%s'" %

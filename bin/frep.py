@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -102,7 +102,7 @@ import optparse
 import logging
 from pprint import pprint, pformat
 from glob import glob
-import cPickle as pickle
+import pickle as pickle
 import codecs
 from hashlib import md5
 import difflib
@@ -192,13 +192,13 @@ def _query_custom_answers(question, answers, default=None):
         leader = question + '\n' + prompt.lstrip()
     leader = leader.lstrip()
 
-    valid_choices = answer_from_valid_choice.keys()
+    valid_choices = list(answer_from_valid_choice.keys())
     admonishment = "Please respond with '%s' or '%s'." \
                    % ("', '".join(clean_answer[:-1]), clean_answer[-1])
 
     while 1:
         sys.stdout.write(leader)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
         elif choice in answer_from_valid_choice:
@@ -233,10 +233,10 @@ def _query_yes_no_quit(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes', 'no' or 'quit'.\n")
@@ -317,7 +317,7 @@ def _chomp(s):
 
 def _safe_print(u):
     s = u.encode(sys.stdout.encoding or "utf-8", 'replace')
-    print s
+    print(s)
 
 _bool_from_str = {
     "true": True, "True": True,
@@ -339,24 +339,24 @@ def main_list_journals(opts):
     for mtime, id, summary in Journal.journals():
         dt = datetime.datetime.fromtimestamp(mtime)
         if log.isEnabledFor(logging.DEBUG):
-            print "-- [%s, %s] %s" % (id, dt, summary)
+            print(("-- [%s, %s] %s" % (id, dt, summary)))
             j = Journal.load(id)
             for record in j:
-                print repr(record)
+                print((repr(record)))
                 for hit in record.rhits:
-                    print "  %r" % hit
+                    print(("  %r" % hit))
         else:
-            print "%s  %s (at %s)" % (id, summary, dt)
+            print(("%s  %s (at %s)" % (id, summary, dt)))
 
 def main_find(paths, includes, excludes, opts):
     for path in findlib2.find(paths, includes=includes, excludes=excludes):
-        print path
+        print(path)
 
 def main_find_matching_files(regex, paths, includes, excludes, opts):
     for event in findlib2.grep(regex, paths, files_with_matches=True,
                                includes=includes, excludes=excludes):
         if isinstance(event, Hit):
-            print event.path
+            print((event.path))
 
 def main_grep(regex, paths, includes, excludes, opts):
     grepper = findlib2.grep(regex, paths, includes=includes, 
@@ -466,7 +466,7 @@ def main_replace(regex, repl, paths, includes, excludes, confirm, argv, opts):
 
         if confirm_mode == "all" and rgroups:
             while True:
-                print
+                print()
                 answer = _query_custom_answers(
                     "Make replacements (%d changes in %d files)?"
                         % (sum(g.length for g in rgroups), len(rgroups)),
@@ -494,7 +494,7 @@ def main_replace(regex, repl, paths, includes, excludes, confirm, argv, opts):
 
     if num_repls:
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             s_str = (num_repls > 1 and "s" or "")
             if confirm_mode:
                 log.debug("Made %d replacement%s%s.", num_repls,
@@ -693,7 +693,7 @@ if __name__ == "__main__":
         else:  # string exception
             log.error(exc_info[0])
         if log.isEnabledFor(logging.INFO-1):
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

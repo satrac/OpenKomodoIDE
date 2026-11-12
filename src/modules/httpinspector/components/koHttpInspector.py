@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 #
@@ -15,7 +15,7 @@ import threading
 import logging
 import re
 import gzip
-import cStringIO
+import io
 import random
 
 from xpcom import components, COMException
@@ -383,7 +383,7 @@ class koProxyReqRespPair:
         return ""
 
     def getText_size(self):
-        if self.response_headers and self.response_headers.has_key("content-length"):
+        if self.response_headers and "content-length" in self.response_headers:
             return self.response_headers.get("content-length", "0")
         elif self.response:
             size = 0
@@ -484,7 +484,7 @@ class koProxyReqRespPair:
         # Check gzip
         if encoding.lower() == "gzip":
             try:
-                gzipStream = cStringIO.StringIO(data)
+                gzipStream = io.StringIO(data)
                 gzipFile = gzip.GzipFile(fileobj=gzipStream)
                 return gzipFile.read()
             except IOError:
@@ -496,7 +496,7 @@ class koProxyReqRespPair:
         # Check gzip
         if encoding.lower() == "gzip":
             try:
-                gzipStream = cStringIO.StringIO()
+                gzipStream = io.StringIO()
                 gzipFile = gzip.GzipFile(mode = 'wb',  fileobj = gzipStream, compresslevel = 9)
                 gzipFile.write(data)
                 gzipFile.close()
@@ -568,22 +568,22 @@ class koProxyReqRespPair:
 
     def getRequestHeaderNames(self):
         if self.request_headers:
-            return self.request_headers.keys()
+            return list(self.request_headers.keys())
         return []
 
     def getRequestHeaderValues(self):
         if self.request_headers:
-            return self.request_headers.values()
+            return list(self.request_headers.values())
         return []
 
     def getResponseHeaderNames(self):
         if self.response_headers:
-            return self.response_headers.keys()
+            return list(self.response_headers.keys())
         return []
 
     def getResponseHeaderValues(self):
         if self.response_headers:
-            return self.response_headers.values()
+            return list(self.response_headers.values())
         return []
 
     # Saving header modifications
@@ -929,7 +929,7 @@ class koHttpInspector:
             try:
                 uiObserver.notifyRowsChanged()
                 log.debug("notifyRowsChanged: sent proxyChangedNotification")
-            except Exception, e:
+            except Exception as e:
                 log.warn("notifyRowsChanged: Proxy observer raised an exception")
                 log.exception(e)
         log.debug("notifyRowsChanged: done")
@@ -968,7 +968,7 @@ class koHttpInspector:
             kps = koProxySession(koproxy)
             self._currentSession = kps
             self.sessions.append(kps)
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
 
     # Go through list of rules and perform any actions, returned matched rule
@@ -1048,7 +1048,7 @@ class koHttpInspector:
                         # We must wait for the UI to modify the request
                         try:
                             uiObserver.notifyBreakRequest(kpp)
-                        except Exception, e:
+                        except Exception as e:
                             log.warn("handleClientRequest: Proxy observer raised an exception")
                             log.exception(e)
                             return None, None
@@ -1071,7 +1071,7 @@ class koHttpInspector:
                 headers.clear()
                 headers.update(kppUnwrapped.request_headers)
             return delayPeriod, kppUnwrapped.forcedResponseStatus
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
         return None, None
 
@@ -1127,7 +1127,7 @@ class koHttpInspector:
                     try:
                         log.debug("handleServerResponse: notifyProxyPairHasChanged")
                         uiObserver.notifyProxyPairHasChanged(kpp)
-                    except Exception, e:
+                    except Exception as e:
                         log.warn("handleServerResponse: Proxy observer raised an exception")
                         log.exception(e)
                         return None
@@ -1137,7 +1137,7 @@ class koHttpInspector:
                         try:
                             log.debug("handleServerResponse: notifyBreakResponse")
                             uiObserver.notifyBreakResponse(kpp)
-                        except Exception, e:
+                        except Exception as e:
                             log.warn("handleServerResponse: Proxy observer raised an exception")
                             log.exception(e)
                             return None
@@ -1155,7 +1155,7 @@ class koHttpInspector:
             log.debug("handleServerResponse: done")
             #print "delayPeriod:", delayPeriod
             return delayPeriod
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
         return None
 
@@ -1172,7 +1172,7 @@ class koHttpInspector:
                 # Nothing happened on connection, no use keeping it around
                 self.sessions.remove(kps)
             log.debug("handleClientConnectionLost: done")
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
 
 

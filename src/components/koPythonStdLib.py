@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -37,7 +37,7 @@ class KoTime:
             return "does not exist"
         try:
             mtime = os.stat(path).st_mtime
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             return "could not determine (%s)" % ex
         mtime_dt = datetime.datetime.fromtimestamp(mtime)
         return timesince(mtime_dt)
@@ -57,43 +57,43 @@ class KoShUtil:
     def copyfile(self, src, dst):
         try:
             shutil.copyfile(src, dst)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def copymode(self, src, dst):
         try:
             shutil.copymode(src, dst)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def copystat(self, src, dst):
         try:
             shutil.copystat(src, dst)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def copy(self, src, dst):
         try:
             shutil.copy(src, dst)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def copy2(self, src, dst):
         try:
             shutil.copy2(src, dst)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def copytree(self, src, dst, symlinks):
         try:
             shutil.copytree(src, dst, symlinks)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
     def rmtree(self, path, ignore_errors):
         try:
             shutil.rmtree(path, ignore_errors)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 

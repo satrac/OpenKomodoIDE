@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # See the accompanying LICENSE file.
 #
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import hashlib
 import re
 
@@ -68,7 +68,7 @@ def getline(url):
             continue
         l=[l.strip() for l in line.split()]
         if len(l)!=4:
-            print "Invalid line in checksums file:", line
+            print("Invalid line in checksums file:", line)
             raise ValueError("Bad checksums file")
         if l[0]==url:
             return l[1:]
@@ -79,14 +79,14 @@ def check(url, data):
     line=getline(url)
     if line:
         if line!=d:
-            print "Checksums mismatch for", url
-            print "checksums file is", line
-            print "Download is", d
+            print("Checksums mismatch for", url)
+            print("checksums file is", line)
+            print("Download is", d)
     else:
-        print url,
+        print(url, end=' ')
         if url.endswith(".zip"):
-            print "  ",
-        print d[0], d[1], d[2]
+            print("  ", end=' ')
+        print(d[0], d[1], d[2])
 
 # They keep messing with where files are in URI - this code is also in setup.py
 def fixup_download_url(url):
@@ -111,17 +111,17 @@ for v in sqlitevers:
     AURL="https://sqlite.org/sqlite-amalgamation-%s.zip" % (v,)
     AURL=fixup_download_url(AURL)
     try:
-        data=urllib2.urlopen(AURL).read()
+        data=urllib.request.urlopen(AURL).read()
     except:
-        print AURL
+        print(AURL)
         raise
     check(AURL, data)
     # All other platforms amalgamation
     AURL="https://sqlite.org/sqlite-autoconf-%s.tar.gz" % (v,)
     AURL=fixup_download_url(AURL)
     try:
-        data=urllib2.urlopen(AURL).read()
+        data=urllib.request.urlopen(AURL).read()
     except:
-        print AURL
+        print(AURL)
         raise
     check(AURL, data)

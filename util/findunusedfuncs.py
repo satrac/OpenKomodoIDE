@@ -2,6 +2,13 @@ from __future__ import generators
 
 import re
 import os
+import fnmatch
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 # Find JS functions which appear to never be called.
 
@@ -26,7 +33,7 @@ def find_files(basedir, pattern):
 
 file_contents = {}
 
-jsfuncdef = re.compile("prototype.(\w\w*)\s*=\s*function\s*\(", re.MULTILINE)
+jsfuncdef = re.compile(r"prototype.(\w\w*)\s*=\s*function\s*\(", re.MULTILINE)
 function_definitions = {}
 
 function_calls = {}
@@ -35,7 +42,7 @@ filenames = list(findallfiles('src/chrome/komodo/content'))
 for file in filenames:
     file_contents[file] = open(file).read()
 
-for filename, data in file_contents.items():
+for filename, data in list(file_contents.items()):
     funcs = jsfuncdef.findall(data)
     for func in funcs:
         if func in function_definitions:
@@ -44,25 +51,25 @@ for filename, data in file_contents.items():
             function_definitions[func] = [filename]
 
 
-for funcname in function_definitions.keys():
+for funcname in list(function_definitions.keys()):
     # If it starts with is_cmd or do_, skip it
     if funcname.startswith('is_cmd_') or funcname.startswith('do_cmd_'): continue
-    jsfunccall = re.compile(funcname + "\s*\(", re.MULTILINE)
-    print 'looking for calls to', funcname, "found", 
+    jsfunccall = re.compile(funcname + r"\s*\(", re.MULTILINE)
+    print('looking for calls to', funcname, "found", end=' ') 
     function_calls[funcname] = 0
-    for filename, data in file_contents.items():
+    for filename, data in list(file_contents.items()):
         calls = jsfunccall.findall(data)
         function_calls[funcname] += len(calls)
-    print function_calls[funcname]
+    print(function_calls[funcname])
 
 
-call_distribution = function_calls.items()
+call_distribution = list(function_calls.items())
 def sort_items(item1, item2):
-    return -cmp(item1[1], item2[1])
-call_distribution.sort(sort_items)
+    return -_cmp(item1[1], item2[1])
+call_distribution.sort(key=cmp_to_key(sort_items))
 for function, hit in call_distribution:
     if hit == 0:
-        print '%3d hits for %s (defined in %s)' % (hit, function, function_definitions[function])
+        print('%3d hits for %s (defined in %s)' % (hit, function, function_definitions[function]))
 
 #import pprint
 #pprint.pprint(function_definitions)

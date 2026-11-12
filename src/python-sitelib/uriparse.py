@@ -9,7 +9,7 @@ As for uriparse.js, koIFileEx is used to handle path/URI conversion.
 import os
 import sys
 import threading
-import urlparse
+import urllib.parse
 import re
 
 from xpcom import components
@@ -179,8 +179,8 @@ def fixupURI(uri):
                         components.interfaces.nsIURIFixup.FIXUP_FLAG_NONE);
         if fixupURI.spec:
             uri = fixupURI.spec;
-            re.sub("^(file:/+\w)|", "\1:", uri)
-    except Exception, ex:
+            re.sub(r"^(file:/+\w)|", "\\1:", uri)
+    except Exception as ex:
         log.debug("nsIURIFixup could not fixup '%s': %s", uri, ex)
         # Leave uri alone (presumably to fail below!)
     return uri

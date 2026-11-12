@@ -48,7 +48,7 @@ class langpack(Task):
     def _svnversion_from_dir(self, dir):
         try:
             p = subprocess.Popen(["svnversion"], cwd=dir, stdout=subprocess.PIPE)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self.log.debug("error running 'svnversion': %s", ex)
             return None
         version = p.stdout.read().strip()
@@ -95,7 +95,7 @@ class langpack(Task):
                     sh.rm(join(dirpath, fname), self.log)
         self._writefile(join(build_dir, "chrome.manifest"),
                         "locale komodo-langpack en-US chrome/locale/en-US/")
-        self._writefile(join(build_dir, "install.rdf"), _dedent("""\
+        self._writefile(join(build_dir, "install.rdf"), _dedent(r"""\
             <?xml version="1.0"?>
             
             <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -148,7 +148,7 @@ class todo(Task):
                     "externals"]
         paths = buildsupport.paths_from_path_patterns(['.'], excludes=excludes)
         for path in paths:
-            self._dump_pattern_in_path("TO\DO\\|XX\X", normpath(path))
+            self._dump_pattern_in_path("TO\\DO\\|XX\\X", normpath(path))
 
     def _dump_pattern_in_path(self, pattern, path):
         os.system('grep -nH "%s" "%s"' % (pattern, path))
@@ -165,11 +165,11 @@ class lscolors(Task):
             for color_name in self._color_names_from_css_path(css_path):
                 if color_name not in color_names:
                     color_names.add(color_name)
-                    print color_name
+                    print(color_name)
 
     # This doesn't get colors listed in groups CSS productions like
     #   border: 1px solid black;
-    _css_color_re = re.compile("(?:\w-)?color\s*: (?P<color>.*?)[;}]")
+    _css_color_re = re.compile(r"(?:\w-)?color\s*: (?P<color>.*?)[;}]")
     def _color_names_from_css_path(self, css_path):
         #print css_path
         css = open(css_path, 'r').read()
@@ -207,7 +207,7 @@ class lsunusedentities(Task):
             for entity in entity_use_re.findall(xul):
                 entities.discard(entity)
         for entity in entities:
-            print entity
+            print(entity)
         if entities:
             self.log.info("%d unused entities", len(entities))
     
@@ -227,7 +227,7 @@ class lsunusedentities(Task):
                     entities.add(entity)
         return entities
     
-    _dtd_entity_re = re.compile('<!ENTITY ([\.\w]+) ".*?">')
+    _dtd_entity_re = re.compile(r'<!ENTITY ([\.\w]+) ".*?">')
     def _entities_from_dtd_path(self, dtd_path):
         #print "\n-- ", dtd_path
         dtd = open(dtd_path, 'r').read()
@@ -246,7 +246,7 @@ class lsnosvneolstyle(Task):
     """
     def make(self):
         for path in self._no_svn_eol_style_files(os.curdir):
-            print path
+            print(path)
 
     def _no_svn_eol_style_files(self, d):
         from os.path import split
@@ -300,7 +300,7 @@ def _svn_propfiles(root, fn):  # Derived from Python's Tools/scripts/svneol.py
         # local modifications in props
         return [os.path.join(root, ".svn", "prop-base", fn+".svn-base"),
                 os.path.join(root, ".svn", "props", fn+".svn-work")]
-    raise ValueError, "Unknown repository format"
+    raise ValueError("Unknown repository format")
 
 def _svn_proplist(root, fn):  # from Python's Tools/scripts/svneol.py
     "Return a list of property names for file fn in directory root"
@@ -352,8 +352,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """
     DEBUG = False
     if DEBUG: 
-        print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
-              % (tabsize, skip_first_line)
+        print(("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
+              % (tabsize, skip_first_line)))
     indents = []
     margin = None
     for i, line in enumerate(lines):
@@ -370,12 +370,12 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 break
         else:
             continue # skip all-whitespace lines
-        if DEBUG: print "dedent: indent=%d: %r" % (indent, line)
+        if DEBUG: print(("dedent: indent=%d: %r" % (indent, line)))
         if margin is None:
             margin = indent
         else:
             margin = min(margin, indent)
-    if DEBUG: print "dedent: margin=%r" % margin
+    if DEBUG: print(("dedent: margin=%r" % margin))
 
     if margin is not None and margin > 0:
         for i, line in enumerate(lines):
@@ -387,7 +387,7 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 elif ch == '\t':
                     removed += tabsize - (removed % tabsize)
                 elif ch in '\r\n':
-                    if DEBUG: print "dedent: %r: EOL -> strip up to EOL" % line
+                    if DEBUG: print(("dedent: %r: EOL -> strip up to EOL" % line))
                     lines[i] = lines[i][j:]
                     break
                 else:
@@ -395,8 +395,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                                      "line %r while removing %d-space margin"
                                      % (ch, line, margin))
                 if DEBUG:
-                    print "dedent: %r: %r -> removed %d/%d"\
-                          % (line, ch, removed, margin)
+                    print(("dedent: %r: %r -> removed %d/%d"\
+                          % (line, ch, removed, margin)))
                 if removed == margin:
                     lines[i] = lines[i][j+1:]
                     break

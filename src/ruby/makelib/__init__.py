@@ -210,7 +210,7 @@ class Makefile(object):
     def _load(self):
         log.debug("reading `%s'", self.path)
         module = _module_from_makefile_path(self.path)
-        for name, attr in module.__dict__.items():
+        for name, attr in list(module.__dict__.items()):
             if (isinstance(attr, type)
                 and issubclass(attr, Target)
                 and not name.startswith("_")  # skip internal target classes
@@ -227,7 +227,7 @@ class Makefile(object):
                 self.targets[ name[len("make_"):] ] = target
         #pprint(self.targets)
 
-        default_targets = [t for t in self.targets.values() if t.default]
+        default_targets = [t for t in list(self.targets.values()) if t.default]
         if not default_targets:
             self.default_target = None
         elif len(default_targets) == 1:
@@ -252,14 +252,14 @@ class Maker(object):
         for target_name, target in sorted(self.makefile.targets.items()):
             doc = target.doc()
             if not doc:
-                print target_name
+                print(target_name)
             else:
                 summary_width = WIDTH - name_width - 2
                 summary = _first_paragraph(doc, True)
                 if len(summary) > summary_width:
                     summary = summary[:summary_width-3] + "..."
                 template = "%%-%ds  %%s" % name_width
-                print template % (target_name, summary)
+                print(template % (target_name, summary))
 
     def _debug(self, msg, *args):
         log.debug(' '*self._depth + msg, *args)
@@ -471,11 +471,17 @@ def _first_paragraph(text, join_lines=False):
 
 # Recipe: module_from_path (1.0) in /Users/trentm/tm/recipes/cookbook
 def _module_from_path(path):
-    from os.path import dirname, basename, splitext
-    import imp
+    import importlib.machinery, importlib.util
+    from os.path import dirname, basename, splitext, expanduser
+    import os
+    path = expanduser(path)
     dir  = dirname(path) or os.curdir
     name = splitext(basename(path))[0]
-    iinfo = imp.find_module(name, [dir])
-    return imp.load_module(name, *iinfo)
+    spec = importlib.machinery.PathFinder.find_spec(name, [dir])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named %r in %r" % (name, dir))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 

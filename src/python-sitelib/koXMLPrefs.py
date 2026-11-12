@@ -16,7 +16,12 @@ import codecs
 from eollib import newl
 import logging
 import uriparse
-import urllib
+import urllib.request, urllib.parse, urllib.error
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 __all__ = ["cgi_escape", "dePercent", "dePickleCache", "deserializeFile",
            "getChildText", "koGlobalPreferenceDefinition",
@@ -54,7 +59,7 @@ def SmallestVersionFirst(a, b):
          0 if a == b
         +1 if a > b
     """
-    return cmp([int(elem) for elem in a.split('.')],
+    return _cmp([int(elem) for elem in a.split('.')],
                [int(elem) for elem in b.split('.')])
 
 
@@ -65,12 +70,12 @@ def pickleCache(prefs, filename):
     """
     from tempfile import mkstemp
     (fdes, pickleFilename) = mkstemp(".tmp", "koPickle_")
-    import cPickle
+    import pickle
     pickle_file = os.fdopen(fdes, "wb")
     try:
         try:
             log.debug("Pickling object %s to %r", prefs, pickleFilename)
-            cPickle.dump(prefs, pickle_file, 1)
+            pickle.dump(prefs, pickle_file, 1)
             log.info("saved the pickle to %r", pickleFilename)
         except:
             log.exception("pickleCache error for file %r", pickleFilename)
@@ -78,7 +83,7 @@ def pickleCache(prefs, filename):
                 pickle_file.close()
                 pickle_file = None
                 os.unlink(pickleFilename)
-            except IOError, details:
+            except IOError as details:
                 log.error("Could not erase the incomplete pickle file %r: %s",
                           pickleFilename, details)
     finally:
@@ -89,7 +94,7 @@ def pickleCache(prefs, filename):
             import shutil
             try:
                 shutil.move(pickleFilename, filename)
-            except OSError, details:
+            except OSError as details:
                 # Could not move, resort to a copy then.
                 shutil.copy(pickleFilename, filename)
 
@@ -132,7 +137,7 @@ def dePickleCache(pickleFilename):
     Return a pref object from a pref pickle file.
     Assumes that pickleCacheOKToLoad() has been called
     """
-    import cPickle
+    import pickle
     try:
         file = open(pickleFilename, "rb")
     except IOError:
@@ -142,7 +147,7 @@ def dePickleCache(pickleFilename):
     try:
         try:
             log.info("Loading preferences from pickle %r", pickleFilename)
-            return cPickle.load(file)
+            return pickle.load(file)
         except:
             log.exception("dePickleCache: Couldn't depickle %r", pickleFilename)
             
@@ -173,14 +178,14 @@ class koGlobalPreferenceDefinition:
         self.defaults_filename = None
         self.save_format = self.SAVE_DEFAULT
         self.contract_id = None
-        for name, val in kw.items():
+        for name, val in list(kw.items()):
             # Handle deprecated "user_filename" field.
             if name == "user_filename":
                 name = "user_filepath"
             if name == "shared_filename":
                 name = "shared_filepath"
-            if not self.__dict__.has_key(name):
-                raise ValueError, "Unknown keyword param '%s'" % (name,)
+            if name not in self.__dict__:
+                raise ValueError("Unknown keyword param '%s'" % (name,))
             self.__dict__[name] = val
 
     @property
@@ -219,7 +224,7 @@ def _dispatch_deserializer(ds, node, parentPref, prefFactory, basedir=None, chai
     
     # Have to convert dsfunname from unicode to
     # ascii in order to use apply().
-    dsfunname = u"_ds_" + node.nodeName
+    dsfunname = "_ds_" + node.nodeName
     if hasattr(ds, dsfunname):
         getattr(ds, dsfunname)(node, parentPref, basedir)
     else:
@@ -230,7 +235,7 @@ _pct_re = re.compile('%([0-9a-fA-F][0-9a-fA-F])')
 def dePercent(m):
     return chr(int(m.group(1), 16))
 def _depercent_unicode(s):
-    return unicode(_pct_re.sub(dePercent, s))
+    return str(_pct_re.sub(dePercent, s))
 
 
 class koPreferenceSetDeserializer:
@@ -411,7 +416,7 @@ def serializePref(stream, pref, prefType, prefName=None, basedir=None):
                         # The problem with relativizing is that it also %-encodes
                         # the usual characters, but that will happen later in
                         # the serialization process, so don't do it here.
-                        relative2 = urllib.unquote(relative)
+                        relative2 = urllib.parse.unquote(relative)
                         if pref.endswith(relative2):
                             pref = relative2
                         else:
@@ -422,17 +427,17 @@ def serializePref(stream, pref, prefType, prefName=None, basedir=None):
                             pref = relative
                     else:
                         pref = relative
-            except Exception, e:
+            except Exception as e:
                 # XXX quick fix bug 65913
                 log.exception(e)
                 pass # pass and use original value
         # This line causes multiple-entification, as _xmlencode
         # will also call cgi_escape
         #pref = cgi_escape(pref)
-        data = u'  <string'
-        for a,v in attrs.items():
+        data = '  <string'
+        for a,v in list(attrs.items()):
             data += ' %s="%s"' % (a,v)
-        data += u'>%s</string>%s' % (_xmlencode(pref), newl)
+        data += '>%s</string>%s' % (_xmlencode(pref), newl)
         stream.write(data)
     elif prefType in ("boolean"):
         if prefName is None:
@@ -459,7 +464,7 @@ def serializePref(stream, pref, prefType, prefName=None, basedir=None):
             log.error("preference '%s' (a %s) is unserializable",
                       prefName, pref)
             raise
-        except TypeError, e:
+        except TypeError as e:
             log.error("cannot serialize %r %s", pref, str(e))
 
 if sys.version_info[0] == 2 and sys.version_info[1] < 3:
@@ -562,7 +567,7 @@ class koXMLPreferenceSetObjectFactory:
         unless a deserializer has already been instantiated to
         handle the given preference type. We cache deserializer
         instances in self._deserializers. """
-        if self._deserializers.has_key(prefType):
+        if prefType in self._deserializers:
             return self._deserializers[prefType]
         else:
             return None

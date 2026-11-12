@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """A client library for code.activestate.com (both internal and external
 APIs).
@@ -20,7 +20,7 @@ See <http://code.activestate.com/about/#api> for details.
 """
 
 from pprint import pprint, pformat
-from urllib import urlencode, quote as urlquote
+from urllib.parse import urlencode, quote as urlquote
 
 if __name__ == "__main__":
     # Magic to allow command line usage.
@@ -63,14 +63,14 @@ class CodeAPI(apibase.HttpAPIBase):
 def main(argv):
     """Usage: ./codeapi.py METHOD ARGS"""
     from os.path import exists, expanduser
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
     
     # Gather configuration info -- in particular "username/password"
     # credentials required for `api.notify(...)`.
     kwargs = {}
     conf_path = expanduser("~/.codeapi.ini")
     if exists(conf_path):
-        conf = SafeConfigParser()
+        conf = ConfigParser()
         conf.read(conf_path)
         section = os.environ.get("CODE_API_URL", CodeAPI._api_url)
         if conf.has_section(section):
@@ -88,7 +88,7 @@ def main(argv):
             args.append(s)
     response = method(*args)
     #pprint(response)
-    print jsonlib.dumps(response, indent=2)
+    print(jsonlib.dumps(response, indent=2))
 
 if __name__ == "__main__":
     import sys

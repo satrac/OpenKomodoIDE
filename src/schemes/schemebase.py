@@ -111,7 +111,7 @@ class SchemeServiceBase(object):
         return scheme
 
     def purgeUnsavedSchemes(self):
-        for scheme in self._schemes.values():
+        for scheme in list(self._schemes.values()):
             if scheme.unsaved:
                 self.removeScheme(scheme)
 

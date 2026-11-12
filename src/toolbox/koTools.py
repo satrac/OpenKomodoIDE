@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2010 ActiveState
 # See the file LICENSE.txt for licensing information.
 
@@ -101,7 +101,7 @@ class _KoTool(object):
 
     def get_iconurl(self):
         iconurl = None
-        if self._attributes.has_key('icon'):
+        if 'icon' in self._attributes:
             iconurl = self._attributes['icon']
         else:
             iconurl = self._iconurl
@@ -122,7 +122,7 @@ class _KoTool(object):
             self.setAttribute('icon', url)
         try:
             self._getObserverSvc().notifyObservers(self, 'part_changed', '')
-        except Exception, unused:
+        except Exception as unused:
             #log.exception("set_iconurl: trying to notify part_changed")
             pass
 
@@ -136,7 +136,7 @@ class _KoTool(object):
             if name in info:
                 setattr(self, name, info[name])
                 del info[name]
-        for key, value in info.items():
+        for key, value in list(info.items()):
             self._attributes[key] = value
         self.initialized = True
 
@@ -188,7 +188,7 @@ class _KoTool(object):
         # Keep names out of attributes
         if name == 'name':
             return self.name is not None
-        return self._attributes.has_key(name)
+        return name in self._attributes
 
     def getAttribute(self, name):
         if not self.hasAttribute(name):
@@ -207,10 +207,10 @@ class _KoTool(object):
         if not self.hasAttribute(name):
             self.updateSelf()
         try:
-            return unicode(self._attributes[name])
+            return str(self._attributes[name])
         except KeyError:
             if name == "name":
-                return unicode(self.name)
+                return str(self.name)
             raise
 
     def setStringAttribute(self, name, value):
@@ -218,7 +218,7 @@ class _KoTool(object):
         if name == 'name':
             self.name = value
         else:
-            self.setAttribute(name, unicode(value))
+            self.setAttribute(name, str(value))
 
     def getLongAttribute(self, name):
         return int(self.getAttribute(name))
@@ -228,7 +228,7 @@ class _KoTool(object):
 
     def getBooleanAttribute(self, name):
         value = self.getAttribute(name)
-        if type(value) is unicode:
+        if type(value) is str:
             return value == "True"
 
         return self.getLongAttribute(name) and 1 or 0
@@ -350,7 +350,7 @@ class _KoTool(object):
         # hack to allow logic to save properly to disk
         # I have to del the attr before data.update runs or else the logic
         # field I explicitly save will get over written :(
-        if self.get_type is "tutorial":
+        if self.get_type == "tutorial":
             data['logic'] = self.getStringAttribute("logic").splitlines()
             self.removeAttribute("logic")
             
@@ -358,7 +358,7 @@ class _KoTool(object):
         data.update(self._attributes)
         
         # Now bring back the logic attribute for the tool
-        if self.get_type is "tutorial" and not self.hasAttribute("logic"):
+        if self.get_type == "tutorial" and not self.hasAttribute("logic"):
             self.setStringAttribute("logic", logic)
         fp = open(savePath, 'r+')
 
@@ -705,8 +705,8 @@ class _KoMacroTool(_KoTool):
         self.saveToolToDisk()
         _tbdbSvc.saveMacroInfo(self.id, self.name, self.value, self._attributes)
 
-    def _asyncMacroCheck(self, async):
-        if async:
+    def _asyncMacroCheck(self, async_):
+        if async_:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                 .getService(components.interfaces.koILastErrorService)
             err = "Asynchronous python macros not yet implemented"
@@ -714,14 +714,14 @@ class _KoMacroTool(_KoTool):
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, err)
 
     def evalAsPython(self, domdocument, window, scimoz, koDoc,
-                     view, code, async):
-        self._asyncMacroCheck(async)
+                     view, code, async_):
+        self._asyncMacroCheck(async_)
         projectUtils.evalPythonMacro(WrapObject(self,self._com_interfaces_[0]),
                         domdocument, window, scimoz, koDoc, view, code)
         
     def evalAsPythonObserver(self, domdocument, window, scimoz, koDoc,
-                             view, code, async, subject, topic, data):
-        self._asyncMacroCheck(async)
+                             view, code, async_, subject, topic, data):
+        self._asyncMacroCheck(async_)
         projectUtils.evalPythonMacro(WrapObject(self,self._com_interfaces_[0]),
                         domdocument, window, scimoz, koDoc, view, code,
                         subject, topic, data)
@@ -938,7 +938,7 @@ class _KoFolderTemplateTool(_KoGenericToolBase):
 
 
 _koToolClassFromTypeName = {}
-for _obj in globals().values():
+for _obj in list(globals().values()):
     if (isinstance(_obj, type) and issubclass(_obj, _KoTool)
         and getattr(_obj, "typeName", None)):
         _koToolClassFromTypeName[_obj.typeName] = _obj

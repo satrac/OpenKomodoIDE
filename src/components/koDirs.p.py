@@ -274,7 +274,7 @@ if __name__ == "__main__":
               "binDBGPDir", "perlDBGPDir", "pythonDBGPDir"]
     for dname in dnames:
         try:
-            print "koIDirs.%s: %s" % (dname, getattr(koDirSvc, dname))
+            print("koIDirs.%s: %s" % (dname, getattr(koDirSvc, dname)))
         except:
-            print "koIDirs.%s: <error retrieving>" % dname
+            print("koIDirs.%s: <error retrieving>" % dname)
 

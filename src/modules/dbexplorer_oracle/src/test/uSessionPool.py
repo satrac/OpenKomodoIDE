@@ -8,7 +8,7 @@ class TestConnection(TestCase):
         """Connect to the database, perform a query and drop the connection."""
         connection = self.pool.acquire()
         cursor = connection.cursor()
-        cursor.execute(u"select count(*) from TestNumbers")
+        cursor.execute("select count(*) from TestNumbers")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 10)
 
@@ -48,10 +48,10 @@ class TestConnection(TestCase):
                 homogeneous = False)
         self.failUnlessEqual(pool.homogeneous, 0,
                 "homogeneous should be 0 after setting it in the constructor")
-        user = u"%s_proxy" % USERNAME
+        user = "%s_proxy" % USERNAME
         connection = pool.acquire(user = user)
         cursor = connection.cursor()
-        cursor.execute(u'select user from dual')
+        cursor.execute('select user from dual')
         result, = cursor.fetchone()
         self.assertEqual(result, user.upper())
 
@@ -60,12 +60,12 @@ class TestConnection(TestCase):
         pool = cx_Oracle.SessionPool(USERNAME, PASSWORD, TNSENTRY, 1, 8, 3)
         connection = pool.acquire()
         cursor = connection.cursor()
-        cursor.execute(u"truncate table TestExecuteMany")
-        cursor.execute(u"insert into TestExecuteMany (IntCol) values (1)")
+        cursor.execute("truncate table TestExecuteMany")
+        cursor.execute("insert into TestExecuteMany (IntCol) values (1)")
         pool = cx_Oracle.SessionPool(USERNAME, PASSWORD, TNSENTRY, 1, 8, 3)
         connection = pool.acquire()
         cursor = connection.cursor()
-        cursor.execute(u"select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestExecuteMany")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 
@@ -74,13 +74,13 @@ class TestConnection(TestCase):
         pool = cx_Oracle.SessionPool(USERNAME, PASSWORD, TNSENTRY, 1, 8, 3)
         connection = pool.acquire()
         cursor = connection.cursor()
-        cursor.execute(u"truncate table TestExecuteMany")
-        cursor.execute(u"insert into TestExecuteMany (IntCol) values (1)")
+        cursor.execute("truncate table TestExecuteMany")
+        cursor.execute("insert into TestExecuteMany (IntCol) values (1)")
         pool.release(connection)
         pool = cx_Oracle.SessionPool(USERNAME, PASSWORD, TNSENTRY, 1, 8, 3)
         connection = pool.acquire()
         cursor = connection.cursor()
-        cursor.execute(u"select count(*) from TestExecuteMany")
+        cursor.execute("select count(*) from TestExecuteMany")
         count, = cursor.fetchone()
         self.failUnlessEqual(count, 0)
 

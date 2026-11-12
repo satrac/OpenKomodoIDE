@@ -43,6 +43,7 @@ import os, sys, re
 import json
 import operator
 import traceback
+from functools import reduce
 
 def _letter_options_to_numeric_options(optionString):
     letter_to_re_options = {
@@ -70,7 +71,7 @@ class Evaluator(object):
         regex = re.compile(self.pattern, self.reFlags)
         if regex:
             self._lastNumGroups = regex.groups
-            groupindex = [(num, name) for (name, num) in regex.groupindex.items()]
+            groupindex = [(num, name) for (name, num) in list(regex.groupindex.items())]
             groupindex.sort()
             self._lastGroupNames = [name for (num, name) in groupindex]
             return regex
@@ -154,7 +155,7 @@ class Evaluator(object):
                 try:
                     substitution = match_obj.expand(replacement)
                     replacedText = self.regex.sub(replacement, searchText, 1)
-                except (re.error, IndexError, ValueError), ex:
+                except (re.error, IndexError, ValueError) as ex:
                     # e.g.:
                     #   sre_constants.error: unterminated group name
                     #   IndexError: unknown group name
@@ -166,7 +167,7 @@ class Evaluator(object):
             retVal = { 'status': 'ok', 'result': groupObjs }
         elif groupObjs:
             retVal = { 'status': 'hybrid', 'subStatus': 'replaceError',
-                       'exception':unicode(ex) }
+                       'exception':str(ex) }
         else:
             retVal = { 'status': 'hybrid', 'subStatus': 'matchFailure'}
         retVal['replacedText'] = replacedText
@@ -191,7 +192,7 @@ class Evaluator(object):
                     try:
                         substitution = match_obj.expand(replacement)
                         substitutions.append(substitution)
-                    except (re.error, IndexError, ValueError), ex:
+                    except (re.error, IndexError, ValueError) as ex:
                         pass
                     if match_obj.end() - match_obj.start():
                         start = match_obj.end()
@@ -201,14 +202,14 @@ class Evaluator(object):
                     break
             try:
                 replacedText = self.regex.sub(replacement, searchText)
-            except (re.error, IndexError, ValueError), ex:
+            except (re.error, IndexError, ValueError) as ex:
                 pass
 
         if groupObjs and substitutions:
             retVal = { 'status': 'ok', 'result': groupObjs }
         elif groupObjs:
             retVal = { 'status': 'hybrid', 'subStatus': 'replaceError',
-                       'exception':unicode(ex) }
+                       'exception':str(ex) }
         else:
             retVal = { 'status': 'hybrid', 'subStatus': 'matchFailure'}
         retVal['replacedText'] = replacedText
@@ -227,18 +228,18 @@ def main():
     retVal = evaluator = None
     try:
         evaluator = Evaluator(requestString)
-    except re.error, ex:
-        retVal = {'status': 'matchError', 'exception': unicode(ex)}
-    except IndexError, ex:
+    except re.error as ex:
+        retVal = {'status': 'matchError', 'exception': str(ex)}
+    except IndexError as ex:
         # Trap some bugs in sre_parse.py. For example:
         #   (?P<>asdf)
         # We will rely on the lexing to report a meaningful error message.
         retVal = {'status': 'error',
                    'exceptionClass': 'IndexError',
                    'exception': None}
-    except Exception, ex:
+    except Exception as ex:
         retVal = {'status': 'error',
-                   'exception': unicode(ex) }
+                   'exception': str(ex) }
     if retVal is not None:
         if evaluator and evaluator.requestObject.get('regexOptional'):
             exitStatus = 0
@@ -251,9 +252,9 @@ def main():
     try:
         json.dump(evaluator.run(), sys.stdout)
         sys.exit(0)
-    except Exception, ex:
+    except Exception as ex:
         json.dump({'status': 'error',
-                   'exception': unicode(ex)}, sys.stdout)
+                   'exception': str(ex)}, sys.stdout)
     sys.exit(1)
 
 if __name__ == "__main__":

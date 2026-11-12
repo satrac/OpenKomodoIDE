@@ -65,10 +65,10 @@ class APIFactory(object):
 
     def __init__(self, settings=None):
         self._settings = settings or {}
-        _ctor_args_base = dict((k,v) for k,v in self._settings.items()
+        _ctor_args_base = dict((k,v) for k,v in list(self._settings.items())
             if '.' not in k)
         self._ctor_args_from_apiname = {}
-        for k,v in self._settings.items():
+        for k,v in list(self._settings.items()):
             if '.' not in k:
                 continue
             ns, k = k.split('.')
@@ -122,7 +122,7 @@ class APIFactory(object):
         # Hook up the subapi attributes:
         # *WARNING*: This presumes the API classes use "_<apiname>" for
         # the attribute name of these apis.
-        for n, api in _apis.items():
+        for n, api in list(_apis.items()):
             for subapiname in subapinames_from_apiname.get(n, []):
                 attrname = "_" + subapiname
                 if getattr(api, attrname) is None:

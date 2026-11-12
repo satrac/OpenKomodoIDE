@@ -22,7 +22,7 @@ def split_full_ver(ver_str):
     def _isdigit(ch):
         return '0' <= ch <= '9'
     def split_quality(s):
-        for i in reversed(range(1, len(s)+1)):
+        for i in reversed(list(range(1, len(s)+1))):
             if not _isdigit(s[i-1]):
                 break
         if i == len(s):
@@ -87,7 +87,7 @@ def split_short_ver(ver_str, intify=False, pad_zeros=None):
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if bit == '.':
             continue
         if intify:

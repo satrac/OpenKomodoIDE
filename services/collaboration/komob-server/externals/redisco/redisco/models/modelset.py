@@ -7,6 +7,7 @@ from redisco.containers import SortedSet, Set, List, NonPersistentList
 from exceptions import AttributeNotIndexed
 from utils import _encode_key
 from attributes import ZINDEXABLE
+from functools import cmp_to_key
 
 # Model Set
 class ModelSet(Set):
@@ -28,7 +29,7 @@ class ModelSet(Set):
 
     def __getitem__(self, index):
         if isinstance(index, slice):
-            return map(lambda id: self._get_item_with_id(id), self._set[index])
+            return [self._get_item_with_id(id) for id in self._set[index]]
         else:
             id = self._set[index]
             if id:
@@ -41,7 +42,7 @@ class ModelSet(Set):
             m = self._set[:30]
         else:
             m = self._set
-        s = map(lambda id: self._get_item_with_id(id), m)
+        s = [self._get_item_with_id(id) for id in m]
         return "%s" % s
 
     def __iter__(self):
@@ -127,7 +128,7 @@ class ModelSet(Set):
 
     def get_or_create(self, **kwargs):
         opts = {}
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             if k in self.model_class._indices:
                 opts[k] = v
         o = self.filter(**opts).first()
@@ -162,13 +163,13 @@ class ModelSet(Set):
             s = self._add_set_exclusions(s)
         n = self._order(s.key)
         self._cached_set = list(self._order(s.key))
-        for key in filter(lambda key: key != self.key, self._expire_or_delete):
+        for key in [key for key in self._expire_or_delete if key != self.key]:
             del self.db[key]
         return self._cached_set
 
     def _add_set_filter(self, s):
         indices = []
-        for k, v in self._filters.iteritems():
+        for k, v in self._filters.items():
             index = self._build_key_from_filter_item(k, v)
             if k not in self.model_class._indices:
                 raise AttributeNotIndexed(
@@ -182,7 +183,7 @@ class ModelSet(Set):
 
     def _add_set_exclusions(self, s):
         indices = []
-        for k, v in self._exclusions.iteritems():
+        for k, v in self._exclusions.items():
             index = self._build_key_from_filter_item(k, v)
             if k not in self.model_class._indices:
                 raise AttributeNotIndexed(
@@ -195,7 +196,7 @@ class ModelSet(Set):
         return Set(new_set_key)
 
     def _add_zfilters(self):
-        k, v = self._zfilters[0].items()[0]
+        k, v = list(self._zfilters[0].items())[0]
         try:
             att, op = k.split('__')
         except ValueError:
@@ -204,7 +205,7 @@ class ModelSet(Set):
         desc = self.model_class._attributes[att]
         zset = SortedSet(index)
         limit, offset = self._get_limit_and_offset()
-        if isinstance(v, (tuple, list,)):
+        if isinstance(v, (tuple, list)):
             min, max = v
             min = float(desc.typecast_for_storage(min))
             max = float(desc.typecast_for_storage(max))

@@ -51,7 +51,7 @@ class KoDBXLoginManager(object):
     _reg_clsid_ = "{3e1741fc-3a0e-4970-b31e-8c175c59358a}"
     _reg_contractid_ = "@activestate.com/KoDBXLoginManager;1"
 
-    EMPTY_PASSWORD_SENTINEL = '\vKOMODO_EMPTY_PASSWORD\v'
+    EMPTY_PASSWORD_SENTINEL = r'\vKOMODO_EMPTY_PASSWORD\v'
 
     def addLoginConnectionInfo(self, koDBXLoginInfo):
         loginManager = components.classes["@mozilla.org/login-manager;1"].\
@@ -95,7 +95,7 @@ class KoDBXLoginManager(object):
             elif login.password == self.EMPTY_PASSWORD_SENTINEL:
                 return ""
             return login.password
-        except AttributeError, ex:
+        except AttributeError as ex:
             raise ServerException(nsError.NS_ERROR_FAILURE, ex)
 
 

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2001-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
 import os
 import sys
-import urlparse
+import urllib.parse
 from xpcom import components
 import logging
 
@@ -21,7 +21,7 @@ class koUrlUtils:
             
     if sys.platform == "win32":
         def _fixPath(self, url):
-            path = urlparse.urlparse(url)[2]
+            path = urllib.parse.urlparse(url)[2]
             # URLs come from different sources, and sometimes use "|" instead of ":"
             # Also Python's urlparse.urlparse puts a '/' at the start of paths,
             # for URIs that start with the correct "file:///C:...",
@@ -35,7 +35,7 @@ class koUrlUtils:
         def _fixPath(self, url):
             # No need to normcase OSX paths,
             # because os.path.samefile will correctly ignore case.
-            return os.path.normpath(urlparse.urlparse(url)[2])
+            return os.path.normpath(urllib.parse.urlparse(url)[2])
 
     def sameURL(self, url1, url2):
         if url1 and url2 and url1.startswith('file:///') and url2.startswith('file:///'):
@@ -47,7 +47,7 @@ class koUrlUtils:
             else:
                 try:
                     return os.path.samefile(path1, path2)
-                except Exception, e:
+                except Exception as e:
                     log.debug("Could not compare files: %r [%r]", e, e.args)
                     return path1 == path2
         else:

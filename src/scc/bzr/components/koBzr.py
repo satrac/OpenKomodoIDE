@@ -78,12 +78,12 @@ class KoBzr(KoSCCBase):
             # (assuming the user installed via the official installer)
             path = None
             try:
-                import _winreg
-                with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                import winreg
+                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                      r"Software\Bazaar", 0,
-                                     _winreg.KEY_QUERY_VALUE) as key:
-                    path, regtype = _winreg.QueryValueEx(key, "InstallPath")
-                if regtype != _winreg.REG_SZ:
+                                     winreg.KEY_QUERY_VALUE) as key:
+                    path, regtype = winreg.QueryValueEx(key, "InstallPath")
+                if regtype != winreg.REG_SZ:
                     path = None
             except:
                 pass
@@ -172,7 +172,7 @@ class KoBzr(KoSCCBase):
         env = koprocessutils.getUserEnv()
         cwd = self.normalizeFiles([fileuri])[0]
         result = []
-        for name, url in scc_handler.getremotes(cwd=cwd, env=env)["items"].items():
+        for name, url in list(scc_handler.getremotes(cwd=cwd, env=env)["items"].items()):
             result.append([url, name])
         return result
 
@@ -380,7 +380,7 @@ class KoBzr(KoSCCBase):
         bzr_stats = result.get('files', {})
 
         result = []
-        for relpath, stat_info in bzr_stats.items():
+        for relpath, stat_info in list(bzr_stats.items()):
             # stat_info will be a dict with the following keys:
             #    History, Locked, Modified, Path, Status, Switched
             status_string = stat_info.get('status')
@@ -520,7 +520,7 @@ class KoBzrFileChecker(KoSCCChecker, PathHelperMixin):
         env = koprocessutils.getUserEnv()
         try:
             result = self.bzr.status(cwd=repo_path, env=env)
-        except koBzrlib.BzrLibError, e:
+        except koBzrlib.BzrLibError as e:
             # we get an exception here if the bzr library call errors out
             self.notifyError('Bzr status error, click for details', e)
             return False
@@ -558,7 +558,7 @@ class KoBzrFileChecker(KoSCCChecker, PathHelperMixin):
 
         if file_status_cache:
             # Convert/Cache scc status information for these files.
-            for repo_relpath, fileinfo in file_status_cache.items():
+            for repo_relpath, fileinfo in list(file_status_cache.items()):
                 fullpath = self.joinPaths(repo_path, repo_relpath)
                 cache_key = uriparse.localPathToURI(fullpath)
                 cache_key = self._norm_uri_cache_key(cache_key)
@@ -571,11 +571,11 @@ class KoBzrFileChecker(KoSCCChecker, PathHelperMixin):
         env = koprocessutils.getUserEnv()
         try:
             result = self.bzr.ls(cwd=path, options="--versioned", env=env)
-        except koBzrlib.BzrLibError, e:
+        except koBzrlib.BzrLibError as e:
             # we get an exception here if the bzr library call errors out
             self.notifyError('Bzr status error, click for details', e)
             return False
-        except Exception, e:
+        except Exception as e:
             # On Windows, this falls over sometimes when the file is missing
             if not os.path.exists(path):
                 return False
@@ -587,7 +587,7 @@ class KoBzrFileChecker(KoSCCChecker, PathHelperMixin):
             time_now = time.time()
             dir_cache_key = self._norm_uri_cache_key(dir_nsUri.spec)
             # Cache all the file scc information
-            for relpath, fileinfo in files.items():
+            for relpath, fileinfo in list(files.items()):
                 fullpath = self.joinPaths(path, relpath)
                 cache_key = uriparse.localPathToURI(fullpath)
                 cache_key = self._norm_uri_cache_key(cache_key)

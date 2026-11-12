@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Proof of concept to see if Komodo's remote files can be used for a publishing
@@ -40,7 +40,7 @@ class ConnectionSync(object):
         base_remote_path = dir_rfinfo.getFilepath()
         base_len = len(base_remote_path)
         if not exists(local_dir):
-            print "  Creating base local directory: %r" % (local_dir)
+            print("  Creating base local directory: %r" % (local_dir))
             os.makedirs(local_dir)
         # XXX: what to do if it exists and is not a directory?
         self.assert_(isdir(local_dir), "Local sync directory is not a directory!")
@@ -50,7 +50,7 @@ class ConnectionSync(object):
             local_path = join(local_dir, remote_path[base_len:].lstrip("/"))
             if child_rfinfo.isDirectory():
                 if not exists(local_path):
-                    print "  Creating synced directory: %r" % (local_path)
+                    print("  Creating synced directory: %r" % (local_path))
                     os.mkdir(local_path)
                     has_changed = True
                 # XXX: what to do if it exists and is not a directory?
@@ -59,30 +59,30 @@ class ConnectionSync(object):
             elif child_rfinfo.isFile():
                 remote_file_data = self._connection.readFile(remote_path)
                 if not exists(local_path):
-                    print "  Creating synced file: %r" % (local_path)
-                    file(local_path, "wb").write(remote_file_data)
+                    print("  Creating synced file: %r" % (local_path))
+                    open(local_path, "wb").write(remote_file_data)
                     has_changed = True
                 else:
                     # XXX: what to do if it exists locally, but is not a file?
                     self.assert_(isfile(local_path), "Local path already exists, but is not a file: %r" % (local_path))
                     # Check if the file has changed.
-                    local_file_data = file(local_path, "rb").read()
+                    local_file_data = open(local_path, "rb").read()
                     if local_file_data != remote_file_data:
-                        print "  Updating synced file: %r" % (local_path)
-                        file(local_path, "wb").write(remote_file_data)
+                        print("  Updating synced file: %r" % (local_path))
+                        open(local_path, "wb").write(remote_file_data)
                         has_changed = True
         return has_changed
 
     def test_pull_directory(self):
         """Pull remote directory entries to a local place"""
         try:
-            print "\n\nChecking for pull changes..."
+            print("\n\nChecking for pull changes...")
             remote_dir = join(self._remote_dir, "pull_folder")
             local_dir = join(self._local_dir, "pull_folder")
             has_changed = self.pull_directory(remote_dir, local_dir)
             if not has_changed:
-                print "  no changes."
-        except COMException, ex:
+                print("  no changes.")
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))
@@ -116,8 +116,8 @@ class ConnectionSync(object):
             if stat.S_ISDIR(st_mode):
                 if child_rfinfo is None:
                     # Create the remote directory.
-                    print "  Creating remote directory: %r" % (remote_path)
-                    self._connection.createDirectory(remote_path, 0700)
+                    print("  Creating remote directory: %r" % (remote_path))
+                    self._connection.createDirectory(remote_path, 0o700)
                     has_changed = True
                 child_rfinfo = self._connection.list(remote_path, 1)# Refresh
                 # XXX: what to do if it exists and is not a directory?
@@ -125,11 +125,11 @@ class ConnectionSync(object):
                 self.assert_(child_rfinfo.isDirectory(), "Remote path already exists, but is not a directory: %r" % (remote_path))
                 has_changed |= self.push_directory(local_path, child_rfinfo)
             elif stat.S_ISREG(st_mode): # Regular file.
-                local_file_data = file(local_path, "rb").read()
+                local_file_data = open(local_path, "rb").read()
                 if not child_rfinfo:
-                    print "  Creating synced file: %r" % (remote_path)
+                    print("  Creating synced file: %r" % (remote_path))
                     self._connection.writeFile(remote_path, local_file_data)
-                    file(local_path, "wb").write(local_file_data)
+                    open(local_path, "wb").write(local_file_data)
                     has_changed = True
                 else:
                     # XXX: what to do if it exists locally, but is not a file?
@@ -137,7 +137,7 @@ class ConnectionSync(object):
                     remote_file_data = self._connection.readFile(remote_path)
                     # Check if the file has changed.
                     if local_file_data != remote_file_data:
-                        print "  Updating synced file: %r" % (remote_path)
+                        print("  Updating synced file: %r" % (remote_path))
                         self._connection.writeFile(remote_path, local_file_data)
                         has_changed = True
         return has_changed
@@ -145,7 +145,7 @@ class ConnectionSync(object):
     def test_push_directory(self):
         """Push local directory entries to a remote location"""
         try:
-            print "\n\nChecking for push changes..."
+            print("\n\nChecking for push changes...")
             local_dir = join(self._local_dir, "push_folder")
             remote_dir = join(self._remote_dir, "push_folder")
             self.assert_(exists(local_dir), "Local directory does not exist: %r" % (local_dir))
@@ -163,13 +163,13 @@ class ConnectionSync(object):
                     if not dir_rfinfo:
                         create_paths.append(parent_path)
                 for parent_path in create_paths:
-                    self._connection.createDirectory(parent_path, 0700)
+                    self._connection.createDirectory(parent_path, 0o700)
                 dir_rfinfo = self._connection.list(remote_dir, 1)# Refresh
                 self.assert_(dir_rfinfo, "Remote directory still does not exist: %r" % (remote_dir))
             has_changed = self.push_directory(local_dir, dir_rfinfo)
             if not has_changed:
-                print "  no changes."
-        except COMException, ex:
+                print("  no changes.")
+        except COMException as ex:
             lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"]\
                            .getService(components.interfaces.koILastErrorService)
             self.fail("COMException raised: %s" % (lastErrorSvc.getLastErrorMessage()))

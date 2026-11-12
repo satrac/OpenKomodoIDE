@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Configuration info and support routines for the cvslib.py test suite."""
 
@@ -32,7 +32,7 @@ users = {
 def _rmtreeOnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 
 def _rmtree(dirname):

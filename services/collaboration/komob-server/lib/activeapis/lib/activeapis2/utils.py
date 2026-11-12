@@ -3,6 +3,7 @@
 
 import os
 import datetime
+from functools import cmp_to_key
 try:
     import httplib2  # `pip install httplib2`, http://code.google.com/p/httplib2/
 except ImportError:
@@ -84,7 +85,7 @@ def escaped_text_from_text(text, escapes="eol"):
     # - Add _escaped_html_from_text() with a similar call sig.
     import re
     
-    if isinstance(escapes, basestring):
+    if isinstance(escapes, str):
         if escapes == "eol":
             escapes = {'\r\n': "\\r\\n\r\n", '\n': "\\n\n", '\r': "\\r\r"}
         elif escapes == "whitespace":
@@ -99,13 +100,8 @@ def escaped_text_from_text(text, escapes="eol"):
 
     # Sort longer replacements first to allow, e.g. '\r\n' to beat '\r' and
     # '\n'.
-    escapes_keys = escapes.keys()
-    try:
-        escapes_keys.sort(key=lambda a: len(a), reverse=True)
-    except TypeError:
-        # Python 2.3 support: sort() takes no keyword arguments
-        escapes_keys.sort(lambda a,b: cmp(len(a), len(b)))
-        escapes_keys.reverse()
+    escapes_keys = list(escapes.keys())
+    escapes_keys.sort(key=lambda a: len(a), reverse=True)
     def repl(match):
         val = escapes[match.group(0)]
         return val

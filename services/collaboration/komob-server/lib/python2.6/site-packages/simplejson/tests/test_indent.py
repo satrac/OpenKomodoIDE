@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import simplejson as json
 import textwrap
-from StringIO import StringIO
+from io import StringIO
 
 class TestIndent(TestCase):
     def test_indent(self):
@@ -10,7 +10,7 @@ class TestIndent(TestCase):
              'i-vhbjkhnth',
              {'nifty': 87}, {'field': 'yes', 'morefield': False} ]
 
-        expect = textwrap.dedent("""\
+        expect = textwrap.dedent("""\\
         [
         \t[
         \t\t"blorpie"

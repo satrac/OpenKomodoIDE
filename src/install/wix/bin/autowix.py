@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2006 ActiveState Software Inc.
 # Author:
 #   Trent Mick (TrentM@ActiveState.com)
@@ -91,7 +91,6 @@ from glob import glob
 import traceback
 import logging
 from optparse import OptionParser
-import cgi
 
 # Import our local ElementTree.
 sys.path.insert(0, dirname(__file__))
@@ -136,7 +135,7 @@ def _get_product_code():
           to spend right now.
     """
     _define_product_code_pat = re.compile(
-        '<\?define\s+ProductCode\s*=\s*"([0-9A-Fa-f-]{36})"\s*\?>'
+        r'<\?define\s+ProductCode\s*=\s*"([0-9A-Fa-f-]{36})"\s*\?>'
     )
     path = "guids.wxi"
     content = open(path, 'r').read()
@@ -289,16 +288,16 @@ def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "h?Vvqf",
             ["help", "version", "verbose", "quiet", "force"])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         raise Error(str(ex))
         return 1
     force = False
     for opt, optarg in optlist:
         if opt in ("-h", "-?", "--help"):
-            print __doc__
+            print(__doc__)
             return 0
         elif opt in ("-V", "--version"):
-            print "autowix %s" % __version__
+            print("autowix %s" % __version__)
             return 0
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -320,7 +319,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

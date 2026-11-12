@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Code to work with sqlite & sqlite3 databases.
@@ -127,9 +127,9 @@ class Database(dbxlib.CommonDatabase):
                 cu.execute("select name from sqlite_master where type = '%s'" % (typeName,))
                 names = [row[0] for row in cu.fetchall()]
                 return names
-        except sqlite3.OperationalError, ex:
+        except sqlite3.OperationalError as ex:
             raise OperationalError(ex)
-        except sqlite3.DatabaseError, ex:
+        except sqlite3.DatabaseError as ex:
             raise DatabaseError(ex)
         
     def listAllTableNames(self):
@@ -179,7 +179,7 @@ class Database(dbxlib.CommonDatabase):
         for value in row_data:
             col_info = col_info_block[idx]
             type = col_info.type
-            if type == u'INTEGER':
+            if type == 'INTEGER':
                 if value is None:
                     new_row_data.append("")
                 else:
@@ -188,11 +188,11 @@ class Database(dbxlib.CommonDatabase):
                     except TypeError:
                         log.error("Can't append value as int: %r", value)
                         new_row_data.append("%r" % value)
-            elif type == u'REAL':
+            elif type == 'REAL':
                 new_row_data.append("%r" % value)
-            elif type in (u'STRING', u'TEXT') or 'VARCHAR' in type:
+            elif type in ('STRING', 'TEXT') or 'VARCHAR' in type:
                 new_row_data.append(value)
-            elif type in (u'date', u'datetime'):
+            elif type in ('date', 'datetime'):
                 # Default adapters in sqlite3
                 new_row_data.append(str(value))
             elif type == 'BLOB':

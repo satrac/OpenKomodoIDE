@@ -11,7 +11,7 @@ import tempfile
 import threading
 import process
 import types
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import select
 import logging
 import json
@@ -24,6 +24,12 @@ import koprocessutils
 import runutils
 
 from zope.cachedescriptors.property import Lazy as LazyProperty
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 #---- globals
 
@@ -122,7 +128,7 @@ class KoInterpolationService:
                        getService(components.interfaces.koIWebbrowser)
             try:
                 browsers = koWebbrowser.get_possible_browsers()
-            except Exception, ex:
+            except Exception as ex:
                 #TODO: I suspect this is a KeyError, but not sure.
                 log.exception(ex)
                 errorMsg = "The command string includes %(browser), but Komodo failed to find the list of installed browsers. You can configure a default browser in Komodo's 'Web' Preference panel. Go to 'Edit | Preferences'."
@@ -221,13 +227,13 @@ class KoInterpolationService:
             codeMap['w'] = selection
             codeMap['s'] = selection
             # urlib quote does not support unicode strings
-            if isinstance(selection, unicode):
+            if isinstance(selection, str):
                 try:
                     selection = selection.encode()
                 except UnicodeEncodeError:
                     selection = selection.encode('utf-8')
-            codeMap['S'] = urllib.quote_plus(selection)
-            codeMap['W'] = urllib.quote_plus(selection)
+            codeMap['S'] = urllib.parse.quote_plus(selection)
+            codeMap['W'] = urllib.parse.quote_plus(selection)
             codeMap['t'] = selection
         if lineText:
             codeMap['l'] = lineText
@@ -247,7 +253,7 @@ class KoInterpolationService:
             codeMap['t'] = codeMap['t'].replace("\n", '\\n')
 
         # Add extensible items:
-        for code, handler in self._codemapAdditions.items():
+        for code, handler in list(self._codemapAdditions.items()):
             if code in codeMap:
                 log.warn("overriding interpolation code %r", code)
             codeMap[code] = lambda: self._interpolationCallbackHandler(handler,
@@ -286,7 +292,7 @@ class KoInterpolationService:
         or, iff "bracketed":
             [[%s]] [[%(perl)]] [[%ask:Search for]]
         """
-        allCharCodes = [re.escape(k) for k in codeMap.keys()]
+        allCharCodes = [re.escape(k) for k in list(codeMap.keys())]
         # Ensure python3 is listed before python - bug 95070.
         if "python3" in allCharCodes:
             allCharCodes.remove("python3")
@@ -674,7 +680,7 @@ class KoInterpolationService:
                                                indentReplacement=True)
                     i1strings.append(i1s)
                     i1strings.append(i1s) # see NOTE in koIRunService on doubling strings
-            except ValueError, ex:
+            except ValueError as ex:
                 log.exception(ex)
                 self.lastErrorSvc.setLastError(nsError.NS_ERROR_INVALID_ARG,
                                             ex.args[0])
@@ -690,7 +696,7 @@ class KoInterpolationService:
             else:
                 i2strings = self.Interpolate2(i1strings, queries)
                 return [], i2strings
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
             raise
 
@@ -711,12 +717,12 @@ class KoInterpolationService:
                         # values. Extend that same functionality to such values
                         # entered in the Interpolation Query dialog.
                         # urlib quote does not support unicode strings
-                        if isinstance(answer, unicode):
+                        if isinstance(answer, str):
                             try:
                                 answer = answer.encode()
                             except UnicodeEncodeError:
                                 answer = answer.encode('utf-8')
-                        answer = urllib.quote_plus(answer)
+                        answer = urllib.parse.quote_plus(answer)
                     forUse = forUse.replace(q.id, answer)
                     if q.isPassword:
                         forDisplay = forDisplay.replace(q.id, '*'*len(answer))
@@ -725,7 +731,7 @@ class KoInterpolationService:
                 i2strings += [forUse, forDisplay]
     
             return i2strings
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
             raise
 
@@ -768,9 +774,9 @@ class KoRunService:
             shellArgs = prefs.getString("runservice.shell.args", "")
             shellArgs = shellArgs.split("||")
         elif sys.platform.startswith("win"):
-            if os.environ.has_key("SHELL"):
+            if "SHELL" in os.environ:
                 shell = os.environ["SHELL"]
-            elif os.environ.has_key("ComSpec"):
+            elif "ComSpec" in os.environ:
                 shell = os.environ["ComSpec"]
             else:
                 #XXX Would be nice to get full path here so can use
@@ -866,7 +872,7 @@ class KoRunService:
 
         # First see if this is possibly an old-style encoding.
         oldStyleRe = re.compile(
-            "^\[(?P<insertOutput>i)?(?P<operateOnSelection>l)?\] "\
+            r"^\[(?P<insertOutput>i)?(?P<operateOnSelection>l)?\] "\
             "(?P<command>.*)$")
         match = oldStyleRe.match(encoded)
         if match:
@@ -889,7 +895,7 @@ class KoRunService:
                              .replace('\\}', '}')
             try:
                 optupdate = eval(optdictstr)
-            except SyntaxError, ex:
+            except SyntaxError as ex:
                 # This likely means that we are trying to decode an old
                 # style encoded command as if it were a new-style
                 # encoded command and the encoded command includes '{'
@@ -962,15 +968,15 @@ class KoRunService:
         #XXX This unicode conversion may not be necessary since
         #    _SaferCreateProcess in process.py.
         uEnvDict = {}
-        for key, val in envDict.items():
+        for key, val in list(envDict.items()):
             #XXX Linux may have trouble with all unicode env
             #    strings. Perhaps have all ASCII on Linux.
-            uEnvDict[unicode(key)] = unicode(val)
+            uEnvDict[str(key)] = str(val)
         envDict = uEnvDict
 
         try:
             p = runutils.KoTerminalProcess(command, cwd=cwd, env=envDict)
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             self.lastErrorSvc.setLastError(ex.errno, str(ex))
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
         if terminal:
@@ -997,13 +1003,13 @@ class KoRunService:
         if scriptFileName:
             try:
                 os.unlink(scriptFileName)
-            except OSError, ex:
+            except OSError as ex:
                 log.warn("Could not remove temporary script file '%s': %s"\
                            % (scriptFileName, ex))
         if inputFileName:
             try:
                 os.unlink(inputFileName)
-            except OSError, ex:
+            except OSError as ex:
                 log.warn("Could not remove temporary input file '%s': %s"\
                            % (inputFileName, ex))
         
@@ -1019,7 +1025,7 @@ class KoRunService:
             sm.highlight = 1
         try:
             self.notifyObservers(sm, 'status_message', None)
-        except COMException, e:
+        except COMException as e:
             # do nothing: Notify sometimes raises an exception if (???)
             # receivers are not registered?
             pass
@@ -1056,8 +1062,8 @@ class KoRunService:
         #XXX This unicode conversion may not be necessary since
         #    _SaferCreateProcess in process.py.
         uEnvDict = {}
-        for key, val in envDict.items():
-            uEnvDict[unicode(key)] = unicode(val)
+        for key, val in list(envDict.items()):
+            uEnvDict[str(key)] = str(val)
         envDict = uEnvDict
 
         # Keep a pure 'command' for reporting status to the user.
@@ -1130,15 +1136,15 @@ class KoRunService:
         #XXX This unicode conversion may not be necessary since
         #    _SaferCreateProcess in process.py.
         uEnvDict = {}
-        for key, val in envDict.items():
-            uEnvDict[unicode(key)] = unicode(val)
+        for key, val in list(envDict.items()):
+            uEnvDict[str(key)] = str(val)
         envDict = uEnvDict
 
         try:
             child = process.ProcessOpen(command, cwd=cwd, env=envDict)
             output, error = child.communicate(input)
             return (child.returncode, output, error)
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             self.lastErrorSvc.setLastError(ex.errno, str(ex))
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
 
@@ -1149,7 +1155,7 @@ class KoRunService:
         try:
             #XXX Dunno if need to pass 'child' in the notification here.
             self.notifyObservers(child, 'run_terminated', command)
-        except COMException, e:
+        except COMException as e:
             # Do nothing: Notify sometimes raises an exception if (???)
             # no receiver are registered?
             pass
@@ -1174,13 +1180,13 @@ class KoRunService:
         #XXX This unicode conversion may not be necessary since
         #    _SaferCreateProcess in process.py.
         uEnvDict = {}
-        for key, val in envDict.items():
-            uEnvDict[unicode(key)] = unicode(val)
+        for key, val in list(envDict.items()):
+            uEnvDict[str(key)] = str(val)
         envDict = uEnvDict
 
         try:
             child = runutils.KoRunProcess(command, cwd=cwd, env=envDict)
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             self.lastErrorSvc.setLastError(ex.errno, str(ex))
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
 
@@ -1215,7 +1221,7 @@ class KoRunService:
             runnable = CallbackRunnable(callbackHandler, command, returncode, stdout, stderr)
             try:
                 thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
-            except COMException, e:
+            except COMException as e:
                 log.warn("RunAsync: callback failed: %s, command %r",
                          str(e), command)
 
@@ -1238,13 +1244,13 @@ class KoRunService:
         #XXX This unicode conversion may not be necessary since
         #    _SaferCreateProcess in process.py.
         uEnvDict = {}
-        for key, val in envDict.items():
-            uEnvDict[unicode(key)] = unicode(val)
+        for key, val in list(envDict.items()):
+            uEnvDict[str(key)] = str(val)
         envDict = uEnvDict
 
         try:
             child = runutils.KoRunProcess(command, cwd=cwd, env=envDict)
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             self.lastErrorSvc.setLastError(ex.errno, str(ex))
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
 
@@ -1286,7 +1292,7 @@ class KoRunEnvView(TreeView):
         self._sortedBy = None
 
     def get_rowCount(self):
-        return len(self._data.keys())
+        return len(list(self._data.keys()))
 
     def getCellText(self, row, column):
         """Get the value for the specified cell.
@@ -1309,7 +1315,7 @@ class KoRunEnvView(TreeView):
             log.error("unknown run environment variables column id: '%s'" % column.id)
             return ""
 
-        if type(cell) not in (types.StringType, types.UnicodeType):
+        if type(cell) not in (bytes, str):
             cell = str(cell)
         return cell
 
@@ -1317,7 +1323,7 @@ class KoRunEnvView(TreeView):
         if sys.platform.startswith("win"):
             variable = variable.upper()
         self._tree.beginUpdateBatch()
-        if not self._data.has_key(variable):
+        if variable not in self._data:
             self._order.append(variable)
             self._sortedBy = None
             self._tree.rowCountChanged(len(self._data)-2, 1)
@@ -1336,7 +1342,7 @@ class KoRunEnvView(TreeView):
         """Return true iff have a datum with the given variable name."""
         if sys.platform.startswith("win"):
             variable = variable.upper()
-        return self._data.has_key(variable)
+        return variable in self._data
 
     def Index(self, variable):
         if sys.platform.startswith("win"):
@@ -1360,8 +1366,8 @@ class KoRunEnvView(TreeView):
             if sortBy == 'env-variable':
                 self._order.sort()
             elif sortBy == 'env-value':
-                self._order.sort(lambda a,b,data=self._data,sortBy=sortBy:
-                                    cmp(data[a], data[b])
+                self._order.sort(key=cmp_to_key(lambda a,b,data=self._data,sortBy=sortBy:
+                                    _cmp(data[a], data[b]))
                                 )
             else:
                 log.error("Cannot sort results by: '%s'" % sortBy)
@@ -1372,7 +1378,7 @@ class KoRunEnvView(TreeView):
         self._tree.endUpdateBatch()
 
     def GetEnvironmentStrings(self):
-        vars = ["%s=%s" % item for item in self._data.items()]
+        vars = ["%s=%s" % item for item in list(self._data.items())]
         return "\n".join(vars)
 
     def SetEnvironmentStrings(self, s):
@@ -1381,7 +1387,7 @@ class KoRunEnvView(TreeView):
             if envvar: # skip empty lines
                 var, val = envvar.split('=', 1)
                 self._data[var] = val
-        self._order = self._data.keys()
+        self._order = list(self._data.keys())
         self._sortedBy = None
         if self._tree:
             self._tree.beginUpdateBatch()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Use this sample script to explore some of Komodo's Python features.
 
@@ -16,9 +16,9 @@ def printStrings(mylist):
     '''This function will print all the items in list that are a string type'''
     import types
     for element in mylist:
-        if type(element) == types.StringType:
-            print "element %s is a string" % element
-    print
+        if type(element) == bytes:
+            print("element %s is a string" % element)
+    print()
 
 mylist = ["hello", 42, "there", 3.14159]
 printStrings(mylist)
@@ -46,7 +46,7 @@ printStrings(mylist)
 #     parameters for how to call string.split().
 
 import string
-print string.split("hello there pete", " ")
+print(string.split("hello there pete", " "))
 
 #---- Abbreviations:
 #     - Snippets from the Abbreviations folder in projects and toolboxes
@@ -73,7 +73,7 @@ def printTotal(priceList):
     sum = 0.0
     for price in prices:
         sum = sum + price
-    print "the sum of the prices is", sum
+    print("the sum of the prices is", sum)
 
 prices = [5.50, 6.25, 7.00, 3.15]
 printTotal(prices)

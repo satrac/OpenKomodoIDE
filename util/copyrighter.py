@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2007 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -153,7 +153,7 @@ class ActiveStateCopyrighter(CopyrightUpdater):
     # See LICENSE.txt for license details.
     rxLicenseRef  = re.compile(r"""^(?P<prefix>.*)(See the file LICENSE.txt for licensing information"""
                                                """|See LICENSE.txt for license details)"""
-                                """.*?(?P<suffix>[^\w\d.]*)$""", re.IGNORECASE)
+                                r""".*?(?P<suffix>[^\w\d.]*)$""", re.IGNORECASE)
 
     mplBriefLicense = """The contents of this file are subject to the Mozilla Public License Version
 1.1 (the "License"); you may not use this file except in compliance with
@@ -166,10 +166,10 @@ http://www.mozilla.org/MPL/
         self.replacedFiles = set()
 
     def report(self, print_filenames=False):
-        print("  Updated to use MPL: %d" % (len(self.replacedFiles)))
+        print(("  Updated to use MPL: %d" % (len(self.replacedFiles))))
         if print_filenames:
             for name in sorted(self.replacedFiles):
-                print("      %r" % (name, ))
+                print(("      %r" % (name, )))
 
     def replace(self, fileCommenter, lines, lineFrom, lineTo):
         """This will update existing license information with a new one."""
@@ -191,7 +191,7 @@ http://www.mozilla.org/MPL/
         if saveChanges:
             if makeFileBackup:
                 self.backup(filename)
-            file(filename, "w").writelines(lines)
+            open(filename, "w").writelines(lines)
         self.replacedFiles.add(fileCommenter.filename)
 
     def handle(self, fileCommenter, lines, lineNo):
@@ -226,17 +226,17 @@ http://www.mozilla.org/MPL/
 
 class UnknownCopyrighter(CopyrightUpdater):
     name = "Unknown"
-    rxPartialMatch = re.compile("^.*?(Copyright|\(c\)|__author__|License:).*?(?P<name>([\w\d]+\s+)+).*?$",
+    rxPartialMatch = re.compile(r"^.*?(Copyright|\(c\)|__author__|License:).*?(?P<name>([\w\d]+\s+)+).*?$",
                                 re.IGNORECASE)
 
     def __init__(self):
         self.unrecognizedLicenseFiles = set()
 
     def report(self, print_filenames=False):
-        print("  Unknown copyrights: %d" % (len(self.unrecognizedLicenseFiles)))
+        print(("  Unknown copyrights: %d" % (len(self.unrecognizedLicenseFiles))))
         if print_filenames:
             for name in sorted(self.unrecognizedLicenseFiles):
-                print("      %r" % (name, ))
+                print(("      %r" % (name, )))
 
     def handle(self, fileCommenter, lines, lineNo):
         if self.rxPartialMatch.match(lines[lineNo]):
@@ -257,14 +257,14 @@ class MPLCopyrighter(CopyrightUpdater):
         self.alreadyPatchedFiles = set()
 
     def report(self, print_filenames=False):
-        print("  Added new license : %d" % (len(self.addedFiles)))
+        print(("  Added new license : %d" % (len(self.addedFiles))))
         if print_filenames:
             for name in sorted(self.addedFiles):
-                print("      %r" % (name, ))
-        print("  Already MPL'd     : %d" % (len(self.alreadyPatchedFiles)))
+                print(("      %r" % (name, )))
+        print(("  Already MPL'd     : %d" % (len(self.alreadyPatchedFiles))))
         if print_filenames:
             for name in sorted(self.alreadyPatchedFiles):
-                print("      %r" % (name, ))
+                print(("      %r" % (name, )))
 
     def handle(self, fileCommenter, lines, lineNo):
         for i in range(len(self.rxLines)):
@@ -283,7 +283,7 @@ class MPLCopyrighter(CopyrightUpdater):
 
     def add(self, fileCommenter):
         """Place copyright in comment at the start of the file."""
-        lines = file(fileCommenter.filename, "r").readlines()
+        lines = open(fileCommenter.filename, "r").readlines()
         # Work out the newline style from the line we just read.
         if lines:
             newline = self.determineNewlineFromLine(lines[0])
@@ -307,7 +307,7 @@ class MPLCopyrighter(CopyrightUpdater):
             if insertLineNo < len(lines) and lines[insertLineNo].strip():
                 licenseLines.append(newline)
             lines[insertLineNo:insertLineNo] = licenseLines
-            file(fileCommenter.filename, "w").writelines(lines)
+            open(fileCommenter.filename, "w").writelines(lines)
         self.addedFiles.add(fileCommenter.filename)
 
 
@@ -406,8 +406,8 @@ class CopyrighterFileHandler:
                         lineFrom -= 1
                         inMiddleOfComment = False
         if inMiddleOfComment:
-            print "Expected comment style %r, got %r in %r" % (
-                    self.commentStart, line[:10] + "...", self.filename)
+            print("Expected comment style %r, got %r in %r" % (
+                    self.commentStart, line[:10] + "...", self.filename))
 
         # If the last line we replace does not end the comment, we need
         # to keep the comment going on the next line!
@@ -762,7 +762,7 @@ def AddCopyright(filename, runRecursivly=0, doSaveChanges=0, doUpdateOnly=0, doM
 
     log.debug("%sChecking %r", logpadding, filename)
     # Else we have a file, lets see if it matches our criteria
-    for regex, commenter in _copyrighterMap.items():
+    for regex, commenter in list(_copyrighterMap.items()):
         filenameMatch = regex.search(os.path.basename(filename))
         if filenameMatch:
             commenter(filename).PatchIfNecessary()
@@ -822,24 +822,24 @@ if __name__ == "__main__":
         for filename in args:
             AddCopyright(filename, opts.recursive, opts.save, opts.update_only, opts.backup_files, opts.num_lines, opts.max_line_length)
 
-        print "Results:"
+        print("Results:")
 
-        print("  Skipped paths     : %d" % (len(_g_skipped_paths)))
+        print(("  Skipped paths     : %d" % (len(_g_skipped_paths))))
         if opts.show_files_changed:
             for name in sorted(_g_skipped_paths):
-                print("      %-5s: %r" % (os.path.isdir(name) and "dir" or "file", name, ))
+                print(("      %-5s: %r" % (os.path.isdir(name) and "dir" or "file", name, )))
 
         for licenseHandler in _g_CopyrightHandlers:
             licenseHandler.report(opts.show_files_changed)
 
-        print("  Ignored file types: %d" % (len(_g_null_copywriter)))
+        print(("  Ignored file types: %d" % (len(_g_null_copywriter))))
         if opts.show_files_changed:
             for name in sorted(_g_null_copywriter):
-                print("      %r" % (name, ))
+                print(("      %r" % (name, )))
 
-        print("  Unknown file types: %d" % (len(_g_unknown_files)))
+        print(("  Unknown file types: %d" % (len(_g_unknown_files))))
         if opts.show_files_changed:
             for name in sorted(_g_unknown_files):
-                print("      %r" % (name, ))
+                print(("      %r" % (name, )))
     else:
         parser.print_help()

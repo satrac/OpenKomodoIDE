@@ -7,6 +7,7 @@ See `mk -h' for options.
 """
 
 import sys
+import subprocess
 import os
 from os.path import join, dirname, normpath, abspath, exists, basename
 import re
@@ -55,8 +56,8 @@ class tsk(Task):
 class trac_play(Task):
     """Play with the XML-RPC interface to the test trac server."""
     def make(self):
-        import xmlrpclib
-        server = xmlrpclib.ServerProxy(
+        import xmlrpc.client
+        server = xmlrpc.client.ServerProxy(
             "http://activetest:activetest@localhost:8001/myproject/login/xmlrpc",
             use_datetime=True,
             #verbose=True
@@ -67,13 +68,13 @@ class trac_play(Task):
         #since = datetime.datetime(2009, 1, 1)
         #self.recent_changes(server, since)
 
-        multicall = xmlrpclib.MultiCall(server) 
+        multicall = xmlrpc.client.MultiCall(server) 
         for method in server.system.listMethods(): 
             multicall.system.methodHelp(method) 
                  
         for help in multicall(): 
             lines = help.splitlines() 
-            print lines[0] 
+            print(lines[0]) 
             #print '\n'.join(['  ' + x for x in lines[2:]]) 
             #print 
 
@@ -81,25 +82,25 @@ class trac_play(Task):
         ids = server.ticket.query("status=!closed")
         # get: id, time_created, time_changed, values
         #print server.ticket.get(id)
-        multicall = xmlrpclib.MultiCall(server)
+        multicall = xmlrpc.client.MultiCall(server)
         for id in ids:
             multicall.ticket.get(id)
         for t in multicall():
-            print t
+            print(t)
 
     def recent_changes(self, server, since):
         for id in server.ticket.getRecentChanges(since):
-            print "-- ticket %d" % id
+            print("-- ticket %d" % id)
             id_, time_created, time_changed, attributes = server.ticket.get(id)
-            print "  time_created: %s" % time_created
-            print "  time_changed: %s" % time_changed
-            print "    attributes: %r" % attributes
+            print("  time_created: %s" % time_created)
+            print("  time_changed: %s" % time_changed)
+            print("    attributes: %r" % attributes)
 
     def list_methods(self, server):
         for method in server.system.listMethods(): 
-            print '--', method 
-            print '\n'.join(['  ' + x for x in server.system.methodHelp(method).split('\n')]) 
-            print
+            print('--', method) 
+            print('\n'.join(['  ' + x for x in server.system.methodHelp(method).split('\n')])) 
+            print()
 
 class test(Task):
     """Run all tests (except known failures)."""
@@ -112,16 +113,15 @@ class test(Task):
                 # Don't (yet) support Python 3.
                 continue
             ver_str = "%s.%s" % ver
-            print "-- test with Python %s (%s)" % (ver_str, python)
+            print("-- test with Python %s (%s)" % (ver_str, python))
             assert ' ' not in python
             sh.run_in_dir("%s test.py" % python, join(self.dir, "test"))
             break #XXX just test with one Python ver for now
 
     def _python_ver_from_python(self, python):
         assert ' ' not in python
-        o = os.popen('''%s -c "import sys; print(sys.version)"''' % python)
-        ver_str = o.read().strip()
-        ver_bits = re.split("\.|[^\d]", ver_str, 2)[:2]
+        ver_str = subprocess.getoutput('''%s -c "import sys; print(sys.version)"''' % python).strip()
+        ver_bits = re.split(r"\.|[^\d]", ver_str, 2)[:2]
         ver = tuple(map(int, ver_bits))
         return ver
 
@@ -148,12 +148,12 @@ class todo(Task):
                 excludes=[".svn", "*.pyc", "TO""DO.txt", "Makefile.py",
                           "*.png", "*.gif", "*.pprint", "*.prof",
                           "tmp-*"]):
-            self._dump_pattern_in_path("TO\DO\\|XX\X", path)
+            self._dump_pattern_in_path("TO\\DO\\|XX\\X", path)
 
         path = join(self.dir, "TO""DO.txt")
         if exists(path):
             todos = re.compile("^- ", re.M).findall(open(path, 'r').read())
-            print "(plus %d TODOs from TO""DO.txt)" % len(todos)
+            print("(plus %d TODOs from TO""DO.txt)" % len(todos))
 
     def _dump_pattern_in_path(self, pattern, path):
         os.system("grep -nH '%s' '%s'" % (pattern, path))

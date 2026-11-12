@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2003-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -33,7 +33,7 @@ import getopt
 import logging
 import itertools
 if sys.platform.startswith("win"):
-    import _winreg
+    import winreg
 
 
 
@@ -99,11 +99,11 @@ class _ListCmd(cmd.Cmd):
             return self.default(argv)
         try:
             return func(argv)
-        except TypeError, ex:
+        except TypeError as ex:
             log.error("%s: %s", cmdName, ex)
             log.error("try '%s help %s'", self.name, cmdName)
             if 1:   # for debugging
-                print
+                print()
                 import traceback
                 traceback.print_exception(*sys.exc_info())
 
@@ -211,16 +211,16 @@ def _getTypeNameFromRegistry(ext, root=None):
     """
     log.debug("_getTypeNameFromRegistry: getting '%s'", ext)
     assert ext[0] == '.', "Extension is invalid: '%s'" % ext
-    import _winreg
+    import winreg
 
     if root is None:
-        root = _winreg.HKEY_CLASSES_ROOT
-    elif root in (_winreg.HKEY_LOCAL_MACHINE, _winreg.HKEY_CURRENT_USER):
+        root = winreg.HKEY_CLASSES_ROOT
+    elif root in (winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER):
         # use the Software\Classes subkey
-        root = _winreg.OpenKey(root, r"Software\Classes")
+        root = winreg.OpenKey(root, r"Software\Classes")
 
     try:
-        extKey = _winreg.OpenKey(root, ext)
+        extKey = winreg.OpenKey(root, ext)
     except WindowsError:
         log.debug("Failed to open '%s'", ext)
         return None
@@ -247,8 +247,8 @@ def _safeQueryValueEx(key, name):
         versus WinNT for null values. Perhaps this method could abstract
         that.
     """
-    value, valueType = _winreg.QueryValueEx(key, name)
-    if valueType in (_winreg.REG_SZ, _winreg.REG_MULTI_SZ, _winreg.REG_EXPAND_SZ):
+    value, valueType = winreg.QueryValueEx(key, name)
+    if valueType in (winreg.REG_SZ, winreg.REG_MULTI_SZ, winreg.REG_EXPAND_SZ):
         value = value.strip('\x00')
     return (value, valueType)
 
@@ -261,26 +261,26 @@ def _deleteKeyIfEmpty(root, keyName, rootDesc="..."):
     @param rootDesc {unicode} A string describing the root (for logging)
     @returns {int} The number of keys deleted
     """
-    import _winreg
+    import winreg
     count = 0
     log.debug(r"_deleteKeyIfEmpty: deleting %s\%s", rootDesc, keyName)
     while keyName:
-        with _winreg.OpenKey(root, keyName) as key:
+        with winreg.OpenKey(root, keyName) as key:
             try:
-                _winreg.EnumValue(key, 0)
+                winreg.EnumValue(key, 0)
             except WindowsError:
                 pass
             else:
                 log.debug("_deleteKeyIfEmpty: %s has values", keyName)
                 return count # not empty
             try:
-                _winreg.EnumKey(key, 0)
+                winreg.EnumKey(key, 0)
             except WindowsError:
                 pass
             else:
                 log.debug("_deleteKeyIfEmpty: %s has subkeys", keyName)
                 return count # not empty
-        _winreg.DeleteKey(root, keyName)
+        winreg.DeleteKey(root, keyName)
         count += 1
         log.info(r"deleted '%s\%s' key", rootDesc, keyName)
         keyName = "\\".join(keyName.split("\\")[:-1])
@@ -299,8 +299,8 @@ def getHKLMRegistryValue(keyName, valueName):
     """
     log.debug("getHKLMRegistryValue(keyName=%r, valueName=%r)", keyName,
               valueName)
-    import _winreg
-    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, keyName)
+    import winreg
+    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, keyName)
     return _safeQueryValueEx(key, valueName)
 
 
@@ -311,25 +311,25 @@ def setHKLMRegistryValue(keyName, valueName, valueType, value):
     """
     log.debug("setHKLMRegistryValue(keyName=%r, valueName=%r, valueType=%r, "\
               "value=%r)", keyName, valueName, valueType, value)
-    import _winreg
+    import winreg
     # Open the key for writing.
     try:
-        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, keyName,
-                              0, _winreg.KEY_SET_VALUE)
-    except EnvironmentError, ex:
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, keyName,
+                              0, winreg.KEY_SET_VALUE)
+    except EnvironmentError as ex:
         # Either do not have permissions or we must create the keys
         # leading up to this key. Presume that latter, if the former
         # then it will fall out in the subsequent calls.
         parts = _splitall(keyName)
         for i in range(len(parts)):
             partKeyName = os.path.join(*parts[:i+1])
-            partKey = _winreg.CreateKey(_winreg.HKEY_LOCAL_MACHINE,
+            partKey = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE,
                                         partKeyName)
-        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, keyName,
-                              0, _winreg.KEY_SET_VALUE)
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, keyName,
+                              0, winreg.KEY_SET_VALUE)
         
     # Write the given value.
-    _winreg.SetValueEx(key, valueName, 0, valueType, value)
+    winreg.SetValueEx(key, valueName, 0, valueType, value)
 
 
 def getFileAssociation(ext):
@@ -348,7 +348,7 @@ def getFileAssociation(ext):
     If the file type is not found, raises WinIntegError
     """
     log.debug("getFileAssociation(ext=%r)", ext)
-    import _winreg
+    import winreg
 
     #---- 1. Find the type name from the extension.
     typeName = _getTypeNameFromRegistry(ext)
@@ -358,9 +358,9 @@ def getFileAssociation(ext):
     # Get the type display name from the type key (it is the default value).
     displayName = None
     try:
-        with _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT, typeName) as typeKey:
+        with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, typeName) as typeKey:
             displayName = _safeQueryValueEx(typeKey, "")[0]
-    except WindowsError, ex:
+    except WindowsError as ex:
         pass
 
     #---- 2. Get the current actions associated with this file type.
@@ -380,15 +380,15 @@ def getFileAssociation(ext):
     # - the first letter is made the accesskey with a '&'-prefix
     actionNames = []
     try:
-        shellKey = _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT,
-                                   "%s\\shell" % typeName)
+        shellKey = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
+                                   "%s\\\\shell" % typeName)
         for index in itertools.count():
             try:
-                actionName = _winreg.EnumKey(shellKey, index)
+                actionName = winreg.EnumKey(shellKey, index)
                 try:
-                    with _winreg.OpenKey(shellKey, actionName) as actionKey:
+                    with winreg.OpenKey(shellKey, actionName) as actionKey:
                         actionDisplayName = _safeQueryValueEx(actionKey, None)[0]
-                except WindowsError, ex:
+                except WindowsError as ex:
                     if ex.winerror != 2: # ERROR_FILE_NOT_FOUND
                         raise
                     actionDisplayName = None
@@ -408,10 +408,10 @@ def getFileAssociation(ext):
     for actionName, actionDisplayName in actionNames:
         command = None
         try:
-            commandKey = _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT,
-                                         "%s\\shell\\%s\\command"
+            commandKey = winreg.OpenKey(winreg.HKEY_CLASSES_ROOT,
+                                         "%s\\\\shell\\%s\\\\command"
                                          % (typeName, actionName))
-        except WindowsError, ex:
+        except WindowsError as ex:
             pass
         else:
             try:
@@ -454,7 +454,7 @@ def checkFileAssociation(ext, action, exe):
     """
     log.debug("checkFileAssociation(ext=%r, action=%r, exe=%r)",
               ext, action, exe)
-    import _winreg
+    import winreg
 
     #---- Find the type name from the extension.
     try:
@@ -506,17 +506,17 @@ def addFileAssociation(ext, action, exe, fallbackTypeName=None):
     """
     log.debug("addFileAssociation(ext=%r, action=%r, exe=%r, "\
               "fallbackTypeName=%r)", ext, action, exe, fallbackTypeName)
-    import _winreg
-    userClasses = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, r"Software\Classes")
+    import winreg
+    userClasses = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Classes")
 
     #---- 1. Find the type name from the extension.
     typeName = _getTypeNameFromRegistry(ext)
     if typeName is None:
         typeName = fallbackTypeName or _getTypeName(ext)
-        with _winreg.CreateKey(userClasses, ext) as extKey:
+        with winreg.CreateKey(userClasses, ext) as extKey:
             # re-open the key with write access
-            with _winreg.OpenKey(extKey, "", 0, _winreg.KEY_SET_VALUE) as extKey:
-                _winreg.SetValueEx(extKey, "", 0, _winreg.REG_SZ, typeName)
+            with winreg.OpenKey(extKey, "", 0, winreg.KEY_SET_VALUE) as extKey:
+                winreg.SetValueEx(extKey, "", 0, winreg.REG_SZ, typeName)
 
     log.info("type name for '%s' is '%s'", ext, typeName)
 
@@ -541,7 +541,7 @@ def addFileAssociation(ext, action, exe, fallbackTypeName=None):
         else:
             # Pick an action key name that does not conflict.
             currActionKeyNames = set(a[0].lower() for a in currActions)
-            for i in [''] + range(2, 100):
+            for i in [''] + list(range(2, 100)):
                 actionKeyName = action.split()[0] + str(i) # Edit1, Edit2, ...
                 if actionKeyName.lower() not in currActionKeyNames:
                     break
@@ -553,28 +553,28 @@ def addFileAssociation(ext, action, exe, fallbackTypeName=None):
     else: # e.g. "Edit"
         actionKeyName = action
         actionName = None
-    actionKeyPath = "%s\\shell\\%s" % (typeName, actionKeyName)
+    actionKeyPath = "%s\\\\shell\\%s" % (typeName, actionKeyName)
     log.info("creating '%s' action at key 'HKCR\\%s'",
              actionName or actionKeyName, actionKeyPath)
 
     #---- 4. Register the action.
     # First, set the action name if necessary (and ensure the action key
     # is created).
-    actionKey = _winreg.CreateKey(userClasses,
+    actionKey = winreg.CreateKey(userClasses,
                                   r"%s\shell\%s" % (typeName, actionKeyName))
     if actionName is not None:
         log.info("setting name for action key '%s' of file type '%s': '%s'",
                  actionKeyName, typeName, actionName)
-        _winreg.SetValueEx(actionKey, "", 0, _winreg.REG_SZ, actionName)
+        winreg.SetValueEx(actionKey, "", 0, winreg.REG_SZ, actionName)
     # Next, determine the command and create/update the "command" subkey.
     if ' ' in exe:
         command = '"%s" "%%1" %%*' % exe
     else:
         command = '%s "%%1" %%*' % exe
-    with _winreg.CreateKey(actionKey, "command") as commandKey:
+    with winreg.CreateKey(actionKey, "command") as commandKey:
         log.info("setting command for '%s' action of '%s' file type: %r",
                  actionName or actionKeyName, typeName, command)
-        _winreg.SetValueEx(commandKey, "", 0, _winreg.REG_EXPAND_SZ, command)
+        winreg.SetValueEx(commandKey, "", 0, winreg.REG_EXPAND_SZ, command)
 
 
 def removeFileAssociation(ext, action, exe, fromHKLM=False):
@@ -594,11 +594,11 @@ def removeFileAssociation(ext, action, exe, fromHKLM=False):
     """
     log.debug("removeFileAssociation(ext=%r, action=%r, exe=%r, HKLM=%r)", ext,
               action, exe, fromHKLM)
-    import _winreg
+    import winreg
     if fromHKLM:
-        HKCR = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, r"Software\Classes")
+        HKCR = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"Software\Classes")
     else:
-        HKCR = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, r"Software\Classes")
+        HKCR = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Classes")
 
     #---- 1. Find the type name and associations from the extension.
     try:
@@ -638,42 +638,42 @@ def removeFileAssociation(ext, action, exe, fromHKLM=False):
         return False
 
     #---- 4. Remove the action key.
-    with _winreg.OpenKey(HKCR, r"%s\shell\%s\command" % (typeName, actionKeyName), 0, _winreg.KEY_SET_VALUE) as commandKey:
-        _winreg.DeleteValue(commandKey, "")
-    log.info("deleted default value for 'HKCR\\%s\\shell\\%s\\command'",
+    with winreg.OpenKey(HKCR, r"%s\shell\%s\command" % (typeName, actionKeyName), 0, winreg.KEY_SET_VALUE) as commandKey:
+        winreg.DeleteValue(commandKey, "")
+    log.info("deleted default value for 'HKCR\\%s\\\\shell\\%s\\\\command'",
              typeName, actionKeyName)
 
     # Clean up an empty registry branch.
     try:
         subkey = r"%s\shell\%s\command" % (typeName, actionKeyName)
         # re-open HKCR with write access
-        with _winreg.OpenKey(HKCR, "", 0, _winreg.KEY_SET_VALUE) as root:
+        with winreg.OpenKey(HKCR, "", 0, winreg.KEY_SET_VALUE) as root:
             log.debug("re-opened root")
             numDeleted = _deleteKeyIfEmpty(root, subkey, rootDesc="HKCR")
             if numDeleted == 1:
                 # perhaps there's a description in <type>\shell\<action>\(Default)
                 subkey = r"%s\shell\%s" % (typeName, actionKeyName)
                 def tryDeleteDefault():
-                    with _winreg.OpenKey(HKCR, subkey, 0, _winreg.KEY_QUERY_VALUE | _winreg.KEY_SET_VALUE) as actionKey:
+                    with winreg.OpenKey(HKCR, subkey, 0, winreg.KEY_QUERY_VALUE | winreg.KEY_SET_VALUE) as actionKey:
                         try:
-                            _winreg.EnumKey(actionKey, 0)
+                            winreg.EnumKey(actionKey, 0)
                             return None # other subkeys exist, don't delete
                         except WindowsError:
                             pass
                         hasDefault = True
                         try:
                             # check if the default value exists (the user-visible description of the file type)
-                            _winreg.QueryValueEx(actionKey, "")
+                            winreg.QueryValueEx(actionKey, "")
                         except WindowsError:
                             # there's no default value
                             hasDefault = False
                         try:
-                            _winreg.EnumValue(actionKey, 1 if hasDefault else 0)
+                            winreg.EnumValue(actionKey, 1 if hasDefault else 0)
                             return None # other values exist
                         except WindowsError:
                             pass
                         if hasDefault:
-                            _winreg.DeleteValue(actionKey, "")
+                            winreg.DeleteValue(actionKey, "")
                     return _deleteKeyIfEmpty(root, subkey, rootDesc="HKCR")
                 moreDeleted = tryDeleteDefault()
                 if moreDeleted is not None:
@@ -681,17 +681,17 @@ def removeFileAssociation(ext, action, exe, fromHKLM=False):
             log.debug("deleted %r keys", numDeleted)
             if numDeleted >= len(subkey.split("\\")):
                 # the whole thing was deleted; clean up the extension tree as well
-                with _winreg.OpenKey(root, ext, 0, _winreg.KEY_SET_VALUE) as extKey:
-                    _winreg.DeleteValue(extKey, None)
+                with winreg.OpenKey(root, ext, 0, winreg.KEY_SET_VALUE) as extKey:
+                    winreg.DeleteValue(extKey, None)
                 try:
                     _deleteKeyIfEmpty(root, ext, rootDesc="HKCR")
-                except WindowsError, ex:
+                except WindowsError as ex:
                     if ex.winerror != 2: # ERROR_FILE_NOT_FOUND
                         raise
                     log.debug("removeFileAssociation: Can't find %s", ext)
                     # ignore not found errors, the file extension part may have
                     # come from the HKLM version of HKCR
-    except WindowsError, ex:
+    except WindowsError as ex:
         if ex.winerror != 5: # ERROR_ACCESS_DENIED
             raise
         log.debug("removeFileAssociation: Access denied (%r)", ex)
@@ -748,7 +748,7 @@ class WinIntegShell(_ListCmd):
         # Process options.
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("get_assoc: %s", ex)
             log.error("get_assoc: try 'wininteg help get_assoc'")
             return 1
@@ -762,15 +762,15 @@ class WinIntegShell(_ListCmd):
 
         try:
             type, name, actions = getFileAssociation(ext)
-            print "File Type: %s (%s)" % (name, type)
+            print("File Type: %s (%s)" % (name, type))
             if actions:
-                print "Actions:"
+                print("Actions:")
                 for aName, aDisplayName, aCommand in actions:
-                    print "    %s (%s)" % (aDisplayName, aName)
-                    print "        %s" % aCommand
+                    print("    %s (%s)" % (aDisplayName, aName))
+                    print("        %s" % aCommand)
             else:
-                print "Actions: <none>"
-        except Exception, ex:
+                print("Actions: <none>")
+        except Exception as ex:
             log.error(str(ex))
             if log.isEnabledFor(logging.DEBUG):
                 import traceback
@@ -791,7 +791,7 @@ class WinIntegShell(_ListCmd):
         # Process options.
         try:
             optlist, args = getopt.getopt(argv[1:], "", [])
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("add_assoc: %s", ex)
             log.error("add_assoc: try 'wininteg help check_assoc'")
             return 1
@@ -806,8 +806,8 @@ class WinIntegShell(_ListCmd):
         try:
             msg = checkFileAssociation(ext, action, exe)
             if msg is not None:
-                print msg
-        except Exception, ex:
+                print(msg)
+        except Exception as ex:
             log.error(str(ex))
             if log.isEnabledFor(logging.DEBUG):
                 import traceback
@@ -837,7 +837,7 @@ class WinIntegShell(_ListCmd):
         # Process options.
         try:
             optlist, args = getopt.getopt(argv[1:], "t:", ["type-name="])
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("add_assoc: %s", ex)
             log.error("add_assoc: try 'wininteg help add_assoc'")
             return 1
@@ -855,7 +855,7 @@ class WinIntegShell(_ListCmd):
 
         try:
             addFileAssociation(ext, action, exe, fallbackTypeName)
-        except Exception, ex:
+        except Exception as ex:
             log.error(str(ex))
             if log.isEnabledFor(logging.DEBUG):
                 import traceback
@@ -881,7 +881,7 @@ class WinIntegShell(_ListCmd):
         # Process options.
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("remove_assoc: %s", ex)
             log.error("remove_assoc: try 'wininteg help remove_assoc'")
             return 1
@@ -895,7 +895,7 @@ class WinIntegShell(_ListCmd):
 
         try:
             removeFileAssociation(ext, action, exe)
-        except Exception, ex:
+        except Exception as ex:
             log.error(str(ex))
             if log.isEnabledFor(logging.DEBUG):
                 import traceback
@@ -908,7 +908,7 @@ def _main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "hVv",
             ["help", "version", "verbose"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         log.error("%s. Your invocation was: %s", msg, argv)
         log.error("Try 'wininteg --help'.")
         return 1
@@ -917,7 +917,7 @@ def _main(argv):
             sys.stdout.write(WinIntegShell.__doc__)
             return 0
         elif opt in ("-V", "--version"):
-            print "wininteg %s" % '.'.join([str(i) for i in _version_])
+            print("wininteg %s" % '.'.join([str(i) for i in _version_]))
             return 0
         elif opt in ("-v", "--verbose"):
             log.setLevel(Logger.DEBUG)

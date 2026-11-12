@@ -57,7 +57,7 @@ class koFileEx:
             # interface attributes
             if hasattr(koFileEx, attr):
                 return getattr(self,attr)
-            raise AttributeError, attr
+            raise AttributeError(attr)
         handler = self.__get_handler()
         if handler is not None:
             # XXX - This is hack to avoid updating the stats via 'hasChanged',
@@ -69,7 +69,7 @@ class koFileEx:
                 return getattr(handler, attr)
         if self._URI is not None and hasattr(self._URI, attr):
             return getattr(self._URI, attr)
-        raise AttributeError, attr
+        raise AttributeError(attr)
   
     def __setattr__(self,name,value):
         handler = self.__get_handler()

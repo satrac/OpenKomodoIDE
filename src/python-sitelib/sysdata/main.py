@@ -56,11 +56,11 @@ class _ListCmd(cmd.Cmd):
             return self.default(argv)
         try:
             return func(argv)
-        except TypeError, ex:
+        except TypeError as ex:
             log.error("%s: %s", cmdName, ex)
             log.error("try '%s help %s'", self.name, cmdName)
             if 1:   # for debugging
-                print
+                print()
                 import traceback
                 traceback.print_exception(*sys.exc_info())
 
@@ -162,7 +162,7 @@ class SysDataShell(_ListCmd):
         """
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("get: %s", ex)
             log.error("get: try 'sysdata help get'")
             return 1
@@ -172,8 +172,8 @@ class SysDataShell(_ListCmd):
         for name in names:
             try:
                 datum = sysdata.get(name)
-                print "%s: %r" % (name, datum)
-            except SysDataError, ex:
+                print("%s: %r" % (name, datum))
+            except SysDataError as ex:
                 log.error(str(ex))
                 if log.isEnabledFor(logging.DEBUG):
                     import traceback
@@ -195,7 +195,7 @@ class SysDataShell(_ListCmd):
     """
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("flush: %s", ex)
             log.error("flush: try 'sysdata help flush'")
             return 1
@@ -205,7 +205,7 @@ class SysDataShell(_ListCmd):
         for name in names:
             try:
                 sysdata.flush(name)
-            except SysDataError, ex:
+            except SysDataError as ex:
                 log.error(str(ex))
                 if log.isEnabledFor(logging.DEBUG):
                     import traceback
@@ -220,7 +220,7 @@ class SysDataShell(_ListCmd):
     """
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("cache: %s", ex)
             log.error("cache: try 'sysdata help cache'")
             return 1
@@ -235,7 +235,7 @@ class SysDataShell(_ListCmd):
     """
         try:
             optlist, args = getopt.getopt(argv[1:], "")
-        except getopt.GetoptError, ex:
+        except getopt.GetoptError as ex:
             log.error("getters: %s", ex)
             log.error("getters: try 'sysdata help getters'")
             return 1
@@ -251,7 +251,7 @@ def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "hVv",
             ["help", "version", "verbose"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         log.error("%s. Your invocation was: %s", msg, argv)
         log.error("Try 'sysdata --help'.")
         return 1
@@ -261,7 +261,7 @@ def main(argv):
             return 0
         elif opt in ("-V", "--version"):
             ver = [str(i) for i in sysdata._version_]
-            print "sysdata %s" % '.'.join(ver)
+            print("sysdata %s" % '.'.join(ver))
             return 0
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)

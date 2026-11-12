@@ -11,5 +11,5 @@ for l in lines:
     #print r
     if (len(r) < 3): continue
     if r[2] in records:
-        print "binding for %s is duplicated" % r[2]
+        print("binding for %s is duplicated" % r[2])
     records[r[2]] = l

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Software Inc.
 
 r"""combinelog -- Merge squid access, referer, and useragent logs for
@@ -98,7 +98,7 @@ import logging
 import optparse
 import datetime
 import gzip
-import cPickle as pickle
+import pickle as pickle
 from hashlib import md5
 from collections import defaultdict
 import itertools
@@ -221,7 +221,7 @@ def combinelog(boxes, start, end, includes=None, excludes=None, domain=None):
                 # little?).
                 while True:
                     try:
-                        referer_rec = referer_stream.next()
+                        referer_rec = next(referer_stream)
                     except StopIteration:
                         log.warn("ran out of referer records")
                         break
@@ -264,7 +264,7 @@ def combinelog(boxes, start, end, includes=None, excludes=None, domain=None):
                 # little?).
                 while True:
                     try:
-                        useragent_rec = useragent_stream.next()
+                        useragent_rec = next(useragent_stream)
                     except StopIteration:
                         log.warn("ran out of useragent records")
                         break
@@ -343,33 +343,33 @@ def combinelog(boxes, start, end, includes=None, excludes=None, domain=None):
 
 
     if False:
-        print "\n-- accesses"
+        print("\n-- accesses")
         access_stream = merged_squid_access_log_stream(boxes, start, end)
-        pprint(access_stream.next())
+        pprint(next(access_stream))
         num_elided = 0
         for access_rec in access_stream:
             num_elided += 1
-        print "(... %d records elided ...)" % (num_elided-1)
+        print("(... %d records elided ...)" % (num_elided-1))
         pprint(access_rec)
 
     if False:
-        print "\n-- referers"
+        print("\n-- referers")
         referer_stream = merged_squid_referer_log_stream(boxes, start, end)
-        pprint(referer_stream.next())
+        pprint(next(referer_stream))
         num_elided = 0
         for referer_rec in referer_stream:
             num_elided += 1
-        print "(... %d records elided ...)" % (num_elided-1)
+        print("(... %d records elided ...)" % (num_elided-1))
         pprint(referer_rec)
 
     if False:
-        print "\n-- useragents"
+        print("\n-- useragents")
         useragent_stream = merged_squid_useragent_log_stream(boxes, start, end)
-        pprint(useragent_stream.next())
+        pprint(next(useragent_stream))
         num_elided = 0
         for useragent_rec in useragent_stream:
             num_elided += 1
-        print "(... %d records elided ...)" % (num_elided-1)
+        print("(... %d records elided ...)" % (num_elided-1))
         pprint(useragent_rec)
 
 
@@ -398,7 +398,7 @@ _access_log_re = re.compile(r"""^
     $""", re.M | re.X)
 
 def squid_access_log_stream(box_id, box_dir, start, end):
-    from urlparse import urlsplit
+    from urllib.parse import urlsplit
 
     assert exists(box_dir)
     assert isinstance(start, datetime.datetime)
@@ -447,7 +447,7 @@ def squid_access_log_stream(box_id, box_dir, start, end):
             log.debug("opening `%s'", path)
             fin = gzip.open(path, 'rb')
             offset = fin.offset
-            line = fin.next()
+            line = next(fin)
             timestamp = float(line.split(None, 1)[0])
             t = datetime.datetime.fromtimestamp(timestamp)
             if t < start:
@@ -582,15 +582,15 @@ def merged_squid_access_log_stream(boxes, start, end):
     """
     # Get a log record stream for each box.
     stream_from_box_id = {}
-    for box_id, box_dir in boxes.items():
+    for box_id, box_dir in list(boxes.items()):
         stream = squid_access_log_stream(box_id, box_dir, start, end)
         stream_from_box_id[box_id] = stream
 
     # Prime the pump: get the first record from each stream.
     next_recs = []  # (<next-record>, <box_id>)
-    for box_id, stream in stream_from_box_id.items():  # prime the pump
+    for box_id, stream in list(stream_from_box_id.items()):  # prime the pump
         try:
-            next_recs.append( (stream.next(), box_id) )
+            next_recs.append( (next(stream), box_id) )
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -601,7 +601,7 @@ def merged_squid_access_log_stream(boxes, start, end):
         rec, box_id = next_recs.pop(0)
         yield rec
         try:
-            next_recs.insert(0, (stream_from_box_id[box_id].next(), box_id))
+            next_recs.insert(0, (next(stream_from_box_id[box_id]), box_id))
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -678,7 +678,7 @@ def squid_useragent_log_stream(box_id, box_dir, start, end):
             log.debug("opening `%s'", path)
             fin = gzip.open(path, 'rb')
             offset = fin.offset
-            line = fin.next()
+            line = next(fin)
             m = _useragent_log_re.match(line)
             if not m:
                 raise Error("couldn't match line in %s[%s:%s]: %r"
@@ -783,15 +783,15 @@ def merged_squid_useragent_log_stream(boxes, start, end):
     """
     # Get a log record stream for each box.
     stream_from_box_id = {}
-    for box_id, box_dir in boxes.items():
+    for box_id, box_dir in list(boxes.items()):
         stream = squid_useragent_log_stream(box_id, box_dir, start, end)
         stream_from_box_id[box_id] = stream
 
     # Prime the pump: get the first record from each stream.
     next_recs = []  # (<next-record>, <box_id>)
-    for box_id, stream in stream_from_box_id.items():  # prime the pump
+    for box_id, stream in list(stream_from_box_id.items()):  # prime the pump
         try:
-            next_recs.append( (stream.next(), box_id) )
+            next_recs.append( (next(stream), box_id) )
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -802,7 +802,7 @@ def merged_squid_useragent_log_stream(boxes, start, end):
         rec, box_id = next_recs.pop(0)
         yield rec
         try:
-            next_recs.insert(0, (stream_from_box_id[box_id].next(), box_id))
+            next_recs.insert(0, (next(stream_from_box_id[box_id]), box_id))
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -872,7 +872,7 @@ def squid_referer_log_stream(box_id, box_dir, start, end):
             log.debug("opening `%s'", path)
             fin = gzip.open(path, 'rb')
             offset = fin.offset
-            line = fin.next()
+            line = next(fin)
             timestamp = float(line.split(None, 1)[0])
             t = datetime.datetime.fromtimestamp(timestamp)
             if t < start:
@@ -971,15 +971,15 @@ def merged_squid_referer_log_stream(boxes, start, end):
     """
     # Get a log record stream for each box.
     stream_from_box_id = {}
-    for box_id, box_dir in boxes.items():
+    for box_id, box_dir in list(boxes.items()):
         stream = squid_referer_log_stream(box_id, box_dir, start, end)
         stream_from_box_id[box_id] = stream
 
     # Prime the pump: get the first record from each stream.
     next_recs = []  # (<next-record>, <box_id>)
-    for box_id, stream in stream_from_box_id.items():  # prime the pump
+    for box_id, stream in list(stream_from_box_id.items()):  # prime the pump
         try:
-            next_recs.append( (stream.next(), box_id) )
+            next_recs.append( (next(stream), box_id) )
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -990,7 +990,7 @@ def merged_squid_referer_log_stream(boxes, start, end):
         rec, box_id = next_recs.pop(0)
         yield rec
         try:
-            next_recs.insert(0, (stream_from_box_id[box_id].next(), box_id))
+            next_recs.insert(0, (next(stream_from_box_id[box_id]), box_id))
         except StopIteration:
             del stream_from_box_id[box_id] # No more records from this stream.
 
@@ -1254,7 +1254,7 @@ if __name__ == "__main__":
             log.error(exc_info[0])
         if log.isEnabledFor(logging.INFO-1):
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

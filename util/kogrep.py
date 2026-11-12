@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # Contributors:
 #   Todd Whiteman (ToddW@ActiveState.com)
@@ -12,6 +12,7 @@
 #
 
 import os, sys, re
+import subprocess
 import traceback
 from optparse import OptionParser
 
@@ -68,7 +69,7 @@ def mainHandler(opts, args):
         grep_command = "grep %s '%s' %s %s *" % (grep_args, name, include_types, exclude_types)
         #print grep_command
         #continue
-        lines = os.popen(grep_command).readlines()
+        lines = subprocess.getoutput(grep_command).splitlines()
         if len(lines) == 0:
             continue
         max_len = 0
@@ -76,7 +77,7 @@ def mainHandler(opts, args):
         for line in lines:
             regroups = rematch.search(line)
             if not regroups:
-                print "ERROR: Re match problem on line '%s'" % (line)
+                print("ERROR: Re match problem on line '%s'" % (line))
                 continue
             regroups = regroups.groups()
             grep_results.append(regroups)
@@ -92,10 +93,10 @@ def mainHandler(opts, args):
                 if len(filename) > 40:
                     filename = "%s...%s" % (filename[:10], filename[-25:])
                 data = data.strip()
-            print format % (pos, filename, line_number, data)
+            print(format % (pos, filename, line_number, data))
             pos += 1
 
-        x = raw_input("Open which one in komodo: ")
+        x = input("Open which one in komodo: ")
         try:
             while x:
                 val = int(x)
@@ -109,13 +110,13 @@ def mainHandler(opts, args):
                     komodo_command = 'komodo -s %s,%d-%s,%d "%s"' % (line_number, pos_start, \
                                                              line_number, pos_end, \
                                                              os.path.abspath(filename))
-                    print komodo_command
-                    os.popen(komodo_command)
-                x = raw_input("Open which one in komodo: ")
-        except Exception, e:
-            print e
+                    print(komodo_command)
+                    subprocess.Popen(komodo_command)
+                x = input("Open which one in komodo: ")
+        except Exception as e:
+            print(e)
             traceback.print_exc()
-            print "Invalid number: '%s'" % (x)
+            print("Invalid number: '%s'" % (x))
 
 # Parse the command line parameters
 def main(argv=None):

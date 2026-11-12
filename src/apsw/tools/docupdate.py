@@ -90,7 +90,7 @@ if op!=benchmark:
 
 # shell stuff
 
-import apsw, StringIO
+import apsw, io
 shell=apsw.Shell()
 incomment=False
 op=[]
@@ -102,7 +102,7 @@ for line in open("doc/shell.rst", "rtU"):
         op.append("")
         op.append(".. code-block:: text")
         op.append("")
-        s=StringIO.StringIO()
+        s=io.StringIO()
         def tw(*args):
             return 80
         shell.stderr=s

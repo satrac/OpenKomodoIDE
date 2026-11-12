@@ -7,7 +7,12 @@ import sys
 import tempfile
 import time
 import unittest
-from distutils.version import LooseVersion
+try:
+    from version_compat import LooseVersion
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "util")))
+    from version_compat import LooseVersion
+    sys.path.pop(0)
 from xpcom.components import classes as Cc, interfaces as Ci
 from testlib import TestSkipped, tag
 
@@ -51,7 +56,7 @@ class HgTestCaseBase(unittest.TestCase):
             self.assertNotEqual(proc.returncode, 0,
                                 "Calling %r expected to fail" % (args,))
         else:
-            self.assertEquals(proc.returncode, 0,
+            self.assertEqual(proc.returncode, 0,
                               "Calling %r failed with %r:\n%s" % (
                                     args, proc.returncode, r_stderr or r_stdout))
         if stderr is not None:
@@ -96,7 +101,7 @@ class HgTestCaseBase(unittest.TestCase):
                             os.rmdir(d)
                     os.rmdir(repo)
                     break
-                except Exception, ex:
+                except Exception as ex:
                     if try_num < total_tries - 1:
                         log.warn("Failed deleting, retrying: %s", ex)
                         t = Cc["@mozilla.org/thread-manager;1"].getService().currentThread
@@ -109,7 +114,7 @@ class HgTestCaseBase(unittest.TestCase):
 class HgTestCase(HgTestCaseBase):
     """ Test cases that do not want a default repo """
     def test_basics(self):
-        self.assertEquals(self._svc.name, "hg")
+        self.assertEqual(self._svc.name, "hg")
         self.assertTrue(self._svc.isEnabled, "hg SCC disabled")
         self.assertFalse(self._svc.executable is None, "No executable")
         self.assertTrue(self._svc.isFunctional, "hg not functional")
@@ -118,10 +123,10 @@ class HgTestCase(HgTestCaseBase):
         self._svc.redetermineIfFunctional() # shouldn't throw
         for cmd in ("add", "checkout", "commit", "diff", "history", "remove",
                     "revert", "status", "update"):
-            self.assertEquals(self._svc.getValue("supports_command", cmd), "Yes",
+            self.assertEqual(self._svc.getValue("supports_command", cmd), "Yes",
                               "hg should support command '%s'" % (cmd,))
         for cmd in ("pants",):
-            self.assertNotEquals(self._svc.getValue("supports_command", cmd),
+            self.assertNotEqual(self._svc.getValue("supports_command", cmd),
                                  "Yes",
                                  "hg should not support command '%s'" % (cmd,))
 
@@ -271,7 +276,7 @@ class HgRepoTestCase(HgTestCaseBase):
                     "clean":    "C"}
         actual = dict([(line[2:], line[0]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
-        files = [os.path.join(self._repo, filename) for filename in expected.keys()]
+        files = [os.path.join(self._repo, filename) for filename in list(expected.keys())]
         with spinner:
             self._svc.status(files, False, "", spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
@@ -285,7 +290,7 @@ class HgRepoTestCase(HgTestCaseBase):
             self.assertEqual(expected.get(item.relativePath, -1), item.status,
                              "item '%s' has unexpected status %r" % (item.relativePath, item.status))
             expected[item.relativePath] = None
-        bad = [k for k, v in expected.items() if v is not None]
+        bad = [k for k, v in list(expected.items()) if v is not None]
         self.assertEqual(len(bad), 0, "Missing status for %s" % (bad,))
 
     def test_add(self):
@@ -333,13 +338,13 @@ class HgRepoTestCase(HgTestCaseBase):
                     "clean":    "C"}
         actual = dict([(line[2:], line[0]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
-        files = [os.path.join(self._repo, filename) for filename in expected.keys()]
+        files = [os.path.join(self._repo, filename) for filename in list(expected.keys())]
         with spinner:
             self._svc.revert(files, "", spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
                          "Error occurred while doing scc revert: %s" % (spinner.data,))
 
-        stdout = self._run(["status", "--all"] + expected.keys())
+        stdout = self._run(["status", "--all"] + list(expected.keys()))
         expected = {"added":    "?",
                     "modified": "C",
                     "removed":  "C",
@@ -348,13 +353,13 @@ class HgRepoTestCase(HgTestCaseBase):
                     "clean":    "C"}
         actual = dict([(line[2:], line[0]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
-        for filename in [name for name, status in expected.items() if status == "C"]:
+        for filename in [name for name, status in list(expected.items()) if status == "C"]:
             with open(os.path.join(self._repo, filename), "r") as f:
-                self.assertEquals(f.read(), "!",
+                self.assertEqual(f.read(), "!",
                                   "Unexpected contents in %s" % (filename,))
-        for filename in [name for name, status in expected.items() if status == "?"]:
+        for filename in [name for name, status in list(expected.items()) if status == "?"]:
             with open(os.path.join(self._repo, filename), "r") as f:
-                self.assertEquals(f.read(), "@@",
+                self.assertEqual(f.read(), "@@",
                                   "Unexpected contents in %s" % (filename,))
 
     def test_remove(self):
@@ -414,7 +419,7 @@ class HgRepoTestCase(HgTestCaseBase):
             self._svc.diff([fileName], "--git", None, spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
                          "Error occurred while doing scc diff: %s" % (spinner.data,))
-        expected = dedent("""
+        expected = dedent(r"""
             Index: %s
             --- a/hello.txt
             +++ b/hello.txt
@@ -440,7 +445,7 @@ class HgRepoTestCase(HgTestCaseBase):
             self._svc.diffRelative(self._repo, [fileName], "--git", None, spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
                          "Error occurred while doing scc diff: %s" % (spinner.data,))
-        expected = dedent("""
+        expected = dedent(r"""
             Index: %s
             --- a/hello.txt
             +++ b/hello.txt
@@ -471,13 +476,13 @@ class HgRepoTestCase(HgTestCaseBase):
                          (len(spinner.data), spinner.data))
         items = list(reversed(spinner.data))
         for index, item in enumerate(items):
-            self.assertEquals(item.version, str(index),
+            self.assertEqual(item.version, str(index),
                               "Unexpected version %s" % (item.version,))
-            self.assertEquals("", item.change,
+            self.assertEqual("", item.change,
                               "Unexpected change %s" % (item.change,))
-            self.assertEquals("", item.action,
+            self.assertEqual("", item.action,
                               "Unexpected action %s" % (item.action,))
-            self.assertEquals("commit %s" % (index,), item.message,
+            self.assertEqual("commit %s" % (index,), item.message,
                               "Unexpected message %s" % (item.message,))
 
         with spinner:
@@ -486,7 +491,7 @@ class HgRepoTestCase(HgTestCaseBase):
                                     fileName, "--git", None, spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
                          "Error occurred while doing scc revision diff: %s" % (spinner.data,))
-        expected = dedent("""
+        expected = dedent(r"""
             Index: %s
             --- a/hello.txt
             +++ b/hello.txt

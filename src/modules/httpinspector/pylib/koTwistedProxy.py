@@ -11,7 +11,7 @@
 #
 
 import sys
-import urlparse
+import urllib.parse
 import threading
 import weakref
 
@@ -25,7 +25,7 @@ try:
     from xpcom.server import WrapObject, UnwrapObject
     have_XPCOM = 1
 except ImportError:
-    print "WARNING: Running without XPCOM"
+    print("WARNING: Running without XPCOM")
     have_XPCOM = 0
 
 from caselessDict import CaselessDict
@@ -119,7 +119,7 @@ class koProxyClient(proxy.ProxyClient):
         proxy.ProxyClient.handleStatus(self, *self.response_status)
 
         # Write headers
-        for key, value in self.response_headers.items():
+        for key, value in list(self.response_headers.items()):
             proxy.ProxyClient.handleHeader(self, key, value)
         proxy.ProxyClient.handleEndHeaders(self)
 
@@ -168,7 +168,7 @@ class koProxyClientFactory(proxy.ProxyClientFactory):
         self.father.transport.write("%s %s %s\r\n" % (self.response_status[0],
                                                       self.response_status[1],
                                                       self.response_status[2]))
-        for key, value in self.response_headers.items():
+        for key, value in list(self.response_headers.items()):
             self.father.transport.write("%s: %s\r\n" % (key, value))
         self.father.transport.write("\r\n")
         self.father.transport.write(self.data)
@@ -191,7 +191,7 @@ class koProxyHTTPSClient(koProxyClient):
         self.father.transport.write("%s %s %s\r\n" % (response.response_status[0],
                                                       response.response_status[1],
                                                       response.response_status[2]))
-        for key, value in response.response_headers.items():
+        for key, value in list(response.response_headers.items()):
             self.father.transport.write("%s: %s\r\n" % (key, value))
         self.father.transport.write("\r\n")
         if response.data:
@@ -277,7 +277,7 @@ class koProxyRequest(proxy.ProxyRequest):
         self.channel.transport.write("%s %s %s\r\n" % (response.response_status[0],
                                                        response.response_status[1],
                                                        response.response_status[2]))
-        for key, value in response.response_headers.items():
+        for key, value in list(response.response_headers.items()):
             self.channel.transport.write("%s: %s\r\n" % (key, value))
         self.channel.transport.write("\r\n")
         self.channel.transport.write(response.data)
@@ -305,7 +305,7 @@ class koProxyRequest(proxy.ProxyRequest):
 
     def _finishProcessCall(self, headers):
         try:
-            parsed = urlparse.urlparse(self.uri)
+            parsed = urllib.parse.urlparse(self.uri)
             if self.method == "CONNECT":
                 protocol = "https"
                 host = parsed[0]
@@ -316,14 +316,14 @@ class koProxyRequest(proxy.ProxyRequest):
                 protocol = parsed[0]
                 host = parsed[1]
                 self._isConnectMethod = False
-                rest = urlparse.urlunparse(('','')+parsed[2:])
+                rest = urllib.parse.urlunparse(('','')+parsed[2:])
             if not rest:
                 rest = rest+'/'
             port = self.ports[protocol]
             if ':' in host:
                 host, port = host.split(':')
                 port = int(port)
-            if not headers.has_key('host'):
+            if 'host' not in headers:
                 headers['host'] = host
             #print "Content-Length: %d" % (len(self.data))
             #print "process method: %s, rest: %s\n" % (self.method, rest)
@@ -349,7 +349,7 @@ class koProxyRequest(proxy.ProxyRequest):
             else:
                 reactor.connectTCP(host, port, clientFactory)
 
-        except Exception, e:
+        except Exception as e:
             log.msg("Exception: _finishProcessCall: %s", e)
             import traceback
             traceback.print_exc()
@@ -380,7 +380,7 @@ class koProxyRequest(proxy.ProxyRequest):
                 self._sendResponseWithStatus(forcedResponseStatus)
             else:
                 self._finishProcessCall(headers)
-        except Exception, e:
+        except Exception as e:
             log.msg("Exception: process: %s", e)
             import traceback
             traceback.print_exc()
@@ -449,7 +449,7 @@ def _startListener(port, acceptLocalConnectionsOnly, doneEvent):
             twisted_portListener = reactor.listenTCP( port, koProxyFactory() )
         koProxyDebugger.isListening = True
         log.msg("INFO: Proxy is now listening.")
-    except Exception, e:
+    except Exception as e:
         koProxyDebugger.lastError = "Listener Error: %s" % (e, )
     doneEvent.set()
     #twisted_portListener = reactor.callFromThread( reactor.listenTCP, port, koProxyFactory() )
@@ -555,8 +555,8 @@ def _testShutdown():
         import time
         time.sleep(5)
         stopProxyReactor()
-    except Exception, e:
-        print "EXCEPTION:", e
+    except Exception as e:
+        print("EXCEPTION:", e)
 
 def _test():
     import time
@@ -581,7 +581,7 @@ def _test():
             try:
                 time.sleep(1)
             except KeyboardInterrupt:
-                print "KeyboardInterrupt received... shutting down"
+                print("KeyboardInterrupt received... shutting down")
                 break
             except:
                 import traceback
@@ -589,7 +589,7 @@ def _test():
         stopListener(port)
     else:
         # Could not listen, print out why
-        print koProxyDebugger.lastError
+        print(koProxyDebugger.lastError)
     stopProxyReactor()
 
 if __name__ == '__main__':

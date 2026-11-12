@@ -7,13 +7,13 @@ Written by Marc-Andre Lemburg (mal@lemburg.com).
 
 """#"
 
-import __builtin__, sys
+import builtins, sys
 
 ### Registry and builtin stateless codec functions
 
 try:
     from _codecs import *
-except ImportError, why:
+except ImportError as why:
     raise SystemError('Failed to load the builtin codecs: %s' % why)
 
 __all__ = ["register", "lookup", "open", "EncodedFile", "BOM", "BOM_BE",
@@ -475,7 +475,7 @@ class StreamReader(Codec):
             data = self.bytebuffer + newdata
             try:
                 newchars, decodedbytes = self.decode(data, self.errors)
-            except UnicodeDecodeError, exc:
+            except UnicodeDecodeError as exc:
                 if firstline:
                     newchars, decodedbytes = self.decode(data[:exc.start], self.errors)
                     lines = newchars.splitlines(True)
@@ -598,7 +598,7 @@ class StreamReader(Codec):
 
         """
         self.bytebuffer = ""
-        self.charbuffer = u""
+        self.charbuffer = ""
         self.linebuffer = None
 
     def seek(self, offset, whence=0):
@@ -609,7 +609,7 @@ class StreamReader(Codec):
         self.stream.seek(offset, whence)
         self.reset()
 
-    def next(self):
+    def __next__(self):
 
         """ Return the next decoded line from the input stream."""
         line = self.readline()
@@ -678,10 +678,10 @@ class StreamReaderWriter:
 
         return self.reader.readlines(sizehint)
 
-    def next(self):
+    def __next__(self):
 
         """ Return the next decoded line from the input stream."""
-        return self.reader.next()
+        return next(self.reader)
 
     def __iter__(self):
         return self
@@ -797,10 +797,10 @@ class StreamRecoder:
         data, bytesencoded = self.encode(data, self.errors)
         return data.splitlines(1)
 
-    def next(self):
+    def __next__(self):
 
         """ Return the next decoded line from the input stream."""
-        data = self.reader.next()
+        data = next(self.reader)
         data, bytesencoded = self.encode(data, self.errors)
         return data
 
@@ -878,7 +878,7 @@ def open(filename, mode='rb', encoding=None, errors='strict', buffering=1):
         if 'b' not in mode:
             # Force opening of the file in binary mode
             mode = mode + 'b'
-    file = __builtin__.open(filename, mode, buffering)
+    file = builtins.open(filename, mode, buffering)
     if encoding is None:
         return file
     info = lookup(encoding)
@@ -1054,11 +1054,11 @@ def make_encoding_map(decoding_map):
         during translation.
 
         One example where this happens is cp875.py which decodes
-        multiple character to \u001a.
+        multiple character to \\u001a.
 
     """
     m = {}
-    for k,v in decoding_map.items():
+    for k,v in list(decoding_map.items()):
         if not v in m:
             m[v] = k
         else:

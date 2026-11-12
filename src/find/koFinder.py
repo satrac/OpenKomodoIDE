@@ -193,7 +193,7 @@ class _FindReplaceInFilesThread(threading.Thread):
             else:
                 self._replace_in_paths(self.regex, self.repl, self.desc,
                                        self.paths)
-        except Exception, ex:
+        except Exception as ex:
             # Log this error to the Komodo UI.
             errmsg = "unexpected error: %s (details in log file)" % ex
             raise
@@ -368,10 +368,10 @@ class _FindReplaceInFilesThread(threading.Thread):
         # happened to get a result on a binary file, that will fail and we
         # will not see any results. protect against that by trying to make
         # the string unicode, and failing that, repr it.
-        if type(context) != types.UnicodeType:
+        if type(context) != str:
             try:
-                context = unicode(context)
-            except UnicodeError, ex:
+                context = str(context)
+            except UnicodeError as ex:
                 context = repr(context)[1:-1]
         
         return context
@@ -629,7 +629,7 @@ class _ConfirmReplacerInFiles(threading.Thread, TreeView):
             self._tree.rowCountChanged(rowIdx, numRows)
             self._tree.invalidate()
             self._tree.endUpdateBatch()
-        except AttributeError, ex:
+        except AttributeError as ex:
             # Ignore if `self._tree` goes away on us during
             # shutdown of the confirmation dialog.
             pass
@@ -944,11 +944,11 @@ class _ReplaceUndoer(threading.Thread, TreeView):
                     break
 
             self._report(flush=True)
-        except findlib2.FindError, ex:
+        except findlib2.FindError as ex:
             # Note: `break_up_words` is a hack to ensure that the XUL
             # <description> in which this message will appear doesn't
             # screw up wrapping because of a very long token.
-            self.controllerProxy.error(textutils.break_up_words(unicode(ex)))
+            self.controllerProxy.error(textutils.break_up_words(str(ex)))
         except:
             # Note: `break_up_words` is a hack to ensure that the XUL
             # <description> in which this message will appear doesn't
@@ -970,7 +970,7 @@ class _ReplaceUndoer(threading.Thread, TreeView):
             self._tree.rowCountChanged(rowIdx, numRows)
             self._tree.invalidate()
             self._tree.endUpdateBatch()
-        except AttributeError, ex:
+        except AttributeError as ex:
             # Ignore if `self._tree` goes away on us during
             # shutdown of the confirmation dialog.
             pass
@@ -1244,7 +1244,7 @@ class KoFindOptions:
             foldersPref = gPrefSvc.prefs.getPref(self.foldersPrefName)
             for i in range(foldersPref.length):
                 self._folders.append(foldersPref.getStringPref(i))
-        except COMException, ex:
+        except COMException as ex:
             log.exception(ex, "Error retrieving 'File in Files' folders "
                               "preference. Some folders may have been lost.")
         self.encodedFolders = os.pathsep.join(self._folders)
@@ -1258,7 +1258,7 @@ class KoFindOptions:
                 s = includeFiletypesPref.getStringPref(i)
                 if s.strip():
                     self._includeFiletypes.append(s.strip())
-        except COMException, ex:
+        except COMException as ex:
             log.exception(ex, "Error retrieving 'File in Files' include "
                               "filetypes preference. Some filetypes may have "
                               "been lost.")
@@ -1270,7 +1270,7 @@ class KoFindOptions:
                 s = excludeFiletypesPref.getStringPref(i)
                 if s.strip():
                     self._excludeFiletypes.append(s.strip())
-        except COMException, ex:
+        except COMException as ex:
             log.exception(ex, "Error retrieving 'File in Files' exclude "
                               "filetypes preference. Some filetypes may have "
                               "been lost.")
@@ -1437,10 +1437,10 @@ class KoFindService(object):
                 break # only want the first one
             else:
                 return None
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1486,10 +1486,10 @@ class KoFindService(object):
                 break # only want the first one
             else:
                 return None        
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1571,10 +1571,10 @@ class KoFindService(object):
                 scimoz.indicatorCurrent = prevIndicator
                 scimoz.indicatorValue = prevIndicatorValue
             return len(hightlight_matches) > 0
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
         return False # not reached
@@ -1588,10 +1588,10 @@ class KoFindService(object):
             scimoz.indicatorClearRange(0, scimoz.length);
             for highlight in self._lastHighlightMatches:
                 scimoz.indicatorFillRange(*highlight)
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1654,10 +1654,10 @@ class KoFindService(object):
                     context)
                 last_endCharIndex = endCharIndex
                 last_endByteIndex = endByteIndex
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1672,10 +1672,10 @@ class KoFindService(object):
                 options.caseSensitivity,
                 options.matchWord)
 
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1696,7 +1696,7 @@ class KoFindService(object):
                                    0, None, None)
             try:
                 offset[0] += callback.onHit(hit)
-            except COMException, ex:
+            except COMException as ex:
                 log.debug("failed to notify onHit: %r", ex)
                 cancelable.cancel(ex.errno)
         cancelable = _CancelableFindThread(desc, text, regex, matchcallback)
@@ -1734,10 +1734,10 @@ class KoFindService(object):
                 last_startByteIndex = startByteIndex
             
             return list(sorted(lines))
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1923,10 +1923,10 @@ class KoFindService(object):
             else:
                 return ''.join(new_text_bits), num_hits
 
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except (ValueError, findlib2.FindError), ex:
+        except (ValueError, findlib2.FindError) as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -1952,10 +1952,10 @@ class KoFindService(object):
                 self.options.patternType,
                 self.options.caseSensitivity,
                 self.options.matchWord)
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except ValueError, ex:
+        except ValueError as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -2001,10 +2001,10 @@ class KoFindService(object):
                 self.options.patternType,
                 self.options.caseSensitivity,
                 self.options.matchWord)
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except ValueError, ex:
+        except ValueError as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -2050,10 +2050,10 @@ class KoFindService(object):
                 self.options.patternType,
                 self.options.caseSensitivity,
                 self.options.matchWord)
-        except re.error, ex:
+        except re.error as ex:
             gLastErrorSvc.setLastError(0, "Invalid regular expression: %s" % ex)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
-        except ValueError, ex:
+        except ValueError as ex:
             gLastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -2236,7 +2236,7 @@ def _regex_info_from_ko_find_data(pattern, repl=None,
         else:
             pattern = '\n'.join(re.escape(ln) for ln in m.group(2).splitlines(0))
             if patternType == FOT_WILDCARD:    # DEPRECATED
-                pattern = pattern.replace("\\?", "\w").replace("\\*", "\w*")
+                pattern = pattern.replace("\\?", r"\w").replace("\\*", r"\w*")
             elif patternType != FOT_SIMPLE:
                 raise ValueError("unrecognized find pattern type: %r"
                                  % patternType)
@@ -2265,12 +2265,12 @@ def _regex_info_from_ko_find_data(pattern, repl=None,
         # if they're asking for search-word, it most likely looks a
         # lot like a word.
         patternParts = []
-        if re.compile('\\w').match(pattern[0]):
+        if re.compile('\\\\w').match(pattern[0]):
             patternParts.append("\\b")
         patternParts.append("(?:")
         patternParts.append(pattern)
         patternParts.append(")")
-        if re.compile('\\w').match(pattern[-1]):
+        if re.compile('\\\\w').match(pattern[-1]):
             patternParts.append("\\b")
         pattern = "".join(patternParts)
     if '$' in pattern:
@@ -2279,7 +2279,7 @@ def _regex_info_from_ko_find_data(pattern, repl=None,
         # '$' with a pattern that properly matches all EOL styles, being
         # careful to skip escaped dollar signs. (Bug 72692.)
         chs = []
-        STATE_DEFAULT, STATE_ESCAPE, STATE_CHARCLASS = range(3)
+        STATE_DEFAULT, STATE_ESCAPE, STATE_CHARCLASS = list(range(3))
         state = STATE_DEFAULT
         for ch in pattern:
             chs.append(ch)

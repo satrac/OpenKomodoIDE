@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -199,12 +199,12 @@ def main():
 
     selinux = SELinux()
     if not selinux.is_installed():
-        print "SELinux is not installed. Done."
+        print("SELinux is not installed. Done.")
         return
     
     for path in sys.argv[1:]:
         context = selinux.context_from_path(path)
-        print "%s: %s" % (path, context)
+        print("%s: %s" % (path, context))
     
 
 if __name__ == "__main__":

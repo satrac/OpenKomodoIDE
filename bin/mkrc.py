@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2009 ActiveState Software Inc.
 
 r"""Make a Komodo RC, i.e. copy the bits from the latest release-branch
@@ -36,6 +36,7 @@ __version_info__ = (2, 0, 0)
 __version__ = '.'.join(map(str, __version_info__))
 
 import os
+import subprocess
 from os.path import exists, join, basename, expanduser, dirname, normpath, isdir
 from posixpath import join as ujoin
 from posixpath import basename as ubasename
@@ -48,10 +49,11 @@ from glob import glob
 import traceback
 import logging
 import optparse
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import tempfile
 import socket
 import bisect
+import functools
 
 sys.path.insert(0, join(dirname(__file__), "..", "util"))
 import kopkglib
@@ -149,7 +151,7 @@ def mkrc(branch="rel", ide_revision=None, edit_revision=None, dry_run=False,
     # Buildbots get their version from the version file.  Why would we get it
     # from somewhere else?  Just make sure you're on the same branch
     log.info("Retrieving version from src/version.txt")
-    ver = file(join(dirname(dirname(__file__)), "src", "version.txt")).read().strip()
+    ver = open(join(dirname(dirname(__file__)), "src", "version.txt")).read().strip()
     ver = kopkglib.short_ver_from_branch(branch)
     log.info("Using version %s to construct build search path" %ver)
     ide_devbuild_dir = kopkglib.get_devbuild_dir(ver, "assvn", branch, ide_revision)
@@ -194,11 +196,11 @@ def mkrc(branch="rel", ide_revision=None, edit_revision=None, dry_run=False,
                 missing_bits.append(src_path)
     if missing_bits:
         if force_release:
-            print("Some expected bits destined for the RC dir are missing:\n%s"
-                  % _indent('\n'.join(missing_bits)))
+            print(("Some expected bits destined for the RC dir are missing:\n%s"
+                  % _indent('\n'.join(missing_bits))))
             if not dry_run:
-                answer = raw_input("\nMissing bits - are you sure you wish to "
-                                   "create this rc [y/N]? ")
+                answer = eval(input("\nMissing bits - are you sure you wish to "
+                                   "create this rc [y/N]? "))
                 if answer.lower() not in ("y", "yes"):
                     print("mkrc aborted")
                     return
@@ -233,7 +235,7 @@ def mkrc(branch="rel", ide_revision=None, edit_revision=None, dry_run=False,
     if log.isEnabledFor(logging.INFO):
         # A hacky pprint of the manifest.
         #print _banner("manifest", '-')
-        from cStringIO import StringIO
+        from io import StringIO
         t = Tree()
         t.add("internal")
         t.add("internal/log")
@@ -256,7 +258,7 @@ def mkrc(branch="rel", ide_revision=None, edit_revision=None, dry_run=False,
         else:
             src_path = join(src_dir, basename(dst_relpath))
         if src_path in missing_bits:
-            print "  ignoring missing file %r" % (dst_relpath, )
+            print(("  ignoring missing file %r" % (dst_relpath, )))
             continue
         dst_path = ujoin(rc_dir, unormpath(dst_relpath))
         if sys.stdout.isatty() and not log.isEnabledFor(logging.DEBUG):
@@ -357,7 +359,7 @@ def send_announcement(ide_build, edit_build,
                       as per KD 159 yourself.""")
  
 def send_slack_message(message):
-    import urllib2
+    import urllib.request, urllib.error, urllib.parse
     import json
     jsonData1 = json.dumps({
         "username": "Komodo Buildbot",
@@ -373,8 +375,8 @@ def send_slack_message(message):
         print("**Slack announcement did not send**.  You'll have to do it manually.")
         return
     hookUrl = AS_SLACK_WEBHOOK_URL
-    req1 = urllib2.Request(hookUrl, jsonData1, headers)
-    urllib2.urlopen(req1)
+    req1 = urllib.request.Request(hookUrl, jsonData1, headers)
+    urllib.request.urlopen(req1)
     log.info("Slack Announcement sent!  Also Again GO TEAM!!!")
     
 def send_email(subject, username, message):
@@ -383,7 +385,7 @@ def send_email(subject, username, message):
     ann = MIMEText(message)
     ann["Subject"] = subject
     ann["From"] = "%s@activestate.com" % username
-    for header, value in ANNOUNCE_EMAIL_HEADERS.items():
+    for header, value in list(ANNOUNCE_EMAIL_HEADERS.items()):
         if isinstance(value, list):
             value = ', '.join(value)
         ann[header] = value
@@ -398,9 +400,9 @@ def send_email(subject, username, message):
         s.close()
         log.info("Announcement email sent!  GO TEAM!!!")
     except:
-        print _banner("failed sending this announcement email", '-')
-        print ann.as_string()
-        print _banner(None, '-')
+        print((_banner("failed sending this announcement email", '-')))
+        print((ann.as_string()))
+        print((_banner(None, '-')))
         raise
     
 def share_url_from_share_path(share_path):
@@ -569,8 +571,8 @@ def _isdigit(char):
 
 def _p4_changenum(p4path):
     cmd = "p4 changes -m1 %s/..." % p4path
-    o = os.popen(cmd)
-    return int(o.read().split(None, 2)[1])
+    output = subprocess.getoutput(cmd)
+    return int(output.split(None, 2)[1])
 
 # Recipe: banner (1.0.1) in C:\trentm\tm\recipes\cookbook
 def _banner(text, ch='=', length=78):
@@ -683,7 +685,7 @@ class NodeIterator(object):
         self._prefixes = [None]
     def __iter__(self):
         return self
-    def next(self):
+    def __next__(self):
         i = self._indices[-1]
         children = self._nodes[-1].children
         if i >= len(children):
@@ -693,7 +695,7 @@ class NodeIterator(object):
             if not self._nodes:
                 raise StopIteration
             else:
-                return self.next()
+                return next(self)
         else:
             child = children[i]
             self._indices[-1] += 1
@@ -711,19 +713,26 @@ class NodeIterator(object):
                     child.name,
                     os.path.join(*names),
                     child.data)
+@functools.total_ordering
 class Node(object):
     def __init__(self, name, path, data):
         self.name = name
         self.path = path
         self.data = data
         self.children = []
-    def __cmp__(self, other):
+    def _other_name(self, other):
         if isinstance(other, Node):
-            return cmp(self.name, other.name)
-        elif isinstance(other, (str, unicode)):
-            return cmp(self.name, other)
+            return other.name
+        elif isinstance(other, str):
+            return other
         else:
             raise TypeError("cannot compare a Node to a %s" % type(other))
+    def __eq__(self, other):
+        return self.name == self._other_name(other)
+    def __lt__(self, other):
+        return self.name < self._other_name(other)
+    def __hash__(self):
+        return hash(self.name)
     def addChild(self, child):
         bisect.insort(self.children, child)
     def getNode(self, path):
@@ -935,7 +944,7 @@ if __name__ == "__main__":
         else:  # string exception
             log.error(exc_info[0])
         if log.isEnabledFor(logging.INFO-1):
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

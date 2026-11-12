@@ -9,7 +9,7 @@ from os.path import join, dirname, normpath, abspath, isabs, exists, \
                     splitext, basename
 import re
 import sys
-from urlparse import urlparse
+from urllib.parse import urlparse
 from pprint import pprint
 
 from mklib import Task, Configuration, Alias

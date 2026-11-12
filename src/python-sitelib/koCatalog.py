@@ -7,6 +7,7 @@ import re
 from koSimpleLexer import *
 from koDTD import DTD
 from koRNGElementTree import rng
+from functools import cmp_to_key
 
 log = logging.getLogger("koCatalog")
 #log.setLevel(logging.INFO)
@@ -17,6 +18,11 @@ try:
 except ImportError:
     log.error("using element tree and not cElementTree, performace will suffer")
     import elementtree.ElementTree as ElementTree # effbot's pure Python module
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 """
 NOTES:
@@ -54,7 +60,7 @@ def _cmpLen(a, b):
     al = len(a)
     bl = len(b)
     if al>bl: return -1
-    if al==bl: return cmp(a, b)
+    if al==bl: return _cmp(a, b)
     return 1
 
 def strip_quotes(str):
@@ -66,7 +72,7 @@ def strip_quotes(str):
 
 
 # XXX a cheap relativize
-urimatch = re.compile("(\w+://.*|/.*|\w:\\.*|\w:/.*)")
+urimatch = re.compile("(\\w+://.*|/.*|\\w:\\.*|\\w:/.*)")
 def relativize(base, fn):
     if urimatch.match(fn):
         return fn
@@ -131,14 +137,14 @@ class Catalog:
 
     # Support functions for matching data to a catalog
     def _longestMatch(self, needle, haystack):
-        haystack.sort(_cmpLen)
+        haystack.sort(key=cmp_to_key(_cmpLen))
         for straw in haystack:
             if needle.find(straw) == 0:
                 return straw
         return None
     
     def _getRewrite(self, id, ar):
-        possible = self._longestMatch(id, ar.keys())
+        possible = self._longestMatch(id, list(ar.keys()))
         if possible:
             return "%s%s" % (ar[possible],id[len(possible):])
         return None
@@ -146,7 +152,7 @@ class Catalog:
     def _getDelegates(self, id, delegates):
         if id not in delegates:
             return None
-        entries = delegates[id].keys().sort(_cmpLen)
+        entries = list(delegates[id].keys()).sort(key=cmp_to_key(_cmpLen))
         return [delegates[id][d].catalog for d in entries]
 
     def getSystemRewrite(self, systemId):
@@ -263,7 +269,7 @@ class XMLCatalog(Catalog):
             try:
                 self.resolver.addCatalogURI(catalogURI)
                 self.nextcatalog.append(catalogURI)
-            except Exception, e:
+            except Exception as e:
                 log.error("Unable to read catalog file [%s] [%s]", catalogURI, e)
                 #raise
         
@@ -371,7 +377,7 @@ class SGMLCatalog(Catalog):
             if self.resolver:
                 try:
                     self.resolver.addCatalogURI(data1)
-                except Exception, e:
+                except Exception as e:
                     log.error("Unable to read catalog file [%s] [%s]", uri, e)
                     #raise
         elif m['type'] == "BASE":
@@ -406,7 +412,7 @@ class CatalogResolver:
                     if not catalog:
                         continue
                 catalogs.append(self.catalogMap[uri])
-            except Exception, e:
+            except Exception as e:
                 log.error("Unable to read catalog file [%s] [%s]", uri, e)
                 #raise
         self.catalogs = catalogs
@@ -580,9 +586,9 @@ if __name__=="__main__":
         filename = sys.argv[1]
         catSvc = CatalogResolver([filename])
         ns = catSvc.getWellKnownNamspaces()
-        print ns
-        print catSvc.resolveExternalIdentifier(systemId=ns.keys()[0])
-        ds = catSvc.getDatasetForNamespace(ns.keys()[0])
+        print(ns)
+        print(catSvc.resolveExternalIdentifier(systemId=list(ns.keys())[0]))
+        ds = catSvc.getDatasetForNamespace(list(ns.keys())[0])
         ds.dump(sys.stdout)
     else:
         import os, sys
@@ -626,7 +632,7 @@ if __name__=="__main__":
         #assert dtdFile == "http://www.w3.org/XML/1998/06/xmlspec-v20.dtd"
         #
         catSvc.init(["/Users/shanec/main/Apps/Komodo-devel/test/catalogs/test1.xml"])
-        print catSvc.getWellKnownNamspaces()
+        print(catSvc.getWellKnownNamspaces())
         #dtdFile = catSvc.resolveExternalIdentifier(publicId="-//OASIS//DTD DocBook XML V4.4//EN")
         #print "got dtd %s" % dtdFile
         #assert dtdFile == "file:///usr/share/xml/docbook44/docbookx.dtd"
@@ -643,13 +649,13 @@ if __name__=="__main__":
         catSvc.init([os.path.join(catalogs, "docbook44","catalog.xml")])
         expect = os.path.join(catalogs, "docbook44", "docbookx.dtd")
         dtdFile = catSvc.resolveExternalIdentifier(publicId="-//OASIS//DTD DocBook XML V4.4//EN")
-        print "got dtd %s" % dtdFile
+        print("got dtd %s" % dtdFile)
         assert dtdFile == expect
         dtdFile = catSvc.resolveExternalIdentifier(systemId="http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd")
-        print "got dtd %s" % dtdFile
+        print("got dtd %s" % dtdFile)
         assert dtdFile == expect
         dtdFile = catSvc.resolveExternalIdentifier(systemId="http://docbook.org/xml/4.4/docbookx.dtd")
-        print "got dtd %s" % dtdFile
+        print("got dtd %s" % dtdFile)
         assert dtdFile == expect
         #catSvc.init(["/Users/shanec/tmp/dtd/DITA-OT1.3/catalog-dita_template.xml"])
         #dtdFile = catSvc.resolveExternalIdentifier(publicId="-//OASIS//DTD DITA Map//EN")

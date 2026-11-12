@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2011 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -11,7 +11,7 @@ Also suppports registering XPTypeLib files.
 
 import re
 import sys
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from os.path import exists, basename, splitext
 try:
     import ast
@@ -28,16 +28,16 @@ def _dump_ast(node, indent="", stream=sys.stdout):
     """
     if isinstance(node, list):
         for item in node:
-            dump_ast(item, indent)
+            _dump_ast(item, indent)
         return
     stream.write("%s%s\n" % (indent, type(node).__name__))
     for name, value in ast.iter_fields(node):
         if isinstance(value, ast.AST):
             stream.write("%s  %s:\n" % (indent, name))
-            dump_ast(value, "  " + indent)
+            _dump_ast(value, "  " + indent)
         elif isinstance(value, list):
             stream.write("%s  %s:\n" % (indent, name))
-            dump_ast(value, indent + "    ")
+            _dump_ast(value, indent + "    ")
         else:
             stream.write("%s  %s: %s\n" % (indent, name, value))
 
@@ -70,7 +70,7 @@ class ChromeReg(object):
         if not exists(self.manifest_name):
             # nothing to read
             return
-        inputfile = file(self.manifest_name, "rU")
+        inputfile = open(self.manifest_name, "rU")
         for line in inputfile.readlines():
             # normalize whitespace - strip leading/trailing, collapse inner
             line = " ".join(line.split())
@@ -89,7 +89,7 @@ class ChromeReg(object):
         if len(self.new_lines) < 1:
             # nothing to write
             return
-        outputfile = file(self.manifest_name, "a")
+        outputfile = open(self.manifest_name, "a")
         for line in self.new_lines:
             outputfile.write("%s\n" % line)
 
@@ -217,13 +217,13 @@ class ChromeReg(object):
                         continue
                     self.set(clazz.name, target.id, self.get(stmt.value))
     
-            if filter(lambda n: hasattr(n, "id") and n.id == "_reg_contractid_", stmt.targets):
+            if [n for n in stmt.targets if hasattr(n, "id") and n.id == "_reg_contractid_"]:
                 # this is an assignment to _reg_contractid_
                 value = self.get(stmt.value, clazz.name)
                 if value is not None:
                     componentData["contractid"] = value.replace(" ", "%20")
     
-            if filter(lambda n: hasattr(n, "id") and n.id == "_reg_clsid_", stmt.targets):
+            if [n for n in stmt.targets if hasattr(n, "id") and n.id == "_reg_clsid_"]:
                 # this is an assignment to _reg_clsid_
                 value = self.get(stmt.value, clazz.name)
                 if value is not None:
@@ -232,13 +232,13 @@ class ChromeReg(object):
                         value = "{%s}" % value
                     componentData["clsid"] = value
     
-            if filter(lambda n: hasattr(n, "id") and n.id == "_reg_desc_", stmt.targets):
+            if [n for n in stmt.targets if hasattr(n, "id") and n.id == "_reg_desc_"]:
                 # this is an assignment to _reg_desc_
                 value = self.get(stmt.value, clazz.name)
                 if value is not None:
-                    componentData["desc"] = urllib.quote(value)
+                    componentData["desc"] = urllib.parse.quote(value)
 
-            if filter(lambda n: hasattr(n, "id") and n.id == "_reg_categories_", stmt.targets):
+            if [n for n in stmt.targets if hasattr(n, "id") and n.id == "_reg_categories_"]:
                 # this is a category registration
                 assert isinstance(stmt.value, ast.Tuple) or isinstance(stmt.value, ast.List), \
                     "%s line %i: category assignment must be a list, got %s" % (
@@ -252,7 +252,7 @@ class ChromeReg(object):
                         self.source_file, entry.lineno, ast.dump(entry))
                     if not "category" in componentData:
                         componentData["category"] = []
-                    entryData = list(map(lambda k: self.get(k, clazz.name), entry.elts))
+                    entryData = list([self.get(k, clazz.name) for k in entry.elts])
                     assert len(entryData) == 2 or len(entryData) == 3, \
                         "%s line %i: category entry %s for class %s has " \
                         "incorrect number of args: %d (expected 2 or 3)" % (
@@ -261,7 +261,7 @@ class ChromeReg(object):
                     componentData["category"].append(entryData)
 
             # koILanguage shebangPatterns attribute - which is a list of regular expressions.
-            if filter(lambda n: hasattr(n, "id") and n.id == "shebangPatterns", stmt.targets):
+            if [n for n in stmt.targets if hasattr(n, "id") and n.id == "shebangPatterns"]:
                 # shebangPatterns = [ re.compile(ur'\A#!.*ruby.*$', re.IGNORECASE | re.MULTILINE | re.S),]
                 assert isinstance(stmt.value, ast.Tuple) or isinstance(stmt.value, ast.List), \
                     "%s line %i: shebangPatterns assignment must be a list, got %s" % (
@@ -290,7 +290,7 @@ class ChromeReg(object):
 
             # koILanguage class attributes that are of type 'list'.
             for lang_attr in ("extraFileAssociations", "modeNames", "namespaces", "publicIdList", "systemIdList"):
-                if filter(lambda n: hasattr(n, "id") and n.id == lang_attr, stmt.targets):
+                if [n for n in stmt.targets if hasattr(n, "id") and n.id == lang_attr]:
                     assert isinstance(stmt.value, ast.Tuple) or isinstance(stmt.value, ast.List), \
                         "%s line %i: %s assignment must be a list, got %s" % (
                         self.source_file, stmt.value.lineno, lang_attr, ast.dump(stmt.value))
@@ -305,7 +305,7 @@ class ChromeReg(object):
             if "category" in componentData:
                 for entry in componentData["category"]:
                     category = entry[0]
-                    entryname = urllib.quote(entry[1])
+                    entryname = urllib.parse.quote(entry[1])
                     if len(entry) == 3:
                         entryvalue = entry[2]
                     else:
@@ -329,8 +329,8 @@ class ChromeReg(object):
                     entrydict[lang_attr] = entryvalue
                     continue
                 import json
-                entryname = urllib.quote(language_name)
-                entryvalue = urllib.quote(json.dumps(entrydict))
+                entryname = urllib.parse.quote(language_name)
+                entryvalue = urllib.parse.quote(json.dumps(entrydict))
                 self.new_lines.add("category komodo-language-info {entryname} {entryvalue}".format(**locals()))
 
     def register(self):
@@ -352,7 +352,7 @@ class ChromeReg(object):
     
     def _register_python(self):
         """Regsiter the component, knowing that it is a python file"""
-        inputfile = file(self.source_file, "r")
+        inputfile = open(self.source_file, "r")
         tree = ast.parse(inputfile.read(), self.source_file)
         assert isinstance(tree, ast.Module), \
             "failed to parse %s" % self.source_file

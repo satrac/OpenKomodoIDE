@@ -40,7 +40,7 @@ def sanitize_object(obj, **kwargs):
                 string = obj
             else:
                 if six.PY2:
-                    string = unicode(str(obj), errors='replace')
+                    string = str(str(obj), errors='replace')
                 else:
                     string = str(obj)
 

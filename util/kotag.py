@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2008 ActiveState Software Inc.
 
 """Tag a Komodo release.
@@ -21,8 +21,9 @@ __version_info__ = (1, 0, 0)
 __version__ = '.'.join(map(str, __version_info__))
 
 import os
+import subprocess
 from os.path import exists, join, basename, expanduser, splitext
-from urlparse import urljoin
+from urllib.parse import urljoin
 import sys
 import re
 from pprint import pprint
@@ -147,7 +148,7 @@ def _svn_rev_from_url(url):
     raise Error("couldn't determine revision for `%s'" % url)
 
 def _is_int(s):
-    return re.match("^\d+$", s) is not None
+    return re.match(r"^\d+$", s) is not None
 
 
 # Recipe: run (0.7.1)
@@ -233,7 +234,7 @@ def _split_full_ver(ver_str):
     def _isdigit(ch):
         return '0' <= ch <= '9'
     def split_quality(s):
-        for i in reversed(range(1, len(s)+1)):
+        for i in reversed(list(range(1, len(s)+1))):
             if not _isdigit(s[i-1]):
                 break
         if i == len(s):
@@ -262,7 +263,7 @@ def _split_full_ver(ver_str):
                 bits.append(0)
     return tuple(bits)
 
-_short_ver_re = re.compile("(\d+)(\.\d+)*([a-z](\d+)?)?")
+_short_ver_re = re.compile(r"(\d+)(\.\d+)*([a-z](\d+)?)?")
 def _split_short_ver(ver_str, intify=False, pad_zeros=None):
     """Parse the given version into a tuple of "significant" parts.
 
@@ -302,7 +303,7 @@ def _split_short_ver(ver_str, intify=False, pad_zeros=None):
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if bit == '.':
             continue
         if intify:
@@ -387,10 +388,10 @@ def _query_yes_no(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "\
@@ -406,9 +407,10 @@ def _create_tmp_dir():
     return path
 
 def _capture_output(cmd):
-    o = os.popen(cmd)
-    output = o.read()
-    retval = o.close()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    output, _ = p.communicate()
+    retval = p.returncode
     if retval:
         raise Error("error capturing output of `%s': %r" % (cmd, retval))
     return output
@@ -501,7 +503,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

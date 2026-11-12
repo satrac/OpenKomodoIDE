@@ -5,9 +5,9 @@ Like base64 and rot13, this returns Python strings, not Unicode.
 
 import codecs, quopri
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 def quopri_encode(input, errors='strict'):
     """Encode the input, returning a tuple (output object, length consumed).

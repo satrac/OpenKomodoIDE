@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Makefile for building Rubies needed for Komodo's Ruby debugger bits."""
 

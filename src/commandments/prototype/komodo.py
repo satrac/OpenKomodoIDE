@@ -29,7 +29,7 @@ def _getKomodoVersion():
     try:
         import bkconfig
         version = bkconfig.version             # '1.9.0-devel'
-        version = re.split('\.|-', version)    # ['1', '9', '0', 'devel']
+        version = re.split(r'\.|-', version)    # ['1', '9', '0', 'devel']
         version = "%s.%s" % tuple(version[:2]) # '1.9'
     except ImportError:
         # fallback
@@ -38,7 +38,7 @@ def _getKomodoVersion():
     return version
 
 # Komodo's status values.
-KS_NOTRUNNING, KS_STARTING, KS_RUNNING = range(3)
+KS_NOTRUNNING, KS_STARTING, KS_RUNNING = list(range(3))
 
 ver = _getKomodoVersion()
 if sys.platform.startswith("win"):
@@ -68,7 +68,7 @@ def startMozilla():
         hProcess, hThread, processId, threadId\
             = win32process.CreateProcess(
                 None,           # app name
-                "C:\\Python22\\python.exe mozilla.py", # command line 
+                "C:\\\\Python22\\\\python.exe mozilla.py", # command line 
                 None,           # process security attributes 
                 None,           # primary thread security attributes 
                 0,              # handles are inherited 
@@ -166,7 +166,7 @@ def getKomodoStatus():
         # If cannot get a lock on the running lock file then Komodo is running.
         try:
             fd = os.open(_gRunningLockFileName, os.O_RDONLY)
-        except OSError, ex:
+        except OSError as ex:
             # OSError: [Errno 2] No such file or directory: 'running.lock'
             if ex.errno == 2:
                 return KS_NOTRUNNING
@@ -176,7 +176,7 @@ def getKomodoStatus():
         try:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except IOError, ex:
+            except IOError as ex:
                 # Darwin:
                 #   IOError: [Errno 35] Resource temporarily unavailable
                 # Elsewhere:
@@ -230,13 +230,13 @@ def waitUntilKomodoIsRunning():
         for i in range(60, 0, -1):
             if getKomodoStatus() == KS_RUNNING:
                 break
-            print "Waiting for an existing Komodo to finish "\
-                  "starting up (timeout in %d sec)." % i
+            print("Waiting for an existing Komodo to finish "\
+                  "starting up (timeout in %d sec)." % i)
             time.sleep(1)
         else:
-            print "WARNING: Either an existing Komodo is locked trying to\n"\
+            print("WARNING: Either an existing Komodo is locked trying to\n"\
                   "         startup or Komodo did not shutdown properly \n"\
-                  "         last time. Recovering and re-starting."
+                  "         last time. Recovering and re-starting.")
             # Timed out: Komodo has not started up, so start up our own.
             os.unlink(_gRunningLockFileName)
             retval = 0
@@ -253,7 +253,7 @@ def main(argv):
     #      up and then proceed.
     #  KA_STARTANDWAIT: There is no Komodo running or starting. Start Komodo
     #      and wait for it to startup.
-    KA_NOTHING, KA_WAIT, KA_STARTANDWAIT = range(3)
+    KA_NOTHING, KA_WAIT, KA_STARTANDWAIT = list(range(3))
     lock = acquireKomodoStatusLock()
     status = getKomodoStatus()
     startingHandle = None
@@ -274,7 +274,7 @@ def main(argv):
     elif action == KA_STARTANDWAIT:
         startMozilla()
         if not waitUntilKomodoIsRunning():
-            print "XXX wait was not successful, starting mozilla again"
+            print("XXX wait was not successful, starting mozilla again")
             startMozilla()
             waitUntilKomodoIsRunning()
     elif action == KA_WAIT:

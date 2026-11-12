@@ -9,11 +9,17 @@ import socket
 import threading
 import logging
 import types
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from xpcom import components, ServerException, COMException, nsError
 
 import URIlib
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 log = logging.getLogger('koRemoteConnectionService')
 #log.setLevel(logging.DEBUG)
@@ -62,8 +68,8 @@ class koServerInfo:
         self.privatekey = privatekey
         if raw_hostdata is None:
             # Generate the host data
-            fields = map(urllib.quote, [protocol, alias, hostname, str(port),
-                                        path, str(passive), privatekey])
+            fields = list(map(urllib.parse.quote, [protocol, alias, hostname, str(port),
+                                        path, str(passive), privatekey]))
             self.raw_hostdata = ":".join(fields)
         else:
             # Use the existing host data
@@ -86,7 +92,7 @@ class koServerInfo:
             # Upgrade - add the privatekey setting.
             host_split.append("")
         # Unquote the elements.
-        host_split = map(urllib.unquote, host_split)
+        host_split = list(map(urllib.parse.unquote, host_split))
         guid = logininfo.QueryInterface(components.interfaces.\
                                         nsILoginMetaInfo).guid
         self.init(guid, host_split[0], host_split[1], host_split[2],
@@ -120,7 +126,7 @@ class RemoteConnectionCache(object):
         self._lock.acquire()
         try:
             self._timer = None
-            for cache_key, cache_item in self._cache.items():
+            for cache_key, cache_item in list(self._cache.items()):
                 connection, cache_time = cache_item
                 if (time.time() - cache_time) > self.EXPIRY_SECONDS:
                     log.debug("RemoteConnectionCache:: expired the cached "
@@ -128,7 +134,7 @@ class RemoteConnectionCache(object):
                     self._cache.pop(cache_key, None)
                     try:
                         connection.close()
-                    except Exception, ex:
+                    except Exception as ex:
                         # We don't care if there was any exception here.
                         log.debug("RemoteConnectionCache:: exception when closing connection: %r", ex)
             if len(self._cache) == 0:
@@ -216,7 +222,7 @@ class koRemoteConnectionService:
     _reg_clsid_ = "{c12f592b-11a2-4172-85c2-02d87ac56887}"
     _reg_contractid_ = "@activestate.com/koRemoteConnectionService;1"
 
-    EMPTY_PASSWORD_SENTINEL = '\vKOMODO_EMPTY_PASSWORD\v'
+    EMPTY_PASSWORD_SENTINEL = r'\vKOMODO_EMPTY_PASSWORD\v'
 
     # List of server login info - cached data, gets updated when the server
     # prefs are modified.
@@ -312,7 +318,7 @@ class koRemoteConnectionService:
             sessionkey = "%s:%s:%s" % (server, port, c.username)
             self._saveSessionInfo(sessionkey, [c.username, c.password])
             return c
-        except COMException, ex:
+        except COMException as ex:
             # koIRemoteConnection will already setLastError on failure so don't
             # need to do it again. The only reason we catch it to just
             # re-raise it is because PyXPCOM complains on stderr if a
@@ -397,7 +403,7 @@ class koRemoteConnectionService:
         # We want the port as an integer
         try:
             if not port: port = -1
-            elif type(port) != types.IntType: port = int(port)
+            elif type(port) != int: port = int(port)
         except ValueError:
             log.debug("Invalid port number: %s", port)
             port = -1
@@ -405,7 +411,7 @@ class koRemoteConnectionService:
         # We want the passive as an integer
         try:
             if not passive: passive = 1
-            elif type(passive) != types.IntType: passive = int(passive)
+            elif type(passive) != int: passive = int(passive)
         except ValueError:
             log.debug("Invalid passive value: %s", passive)
             passive = 1
@@ -431,7 +437,7 @@ class koRemoteConnectionService:
             loginmanager = components.classes["@mozilla.org/login-manager;1"].\
                                 getService(components.interfaces.nsILoginManager)
             logins = loginmanager.getAllLogins() # array of nsILoginInfo
-        except COMException, ex:
+        except COMException as ex:
             # TODO: Check if this is a testing environment, if it's not then
             #       this should be an exception.
             log.warn("Could not obtain logins from the nsILoginManager")
@@ -449,7 +455,7 @@ class koRemoteConnectionService:
                 except BadServerInfoException:
                     # Ignore non Komodo server entries.
                     pass
-            serverinfo_list.sort(lambda a,b: cmp(a.alias.lower(), b.alias.lower()))
+            serverinfo_list.sort(key=cmp_to_key(lambda a,b: _cmp(a.alias.lower(), b.alias.lower())))
         return serverinfo_list
     
     # We have the lock already
@@ -477,7 +483,7 @@ class koRemoteConnectionService:
         for i in range(len(children)):
             childRFInfo = children[i]
             child_path = addslash(path) + childRFInfo.getFilename()
-            if cache.has_key(child_path):
+            if child_path in cache:
                 # It's already cached, update the child to be the cached object
                 log.debug("_setCachedRFInfo: Adding new child rfinfo to cache: '%s'", child_path)
                 children[i] = cache[child_path]
@@ -490,10 +496,10 @@ class koRemoteConnectionService:
     def _getCachedRFInfo(self, cache_key, path):
         log.debug("_getCachedRFInfo: cache_key %r, path %r",
                   cache_key, path)
-        if not self._cachedFiles.has_key(cache_key):
+        if cache_key not in self._cachedFiles:
             self._cachedFiles[cache_key] = {}
         cache = self._cachedFiles[cache_key]
-        if cache.has_key(path):
+        if path in cache:
             return cache[path]
         return None
 
@@ -501,15 +507,15 @@ class koRemoteConnectionService:
     def _removeCachedRFInfo(self, cache_key, path, removeChildPaths):
         log.debug("_removeCachedRFInfo: cache_key %r, path %r",
                   cache_key, path)
-        if self._cachedFiles.has_key(cache_key):
+        if cache_key in self._cachedFiles:
             cache = self._cachedFiles[cache_key]
-            if cache.has_key(path):
+            if path in cache:
                 del cache[path]
             if removeChildPaths:
                 # Remove all cached paths that are under this directory
                 from remotefilelib import addslash
                 dirPath = addslash(path)
-                for keypath in cache.keys():
+                for keypath in list(cache.keys()):
                     if keypath.startswith(dirPath):
                         del cache[keypath]
 
@@ -550,8 +556,8 @@ class koRemoteConnectionService:
         if not server:
             # Build one up from the connection details, don't include password
             from remotefilelib import koRFProtocolDefaultPort
-            server = "%s@%s" % (urllib.quote(connection.username),
-                                urllib.quote(connection.server))
+            server = "%s@%s" % (urllib.parse.quote(connection.username),
+                                urllib.parse.quote(connection.server))
             port = connection.port
             if port != koRFProtocolDefaultPort[protocol]:
                 server += ":%d" % (port)
@@ -563,8 +569,8 @@ class koRemoteConnectionService:
         #       using the set_path() method using an absolute path will create
         #       a "file:///" URI even if it was originally "sftp://". Bah!
         try:
-            return "%s://%s/%s" % (protocol, server, urllib.quote(path))
-        except KeyError, e:
+            return "%s://%s/%s" % (protocol, server, urllib.parse.quote(path))
+        except KeyError as e:
             # Quoting can fail on unicode chars, just leave as is then.
             return "%s://%s/%s" % (protocol, server, path)
 
@@ -769,7 +775,7 @@ class koRemoteConnectionService:
                 if not old_login.equals(new_login):
                     loginmanager.modifyLogin(old_login, new_login)
                     
-        for old_login in old_logins.itervalues():
+        for old_login in old_logins.values():
             loginmanager.removeLogin(old_login)
             
         obsSvc = components.classes["@mozilla.org/observer-service;1"].\

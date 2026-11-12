@@ -38,7 +38,7 @@ class KoLanguageKeywordBase(KoLanguageBase):
 
     # Allow all these characters to work as line-up, as the keywords
     # manage indenting.
-    _lineup_chars = u"{}()[]"
+    _lineup_chars = "{}()[]"
     _lineup_open_chars = "([{"
     _lineup_close_chars = ")]}"
     
@@ -55,8 +55,8 @@ class KoLanguageKeywordBase(KoLanguageBase):
         try:
             self._prefs.prefObserverService.addObserver(self, "edit.indent.keyword.dedent_on_last_char", 0)
             self._prefs.prefObserverService.addObserver(self, "editAutoIndentStyle", 0)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
 
     def observe(self, subject, topic, data):
         if topic == "edit.indent.keyword.dedent_on_last_char":

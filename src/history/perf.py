@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Some performance testing for editorhistory.py.
 
@@ -7,7 +7,7 @@ import os
 import sys
 import time
 import random
-timestamp = (sys.platform == "win32" and time.clock or time.time)
+timestamp = (sys.platform == "win32" and time.perf_counter or time.time)
 
 from editorhistory import History, Location, Database
 
@@ -19,7 +19,7 @@ def hotshotit(func):
     def wrapper(*args, **kw):
         import hotshot
         global hotshotProfilers
-        prof_name = func.func_name+".prof"
+        prof_name = func.__name__+".prof"
         profiler = hotshotProfilers.get(prof_name)
         if profiler is None:
             profiler = hotshot.Profile(prof_name)
@@ -56,12 +56,12 @@ def perf_uris():
     
     # Preload db with a lot of files.
     if False:
-        print "Setting up db..."
+        print("Setting up db...")
         uris = ["file:///home/trentm/%05d.txt" % d for d in range(5000, 10000)]
         random.shuffle(uris)
         for uri in uris:
             db.uri_id_from_uri(uri)
-        print "Done setting up db."
+        print("Done setting up db.")
     
     rand = random.Random(42)
     randchoice = rand.choice
@@ -76,7 +76,7 @@ def perf_uris():
         end = timestamp()
         times.append(end-start)
     for t in times:
-        print "%d add/gets: %.3fs" % (N, t)
+        print("%d add/gets: %.3fs" % (N, t))
     
 
 def setup_perf_load(db_path):
@@ -101,11 +101,11 @@ def perf_load():
     start = timestamp()
     hist.load()
     end = timestamp()
-    print "time to load: %.3fs" % (end-start)
+    print("time to load: %.3fs" % (end-start))
     
 class HistoryVisitor:
     def _visit_weekend(self):
-        roll = random.choice(range(10))
+        roll = random.choice(list(range(10)))
         if roll < 7:
             # Most weekends we do nothing
             return
@@ -129,7 +129,7 @@ class HistoryVisitor:
         
     def _visit_(self):
         # Adjust the list of URIs
-        self.uri_nums += range(self._next_uri, self._next_uri + self.num_to_add)
+        self.uri_nums += list(range(self._next_uri, self._next_uri + self.num_to_add))
         self._next_uri += self.num_to_add
         for i in range(self.num_to_drop):
             idx = random.randint(0, len(self.uri_nums) - 1)
@@ -191,7 +191,7 @@ class HistoryVisitor:
         # Each day add rand(5,10) new files and drop rand(3, 8) files
         # Each make 300 edits over our files, uniform selection
         self._next_uri = 50
-        self.uri_nums = range(self._next_uri)
+        self.uri_nums = list(range(self._next_uri))
         self._most_recent_uri = 0
         start = timestamp()
         db_path = join("tmp", "perf_delete.sqlite")
@@ -211,9 +211,9 @@ class HistoryVisitor:
                 self.time += 1
             cu.execute("SELECT count(*) from history_visit")
             num_to_delete = int(cu.fetchone()[0])
-        print "Done"
+        print("Done")
         end = timestamp()
-        print "time to fill the database with %d items: %.3fs" % (num_to_delete, end - start)
+        print("time to fill the database with %d items: %.3fs" % (num_to_delete, end - start))
         # Now remove the entries
         
         with self.db.connect(True, cu=None) as cu:
@@ -229,7 +229,7 @@ class HistoryVisitor:
             cu.execute("SELECT count(*) from history_visit where timestamp < ?",
                        (self.curr_time - 28,))
             num_not_deleted = int(cu.fetchone()[0])
-            print "P4 delete %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start)
+            print("P4 delete %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start))
             
             # Cull P3: more than 7 days old
             cu.execute("SELECT count(*) from history_visit where timestamp < ?",
@@ -242,7 +242,7 @@ class HistoryVisitor:
             cu.execute("SELECT count(*) from history_visit where timestamp < ?",
                        (self.curr_time - 7,))
             num_not_deleted = int(cu.fetchone()[0])
-            print "P3 delete over %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start)
+            print("P3 delete over %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start))
             
             # Cull P2: 1 - 7 days old
             cu.execute("SELECT count(*) from history_visit where timestamp between ? and ?",
@@ -258,7 +258,7 @@ class HistoryVisitor:
             cu.execute("SELECT count(*) from history_visit where timestamp between ? and ?",
                        (self.curr_time - 7, self.curr_time - 1))
             num_not_deleted = int(cu.fetchone()[0])
-            print "P2 delete over %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start)
+            print("P2 delete over %d items (leaving %d undeleted): %.3fs" % (num_to_delete, num_not_deleted, end - start))
             
 
 

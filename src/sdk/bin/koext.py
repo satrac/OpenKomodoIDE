@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007-2009 ActiveState Software Inc.
 
 """koext -- a tool for building Komodo extensions"""
@@ -643,7 +643,7 @@ def main(argv=sys.argv):
             log.error(exc_info[0])
         if not skip_it:
             if log.isEnabledFor(logging.DEBUG):
-                print
+                print()
                 traceback.print_exception(*exc_info)
             sys.exit(1)
     else:

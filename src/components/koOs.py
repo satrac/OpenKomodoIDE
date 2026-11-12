@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -33,7 +33,7 @@ def _unique(s):
     except TypeError:
         del u  # move on to the next method
     else:
-        return u.keys()
+        return list(u.keys())
 
 def _splitall(path):
     """Split the given path into all its directory parts and return the list
@@ -231,7 +231,7 @@ class koOs(object):
     def chmod(self, path, mode):
         try:
             os.chmod(path, mode)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise
 
@@ -259,7 +259,7 @@ class koOs(object):
                    wantEncoding=None,
                    defaultEncoding=defaultEncoding)
             return unicode_buffer
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise
 
@@ -269,21 +269,21 @@ class koOs(object):
     def mkdir(self, path):
         try:
             os.mkdir(path)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise
 
     def rename(self, fn_from, fn_to):
         try:
             os.rename(fn_from, fn_to)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise
 
     def renames(self, fn_from, fn_to):
         try:
             os.renames(fn_from, fn_to)
-        except Exception, ex:
+        except Exception as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise
 
@@ -309,7 +309,7 @@ class koOs(object):
             if retval[stat.ST_CTIME] == -1:
                 retval[stat.ST_CTIME] = retval[stat.ST_ATIME]
             return retval
-        except OSError, ex:
+        except OSError as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise
 
@@ -345,28 +345,28 @@ class koOs(object):
                 desired_mode = mode & ~stat.S_IWUSR
             os.chmod(path, desired_mode)
             obtained_mode = self.getmod(path)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise
     
     def listdir(self, path):
         try:
             return os.listdir(path)
-        except OSError, ex:
+        except OSError as ex:
             lastErrorSvc.setLastError(0, str(ex))
             raise
 
     def open(self, path, flags):
         try:
             return os.open(path, flags)
-        except OSError, ex:
+        except OSError as ex:
             lastErrorSvc.setLastError(ex.errno, str(ex))
             raise
 
     def unsetenv(self, varname):
         try:
             return os.unsetenv(varname)
-        except OSError, ex:
+        except OSError as ex:
             lastErrorSvc.setLastError(ex.errno, str(ex))
             raise
 

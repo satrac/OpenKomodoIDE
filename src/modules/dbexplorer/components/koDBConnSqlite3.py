@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -18,14 +18,14 @@ log.setLevel(logging.INFO)
 
 try:
     import dbxlib
-except ImportError, ex:
+except ImportError as ex:
     sys.stderr.write("Failed to load dbxlib: %s\n" % (ex,))
     raise
 
 try:
     import dbx_sqlite3
     loaded = True
-except ImportError, ex:
+except ImportError as ex:
     sys.stderr.write("Failed to load dbx_sqlite3: %s\n" % (ex,))
     loaded = False
 
@@ -107,10 +107,10 @@ class KoSQLite3DBXConnection(dbxlib.KoDBXConnection):
             log.debug("names: %s", table_names)
             names = sorted(table_names, key=lambda item:item[0].lower())
             return names
-        except dbx_sqlite3.OperationalError, ex:
+        except dbx_sqlite3.OperationalError as ex:
             log.error("Failed: %r", ex)
             return [("Error: " + str(ex), 'error', None)]
-        except dbx_sqlite3.DatabaseError, ex:
+        except dbx_sqlite3.DatabaseError as ex:
             log.error("Failed: %r", ex)
             return [("Error: " + str(ex), 'error', None)]
 
@@ -157,7 +157,7 @@ class KoSQLite_DBXTable(dbxlib.KoDBXConnectionChild, KoSQLite3DBXTableConnection
             column_names = [(name, 'column', KoSQLite_DBXColumn(self, name)) for name in db.listAllColumnNames(self._table_name)]
             names = sorted(column_names, key=lambda item:item[0].lower())
             return names
-        except Exception, ex:
+        except Exception as ex:
             log.exception("Failed: KoSQLite3DBXConnection.getChildren")
             return [("Error: " + str(ex), 'error')]
         

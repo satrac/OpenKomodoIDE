@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2008 ActiveState Software Inc.
 
 r"""List files under a given dir that are not built universal.
@@ -130,7 +130,7 @@ def _walk(top, topdown=True, onerror=None, follow_symlinks=False):
     # left to visit.  That logic is copied here.
     try:
         names = os.listdir(top)
-    except OSError, err:
+    except OSError as err:
         if onerror is not None:
             onerror(err)
         return
@@ -256,7 +256,7 @@ def _paths_from_path_patterns(path_patterns, files=True, dirs="never",
                         lexists, islink, realpath
     from glob import glob
 
-    assert not isinstance(path_patterns, basestring), \
+    assert not isinstance(path_patterns, str), \
         "'path_patterns' must be a sequence, not a string: %r" % path_patterns
     GLOB_CHARS = '*?['
 
@@ -398,7 +398,7 @@ def main(argv):
 
     for dir in args:
         for path in lsnonuniversal(dir):
-            print path
+            print(path)
 
 
 if __name__ == "__main__":
@@ -413,7 +413,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

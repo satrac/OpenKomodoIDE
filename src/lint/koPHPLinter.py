@@ -67,7 +67,7 @@ class KoPHPCompileLinter:
             log.error("koPHPLinter.py: checkValidVersion: %s", errmsg)
         return not reject
         
-    _tplPatterns = ("PHP", re.compile('<\?(?:php\s+echo\b[^_]|=)', re.IGNORECASE|re.DOTALL), re.compile(r'\?>\s*\Z', re.DOTALL))
+    _tplPatterns = ("PHP", re.compile(r'<\?(?:php\s+echo\b[^_]|=)', re.IGNORECASE|re.DOTALL), re.compile(r'\?>\s*\Z', re.DOTALL))
     def lint(self, request):
         try:
             html_linter = UnwrapObject(self._koLintService.getLinterForLanguage("HTML"))
@@ -135,7 +135,7 @@ class KoPHPCompileLinter:
                 lineText = line.rfind(' ')
                 try:
                     lineNo = int(line[lineText+1:])
-                except ValueError, e:
+                except ValueError as e:
                     continue
                 #print "Line Number: ", lineNo
                 result = KoLintResult()
@@ -147,7 +147,7 @@ class KoPHPCompileLinter:
                 # PHP Fatal error:  Can't use function return value in write context in C:\home\ericp\lab\komodo\bugs\bz42553a.php on line 3
                 m = re.match(r'(.*?)\bin .*?(\b(?:on|at)\s+line\s+\d+)', line)
                 if m:
-                    result.description = string.join(m.groups())
+                    result.description = ''.join(m.groups())
                 else:
                     result.description = line
                 result.lineStart = result.lineEnd = lineNo

@@ -81,7 +81,7 @@ class koUtils:
             if not extracted:
                 archive.extractall(target)
 
-        except Exception, e:
+        except Exception as e:
             log.exception("Failed extracting %s" % path)
             self.callback(1, str(e), cb)
         else:
@@ -103,7 +103,7 @@ class koUtils:
     def _copytree(self, path, target, cb):
         try:
             self._doCopytree(path, target)
-        except Exception, e:
+        except Exception as e:
             log.exception("Failed copying %s" % path)
             self.callback(1, str(e), cb)
         else:

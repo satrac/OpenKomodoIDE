@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 #
@@ -60,7 +60,7 @@ gInstallLog = "koinstall.log"
 def _rmtreeOnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 
 def _rmtree(dname):
@@ -141,11 +141,11 @@ def _askYesNo(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         #sys.stdout.write('\n')
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please repond with 'yes' or 'no' "\
@@ -186,7 +186,7 @@ def _verifyDependencies(promptToContinue):
                         gtk_pkg_name))
             if promptToContinue:
                 if _askYesNo("Proceed?", default="no") == "no":
-                    print "Aborting install."
+                    print("Aborting install.")
                     return False
                 
     return True
@@ -258,9 +258,9 @@ def _run_and_capture(argv):
 def _ensure_executable(filename):
     try:
         filestat = os.stat(filename)
-        perms = 0700 | (filestat.st_mode & (0077))
+        perms = 0o700 | (filestat.st_mode & (0o077))
         os.chmod(filename, perms)
-    except Exception, ex:
+    except Exception as ex:
         log.warn("could not set exec permissions on path %r - %s", filename, ex)
 
 def _install_desktop_shortcut(absInstallDir, suppressShortcut):
@@ -278,7 +278,7 @@ def _install_desktop_shortcut(absInstallDir, suppressShortcut):
     (See bug 32351 for details).
     """
     # Put together the shortcut content.
-    content = """\
+    content = r"""\
 [Desktop Entry]
 Encoding=UTF-8
 Name=__GNOME_DESKTOP_NAME__
@@ -300,7 +300,7 @@ Categories=__GNOME_DESKTOP_CATEGORIES__
     tempDir = tempfile.mkdtemp()
     try:
         tempPath = join(tempDir, shortcutName)
-        file(tempPath, "w").write(content)
+        open(tempPath, "w").write(content)
 
         if suppressShortcut:
             raise ShortcutInstallError("shortcut suppressed by user")
@@ -339,7 +339,7 @@ Categories=__GNOME_DESKTOP_CATEGORIES__
             shutil.copy(tempPath, shortcutPath)
             # Ensure the desktop shortcut has executable permissions.
             _ensure_executable(shortcutPath)
-    except (EnvironmentError, ShortcutInstallError), ex:
+    except (EnvironmentError, ShortcutInstallError) as ex:
         fallbackDir = join(absInstallDir, "share", "desktop")
         fallbackPath = join(fallbackDir, shortcutName)
         try:
@@ -348,7 +348,7 @@ Categories=__GNOME_DESKTOP_CATEGORIES__
             shutil.copy(tempPath, fallbackPath)
             # Ensure the backup desktop shortcut has executable permissions.
             _ensure_executable(fallbackPath)
-        except EnvironmentError, ex2:
+        except EnvironmentError as ex2:
             log.warn("unexpected error creating fallback .desktop file "
                      "'%s': %s", fallbackPath, ex2)
         else:
@@ -412,7 +412,7 @@ def _selinux_prepare(absInstallDir):
             log.debug("trying chcon(%r, %r)", so_path, context_to_try)
             try:
                 selinuxlib.chcon(so_path, context_to_try)
-            except selinuxlib.SELinuxError, ex:
+            except selinuxlib.SELinuxError as ex:
                 pass
             else:
                 break
@@ -538,7 +538,7 @@ def _install(installDir, userDataDir, suppressShortcut, destDir=None):
         finally:
             fin.close()
         content = content.replace(token, absInstallDir)
-        os.chmod(file, 0644)
+        os.chmod(file, 0o644)
         fout = open(file, 'w')
         try:
             fout.write(content)
@@ -549,7 +549,7 @@ def _install(installDir, userDataDir, suppressShortcut, destDir=None):
     _install_desktop_shortcut(absInstallDir, suppressShortcut)
     _selinux_prepare(absInstallDir)
 
-    print """
+    print("""
 %s
 __GNOME_DESKTOP_NAME__ has been successfully installed to:
     %s
@@ -576,7 +576,7 @@ channels below:
 Thank you for using Komodo.
 %s
 """ % (_banner(None), absInstallDir, absInstallDir, absInstallDir,
-       _banner(None))
+       _banner(None)))
 
 
 
@@ -587,11 +587,11 @@ def interactiveInstall(suppressShortcut):
         return
     
     default = _getDefaultInstallDir()
-    sys.stdout.write("""\
+    sys.stdout.write(r"""\
 Enter directory in which to install Komodo. Leave blank and
 press 'Enter' to use the default [%s].
 Install directory: """ % default)
-    installDir = raw_input().strip()
+    installDir = input().strip()
     if not installDir:
         installDir = default
 
@@ -606,12 +606,12 @@ sure you would like to proceed with the installation?
         if choice == "yes":
             pass
         elif choice == "no":
-            print "Aborting install."
+            print("Aborting install.")
             return
     elif exists(norm):
         raise Error("'%s' exists and is not a directory" % installDir)
 
-    print
+    print()
     install(installDir, suppressShortcut)
 
 def install(installDir, suppressShortcut, destDir=None):
@@ -690,7 +690,7 @@ def main(argv):
         opts, args = getopt.getopt(argv[1:], "vhI:s",
             ["verbose", "help", "install-dir=", "suppress-shortcut",
              "dest-dir="])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         log.error(str(ex))
         log.error("Try `__MAIN_INSTALL_SCRIPT__ --help'.")
         return 1
@@ -718,7 +718,7 @@ def main(argv):
             interactiveInstall(suppressShortcut)
         else:
             install(installDir, suppressShortcut, destDir=destDir)
-    except (EnvironmentError, Error), ex:
+    except (EnvironmentError, Error) as ex:
         log.error(str(ex))
         log.debug("exception info:", exc_info=True)
         return 1

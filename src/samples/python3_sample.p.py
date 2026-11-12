@@ -17,8 +17,8 @@ def printStrings(mylist):
     import types
     for element in mylist:
         if type(element) is str:
-            print("element %s is a string" % element)
-    print
+            print(("element %s is a string" % element))
+    print()
 
 mylist = ["hello", 42, "there", 3.14159]
 printStrings(mylist)
@@ -47,7 +47,7 @@ printStrings(mylist)
 
 import textwrap
 s = textwrap.dedent("   abc\n   def\n  ghi\n")
-print("Wrapped text:\n%s" % s)
+print(("Wrapped text:\n%s" % s))
 
 #---- Abbreviations:
 #     - Snippets from the Abbreviations folder in projects and toolboxes
@@ -74,7 +74,7 @@ def printTotal(priceList):
     sum = 0.0
     for price in prices:
         sum = sum + price
-    print("the sum of the prices is", sum)
+    print(("the sum of the prices is", sum))
 
 prices = [5.50, 6.25, 7.00, 3.15]
 printTotal(prices)

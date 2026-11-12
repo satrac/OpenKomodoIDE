@@ -7,7 +7,7 @@ import sys
 import threading
 import time
 import re
-from Tkinter import *  # for fakey komodo.xul
+from tkinter import *  # for fakey komodo.xul
 if sys.platform.startswith("win"):
     import win32api
     import win32event
@@ -27,7 +27,7 @@ def _getKomodoVersion():
     try:
         import bkconfig
         version = bkconfig.version             # '1.9.0-devel'
-        version = re.split('\.|-', version)    # ['1', '9', '0', 'devel']
+        version = re.split(r'\.|-', version)    # ['1', '9', '0', 'devel']
         version = "%s.%s" % tuple(version[:2]) # '1.9'
     except ImportError:
         # fallback
@@ -59,7 +59,7 @@ class KomodoXul(Frame):
     prototype.
     """
     def say_hi(self):
-        print "hi there, everyone!"
+        print("hi there, everyone!")
     def createWidgets(self):
         self.QUIT = Button(self)
         self.QUIT["text"] = "QUIT"
@@ -118,7 +118,7 @@ if sys.platform.startswith("win"):
                 # Handle the commandments.
                 exit = 0
                 for cmd in cmds:
-                    print "command handler: cmd=%r" % cmd
+                    print("command handler: cmd=%r" % cmd)
                     if cmd == "__exit__":
                         exit = 1
                         break
@@ -175,7 +175,7 @@ else:
                 # handle each command
                 exit = 0
                 for cmd in cmds:
-                    print "command handler: cmd=%r" % cmd
+                    print("command handler: cmd=%r" % cmd)
                     if cmd == "__exit__":
                         exit = 1
                         break
@@ -233,7 +233,7 @@ def main(argv):
     #---- startup
     # Take of long time to startup
     for i in range(2):
-        print '. (Komodo starting)'
+        print('. (Komodo starting)')
         time.sleep(1)
 
     # Start commandment handler thread.
@@ -252,7 +252,7 @@ def main(argv):
     #---- exit
     cmdSvc.exit() # exit command pipe handler
     cleanupRunningHandle(runningHandle)
-    print "Komodo exiting"
+    print("Komodo exiting")
 
 
 if __name__ == "__main__":

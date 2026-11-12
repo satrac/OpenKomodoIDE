@@ -51,11 +51,11 @@ class todo(Task):
                     "*.png", "*.gif", "build",
                     "externals"]
         for path in paths_from_path_patterns(['.'], excludes=excludes):
-            self._dump_pattern_in_path("TO\DO\\|XX\X", normpath(path))
+            self._dump_pattern_in_path(r"TO\DO\\|XX\X", normpath(path))
 
         path = join(self.dir, "TO""DO.txt")
         todos = re.compile("^- ", re.M).findall(open(path, 'r').read())
-        print "(plus %d TO""DOs from TO""DO.txt)" % len(todos)
+        print("(plus %d TO""DOs from TO""DO.txt)" % len(todos))
 
     def _dump_pattern_in_path(self, pattern, path):
         os.system('grep -nH "%s" "%s"' % (pattern, path))

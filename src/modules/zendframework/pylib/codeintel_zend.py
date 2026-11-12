@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2008 ActiveState Software Inc.
 # See LICENSE.txt for license details.
 

@@ -45,7 +45,6 @@ each time the instance is evaluated with str(instance).  For example:
 """
 
 import sys, string
-from types import StringType
 from tokenize import tokenprog
 
 class ItplError(ValueError):
@@ -88,8 +87,8 @@ class Itpl:
         3.  Outside of the expressions described in the above two rules,
             two dollar signs in a row give you one literal dollar sign."""
 
-        if type(format) != StringType:
-            raise TypeError, "needs string initializer"
+        if not isinstance(format, str):
+            raise TypeError("needs string initializer")
         self.format = format
 
         namechars = "abcdefghijklmnopqrstuvwxyz" \
@@ -144,7 +143,7 @@ class Itpl:
     def __str__(self):
         """Evaluate and substitute the appropriate parts of the string."""
         try: 1/0
-        except: frame = sys.exc_traceback.tb_frame
+        except: frame = sys.exc_info()[2].tb_frame
 
         while frame.f_globals["__name__"] == __name__: frame = frame.f_back
         loc, glob = frame.f_locals, frame.f_globals
@@ -157,7 +156,7 @@ class Itpl:
         return string.join(result, "")
 
 def itpl(text): return str(Itpl(text))
-def printpl(text): print itpl(text)
+def printpl(text): print(itpl(text))
 
 class ItplFile:
     """A file object that filters each write() through an interpolator."""

@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
 import os
 from os.path import exists, join, dirname, isdir, abspath, splitext
 from glob import glob
-import imp
 import logging
 
 from taskslib import database, errors
@@ -82,13 +81,17 @@ class Manager(object):
 
         module_dir, module_name = os.path.split(module_path)
         module_name = splitext(module_name)[0]
-        iinfo = imp.find_module(module_name, [module_dir])
-        module = imp.load_module(module_name, *iinfo)
+        import importlib.machinery, importlib.util
+        spec = importlib.machinery.PathFinder.find_spec(module_name, [module_dir])
+        if spec is None or spec.loader is None:
+            raise ImportError("No module named %r in %r" % (module_name, module_dir))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
         if hasattr(module, "register"):
             log.debug("register `%s' taskslib support module", module_path)
             try:
                 module.register(self)
-            except errors.TasksError, ex:
+            except errors.TasksError as ex:
                 log.warn("error registering `%s' taskslib support "
                     "module: %s", module_path, ex)
             except:
@@ -115,7 +118,7 @@ class Manager(object):
                 "no such repository id: %r" % repo_id)
 
     def repo_from_nickname(self, repo_nickname):
-        for repo in self.repo_from_id_cache.values():
+        for repo in list(self.repo_from_id_cache.values()):
             if repo.nickname == repo_nickname:
                 return repo
         else:
@@ -132,7 +135,7 @@ class Manager(object):
             raise TasksError("unknown repository type: %r" % repo_type)
 
     def repo_types(self):
-        return self._repo_class_from_type.keys()
+        return list(self._repo_class_from_type.keys())
 
     def add_repo(self, repo_type, repo_url, username=None, password=None,
                  nickname=None, skip_verify=False):

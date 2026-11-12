@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -34,7 +34,7 @@ class EmptyDatasetHandler:
             tags = tree.tags.get(tree.namespace(node), {})
         else:
             tags = tree.tags.get("", {})
-        return [t for t in tags.keys() if t]
+        return [t for t in list(tags.keys()) if t]
 
     def attrs(self, tree, node=None):
         if node is None:
@@ -44,7 +44,7 @@ class EmptyDatasetHandler:
         # now, get all attributes from all the tags
         for n in nodes:
             attrs.update(n.attrib)
-        return attrs.keys()
+        return list(attrs.keys())
 
     def values(self, attrname, tree, node=None):
         return []
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         """
         tree = koXMLTreeService.getService().getTreeForURI(uri, text)
         if tree.current is None: return None
-        already_supplied = tree.current.attrib.keys()
+        already_supplied = list(tree.current.attrib.keys())
         handlerclass = get_tree_handler(tree, tree.current, default_completion.get(lang))
         attrs = handlerclass.attrs(tree)
         if not attrs:

@@ -29,9 +29,7 @@ def _hasattr(C, attr):
         return hasattr(C, attr)
 
 
-class Hashable:
-    __metaclass__ = ABCMeta
-
+class Hashable(metaclass=ABCMeta):
     @abstractmethod
     def __hash__(self):
         return 0
@@ -52,9 +50,7 @@ class Hashable:
         return NotImplemented
 
 
-class Iterable:
-    __metaclass__ = ABCMeta
-
+class Iterable(metaclass=ABCMeta):
     @abstractmethod
     def __iter__(self):
         while False:
@@ -87,9 +83,7 @@ class Iterator(Iterable):
         return NotImplemented
 
 
-class Sized:
-    __metaclass__ = ABCMeta
-
+class Sized(metaclass=ABCMeta):
     @abstractmethod
     def __len__(self):
         return 0
@@ -102,9 +96,7 @@ class Sized:
         return NotImplemented
 
 
-class Container:
-    __metaclass__ = ABCMeta
-
+class Container(metaclass=ABCMeta):
     @abstractmethod
     def __contains__(self, x):
         return False
@@ -117,9 +109,7 @@ class Container:
         return NotImplemented
 
 
-class Callable:
-    __metaclass__ = ABCMeta
-
+class Callable(metaclass=ABCMeta):
     @abstractmethod
     def __call__(self, *args, **kwds):
         return False
@@ -238,7 +228,7 @@ class Set(Sized, Iterable, Container):
         freedom for __eq__ or __hash__.  We match the algorithm used
         by the built-in frozenset type.
         """
-        MAX = sys.maxint
+        MAX = sys.maxsize
         MASK = 2 * MAX + 1
         n = len(self)
         h = 1927868237 * (n + 1)
@@ -371,7 +361,7 @@ class Mapping(Sized, Iterable, Container):
     def __eq__(self, other):
         if not isinstance(other, Mapping):
             return NotImplemented
-        return dict(self.items()) == dict(other.items())
+        return dict(list(self.items())) == dict(list(other.items()))
 
     def __ne__(self, other):
         return not (self == other)
@@ -468,12 +458,12 @@ class MutableMapping(Mapping):
             for key in other:
                 self[key] = other[key]
         elif hasattr(other, "keys"):
-            for key in other.keys():
+            for key in list(other.keys()):
                 self[key] = other[key]
         else:
             for key, value in other:
                 self[key] = value
-        for key, value in kwds.items():
+        for key, value in list(kwds.items()):
             self[key] = value
 
     def setdefault(self, key, default=None):
@@ -517,7 +507,7 @@ class Sequence(Sized, Iterable, Container):
         return False
 
     def __reversed__(self):
-        for i in reversed(range(len(self))):
+        for i in reversed(list(range(len(self)))):
             yield self[i]
 
     def index(self, value):
@@ -530,7 +520,7 @@ class Sequence(Sized, Iterable, Container):
         return sum(1 for v in self if v == value)
 
 Sequence.register(tuple)
-Sequence.register(basestring)
+Sequence.register(str)
 Sequence.register(buffer)
 Sequence.register(xrange)
 

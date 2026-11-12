@@ -134,7 +134,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_html_file(self):
         manifest = [
-            (tempfile.mktemp(".html"), """\
+            (tempfile.mktemp(".html"), r"""\
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd" [
 <!ENTITY % fizz SYSTEM "/no/such/file1">
 %fizz;
@@ -159,7 +159,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_html5_file(self):
         manifest = [
-            (tempfile.mktemp(".html"), """\
+            (tempfile.mktemp(".html"), r"""\
 <!DOCTYPE html>
 <html>
 <head>
@@ -194,7 +194,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_django_file(self):
         manifest = [
-            (tempfile.mktemp(".django.html"), """\
+            (tempfile.mktemp(".django.html"), r"""\
 {% extends 'layouts/base.html' %}
 {%block title %} Dashboard {% endblock %}
 {%block extrahead %}
@@ -227,7 +227,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_smarty_file_01(self):
         manifest = [
-            (tempfile.mktemp(".tpl"), """\
+            (tempfile.mktemp(".tpl"), r"""\
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
                       "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -263,7 +263,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_smarty_file_02(self):
         manifest = [
-            (tempfile.mktemp(".smarty.tpl"), """\
+            (tempfile.mktemp(".smarty.tpl"), r"""\
 {{ hello }}
 {% import 'macro/std.macro.twig' as macro_std %}"""),
         ]
@@ -276,7 +276,7 @@ use moz bindings with CSS to acheive everything we have here.
     # bug 98264
     def test_recognize_php_file_01(self):
         manifest = [
-            (tempfile.mktemp(".tpl.php"), """\
+            (tempfile.mktemp(".tpl.php"), r"""\
 {{ hello }}
 {% import 'macro/std.macro.twig' as macro_std %}"""),
         ]
@@ -288,7 +288,7 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_twig_file(self):
         manifest = [
-            (tempfile.mktemp(".twig"), """\
+            (tempfile.mktemp(".twig"), r"""\
 {{ hello }}
 {% import 'macro/std.macro.twig' as macro_std %}"""),
         ]
@@ -300,21 +300,21 @@ use moz bindings with CSS to acheive everything we have here.
 
     def test_recognize_python_file(self):
         manifest = [
-            (tempfile.mktemp(".py"), """\
-#!/usr/bin/env python
+            (tempfile.mktemp(".py"), r"""\
+#!/usr/bin/env python3
 print('should be py2')
 """),
-            (tempfile.mktemp(".py"), """\
+            (tempfile.mktemp(".py"), r"""\
 #  -*- python -*-
 print('should be py2')
 """),
-            (tempfile.mktemp(".py"), """\
+            (tempfile.mktemp(".py"), r"""\
 try:
     print('should be py2')
 except AttributeError, x:
     print("exception: %s", x)
 """),
-            (tempfile.mktemp(".py"), """\
+            (tempfile.mktemp(".py"), r"""\
 # no specific markers here, default to py
 """),
         ]
@@ -326,11 +326,11 @@ except AttributeError, x:
 
     def test_recognize_python3_file(self):
         manifest = [
-            (tempfile.mktemp(".py"), """\
+            (tempfile.mktemp(".py"), r"""\
 #!/usr/bin/env python3
 print('should be py3')
 """),
-            (tempfile.mktemp(".py"), """\
+            (tempfile.mktemp(".py"), r"""\
 #  -*- python3 -*-
 print('should be py3')
 """),
@@ -344,17 +344,17 @@ print('should be py3')
 
     def test_recognize_javascript_file(self):
         manifest = [
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 #  -*- javascript -*-
 alert('should be js')
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 document.getElementById("should be js");
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 alert("should be js");
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 var x = 'no markers, default js';
 """),
         ]
@@ -366,11 +366,11 @@ var x = 'no markers, default js';
 
     def test_recognize_nodejs_file(self):
         manifest = [
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 #  -*- mode: Node.js -*-
 console.log('should be node')
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 #!/usr/bin/env node
 console.log('should be node')
 """),
@@ -386,13 +386,13 @@ console.log('should be node')
         # If we have a node interpreter on our path, then these will be seen as
         # Node.js files, otherwise they are seen as JavaScript files.
         manifest = [
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 require('console');
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 module.exports = {};
 """),
-            (tempfile.mktemp(".js"), """\
+            (tempfile.mktemp(".js"), r"""\
 foo.on('something', function(event) {
 console.log(event.name);
 });
@@ -461,15 +461,15 @@ console.log(event.name);
     
     def test_language_reset(self):
         manifest = [
-            ("Python", tempfile.mktemp(".py"), """\
-#!/usr/bin/env python
+            ("Python", tempfile.mktemp(".py"), r"""\
+#!/usr/bin/env python3
 print 'should be py'
 """),
-            ("Python3", tempfile.mktemp(".py"), """\
+            ("Python3", tempfile.mktemp(".py"), r"""\
 #  -*- python3 -*-
 print('should be py3')
 """),
-            ("JavaScript", tempfile.mktemp(".js"), """\
+            ("JavaScript", tempfile.mktemp(".js"), r"""\
 alert('should be js')
 """),
         ]
@@ -569,13 +569,13 @@ class TestKoDocumentBase(_KoDocTestCase):
             # Does the document match our platform endings?
             assert koDoc.existing_line_endings == eollib.EOL_PLATFORM
             # test converting to each of our endings
-            for le in eollib.eolMappings.keys():
+            for le in list(eollib.eolMappings.keys()):
                 koDoc.existing_line_endings = le
                 assert koDoc.existing_line_endings == le
             # test converting to an invalid ending, should raise exception
             try:
                 koDoc.existing_line_endings = 10
-            except COMException, e:
+            except COMException as e:
                 pass
             assert koDoc.existing_line_endings != 10
         finally:
@@ -752,18 +752,18 @@ class KoDocIndentationDetection(_KoDocTestCase):
         for entry in manifest:
             koDoc = self._koDocUntitled()
             koDoc.setBufferAndEncoding(entry["content"], entry["encoding"])
-            self.assertEquals(koDoc.useTabs, entry["useTabs"],
+            self.assertEqual(koDoc.useTabs, entry["useTabs"],
                               "Failed useTabs test for %r" % (entry["name"]))
-            self.assertEquals(koDoc.indentWidth, entry["indentWidth"],
+            self.assertEqual(koDoc.indentWidth, entry["indentWidth"],
                               "Failed indentWidth test for %r" % (entry["name"]))
-            self.assertEquals(koDoc.tabWidth, entry["tabWidth"],
+            self.assertEqual(koDoc.tabWidth, entry["tabWidth"],
                               "Failed tabWidth test for %r" % (entry["name"]))
 
     def test_koGoLanguage(self):
         """Note that this tests code path in koLanguageBase.guessIndentation"""
         name = "koGoLanguage.py"
         koDoc = self._koDocFromPath(join(self.data_dir, name))
-        self.assertEquals(koDoc.useTabs, False)
+        self.assertEqual(koDoc.useTabs, False)
 
 class TestKoDocumentRemote(_KoDocTestCase):
     def test_differentOnDisk(self):

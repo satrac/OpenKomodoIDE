@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2008 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -21,7 +21,7 @@ if sys.platform.startswith("win"):
     # needed for winprocess.py
     sys.path.append(join(srcroot, "contrib", "smallstuff"))
 sys.path.append(join(srcroot, "src", "python-sitelib"))
-print sys.path[-1]
+print(sys.path[-1])
 import gitlib
 
 class GITTest(gitlib.GIT):
@@ -49,7 +49,7 @@ class test_gitlib(unittest.TestCase):
                }
         repobase = tempfile.mkdtemp()
         try:
-            for name in data.keys():
+            for name in list(data.keys()):
                 abspath = join(repobase, *name.split("/"))
                 parent = split(abspath)[0]
                 if not exists(parent):
@@ -57,7 +57,7 @@ class test_gitlib(unittest.TestCase):
                 with open(abspath, "w") as f:
                     f.write(".")
 
-            output = "\n".join("%s %s" % (v, k) for k,v in data.items() if v is not None)
+            output = "\n".join("%s %s" % (v, k) for k,v in list(data.items()) if v is not None)
             git = GITTest(output)
             result = git.status(repobasedir=repobase, cwd=repobase, recursive=True)
 
@@ -68,11 +68,11 @@ class test_gitlib(unittest.TestCase):
             pprint(result)
             files = result.get('files', {})
             self.assertEqual(len(files), len(data), "Incorrect number of files: %r" % (len(files), ))
-            for path, expected_status in {
+            for path, expected_status in list({
                                 normpath(join(repobase, 'test.py')): '?',
                                 normpath(join(repobase, 'COPYING')): 'H',
                                 normpath(join(repobase, 'python/webview.py')): 'C',
-                        }.items():
+                        }.items()):
                 self.assertTrue(path in files, "File was not found: %r" % (path, ))
                 status = files[path]['status']
                 self.assertEqual(status, expected_status, "File %r has incorrect status: %r" % (path, status, ))

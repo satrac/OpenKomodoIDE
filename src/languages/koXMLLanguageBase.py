@@ -12,9 +12,9 @@ class koXMLLanguageBase(KoUDLLanguage):
 
     primary = 1
     commentDelimiterInfo = { "block": [ ("<!--", "-->") ]  }
-    _indent_chars = u'<>'
-    _indent_open_chars = u'>'
-    _indent_close_chars = u'>'
+    _indent_chars = '<>'
+    _indent_open_chars = '>'
+    _indent_close_chars = '>'
     _lineup_chars = '' # don't indent ()'s and the like in XML/HTML!
     _lineup_open_chars = "" # don't indent ()'s and the like in XML/HTML!
 
@@ -241,7 +241,7 @@ class koXMLLanguageBase(KoUDLLanguage):
         tagName = tag.split()[0]
         assert not tagName.startswith("/"), \
             "getEndTagForStartTag: got an end tag instead"
-        return u"</%s>" % (tagName,)
+        return "</%s>" % (tagName,)
 
 
 class koHTMLLanguageBase(koXMLLanguageBase):
@@ -317,7 +317,7 @@ class koHTMLLanguageBase(koXMLLanguageBase):
         if tagName.lower() in self._void_elements:
             # this is a void element (no close tag)
             return ""
-        return u"</%s>" % (tagName,)
+        return "</%s>" % (tagName,)
 
 class KoGenericXMLLinter(object):
     """
@@ -345,9 +345,9 @@ class KoDjangoTemplateFamilyBase(koHTMLLanguageBase):
         self._style_info.update(
             _indent_styles = [components.interfaces.ISciMoz.SCE_UDL_TPL_OPERATOR]
             )
-        self._indent_chars = u'{}'
-        self._indent_open_chars = u'{'
-        self._indent_close_chars = u'}'
+        self._indent_chars = '{}'
+        self._indent_open_chars = '{'
+        self._indent_close_chars = '}'
 
     def accept_matching_percent(self, scimoz, pos, style_info, candidate):
         return self.softchar_accept_styled_chars(

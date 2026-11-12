@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """An interface to Trac's XMLRPC API.
 
@@ -22,11 +22,11 @@ __version__ = '.'.join(map(str, __version_info__))
 import os
 from os.path import expanduser
 import sys
-from urlparse import urljoin
-import xmlrpclib
+from urllib.parse import urljoin
+import xmlrpc.client
 import logging
 import getpass
-import urlparse
+import urllib.parse
 from pprint import pprint
 
 #import httplib2
@@ -48,7 +48,7 @@ class TracError(Exception):
 
 #---- public iface
 
-class RawTrac(xmlrpclib.ServerProxy):
+class RawTrac(xmlrpc.client.ServerProxy):
     def __init__(self, base_url, username=None, password=None):
         self.base_url = base_url
         self.username = username
@@ -56,14 +56,14 @@ class RawTrac(xmlrpclib.ServerProxy):
         
         url = self.url = urljoin(base_url, "xmlrpc")
         #scheme, netloc, path, params, query, fragment = urlparse(url)
-        parts = urlparse.urlsplit(url)
+        parts = urllib.parse.urlsplit(url)
         XXX # Put in username/password
         
         
         kwargs = {}
         if sys.version_info[:2] >= (2,5):
             kwargs["use_datetime"] = True
-        xmlrpclib.ServerProxy.__init__(self, self.url, **kwargs)
+        xmlrpc.client.ServerProxy.__init__(self, self.url, **kwargs)
 
     #XXX Want to do any of this in the raw interface?
     #def bugzilla_version(self):
@@ -89,7 +89,7 @@ def _test():
     password = getpass.getpass("%s's ActiveState password:" % username)
     t = RawTrac("http://vm-ubuntu80-trentm.activestate.com/",
                 username, password)
-    print t.server.getAPIVersion()
+    print(t.server.getAPIVersion())
     
 
 

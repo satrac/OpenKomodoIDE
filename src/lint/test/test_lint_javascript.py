@@ -34,7 +34,7 @@ class Encodings(unittest.TestCase):
 
     @tag("bug105635")
     def test_latin1(self):
-        file_contents = u"(; // ß"
+        file_contents = "(; // ß"
         fd, path = tempfile.mkstemp(suffix=".js")
         try:
             os.write(fd, file_contents.encode("latin-1"))

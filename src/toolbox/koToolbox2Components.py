@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2010 ActiveState
 # See the file LICENSE.txt for licensing information.
 
@@ -230,7 +230,7 @@ class KoToolbox2Service(object):
         if not self._loadedToolboxes:
             return []
         return [(id, uri)
-                for uri, id in self._loadedToolboxes.items()
+                for uri, id in list(self._loadedToolboxes.items())
                 if not self._tbFromExtension.get(id, False)]
 
     def toolbox_id_from_uri(self, uri):
@@ -256,7 +256,7 @@ class KoToolbox2Service(object):
         return id
 
     def getProjectURL(self, rootId):
-        for url, id in self._loadedToolboxes.iteritems():
+        for url, id in self._loadedToolboxes.items():
             if id == rootId:
                 return url
         
@@ -281,14 +281,14 @@ class KoToolbox2Service(object):
         try:
             self.toolboxLoader.importDirectory(parentPath, pathToImport)
             self._notifyToolboxChanged(parentPath)
-        except Exception, ex:
+        except Exception as ex:
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
     
     def importFiles(self, parentPath, toolPaths):
         try:
             self.toolboxLoader.importFiles(parentPath, toolPaths)
             self._notifyToolboxChanged(parentPath)
-        except Exception, ex:
+        except Exception as ex:
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
     
     def convertSublimeSnippetFolder(self, pathToImport):
@@ -298,7 +298,7 @@ class KoToolbox2Service(object):
         Returns the root of the converted snippets directory."""
         try:
             return sublime.Sublime().convertSublimeSnippetFolder(pathToImport)
-        except Exception, ex:
+        except Exception as ex:
             log.error("it broke: %s", ex)
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
     
@@ -308,7 +308,7 @@ class KoToolbox2Service(object):
         try:
             parentPath = os.path.dirname(toolPaths[0])
             return sublime.Sublime().convertSublimeSnippets(False, parentPath, toolPaths)
-        except Exception, ex:
+        except Exception as ex:
             log.error("it broke: %s", ex)
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
     
@@ -317,14 +317,14 @@ class KoToolbox2Service(object):
         try:
             self.toolboxLoader.importFileWithNewName(parentPath, srcPath, destPath)
             self._notifyToolboxChanged(parentPath)
-        except Exception, ex:
+        except Exception as ex:
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
             
     def importV5Package(self, parentPath, kpzPath):
         try:
             self.importV5Package_aux(parentPath, kpzPath)
             self._notifyToolboxChanged(parentPath)
-        except Exception, ex:
+        except Exception as ex:
             raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE, ex)
         
     def importV5Package_aux(self, parentPath, kpzPath):
@@ -770,7 +770,7 @@ class KoToolbox2Service(object):
             nameHitIds = set(h[0] for h in hits)
             subDirHitIds = []
             words = [w.lower() for w in query.split()]
-            for id, info in infoFromId.items():
+            for id, info in list(infoFromId.items()):
                 if id in nameHitIds:
                     continue
                 name, subDir = info

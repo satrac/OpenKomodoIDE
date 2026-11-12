@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Some general Python utilities for Trent
 
@@ -28,11 +28,11 @@ def AskYesNo(prompt="?", default=1):
         postPrompt = ' [y/N] '
     while 1:
         out.write(prompt + postPrompt)
-        choice = string.lower(raw_input())
+        choice = eval(input()).lower()
         out.write("\n")
         if default is not None and choice == '':
             return default
-        elif choice in validChoices.keys():
+        elif choice in list(validChoices.keys()):
             return validChoices[choice]
         else:
             out.write("Please repond with 'yes' or 'no' (or 'y' or 'n').\n")
@@ -54,11 +54,11 @@ def AskYesNoQuit(prompt="?", default=1):
         postPrompt = ' [y/n/Q] '
     while 1:
         out.write(prompt + postPrompt)
-        choice = string.lower(raw_input())
+        choice = eval(input()).lower()
         out.write("\n")
         if default is not None and choice == '':
             return default
-        elif choice in validChoices.keys():
+        elif choice in list(validChoices.keys()):
             return validChoices[choice]
         else:
             out.write("Please repond with 'yes', 'no' or 'quit' "\
@@ -74,7 +74,7 @@ def AskQuestion(prompt="?", default="", isValidCallback=None):
         postPrompt = ' '
     while 1:
         out.write(prompt + postPrompt)
-        choice = raw_input()
+        choice = eval(input())
         if choice == "":
             choice = default
         if isValidCallback is not None:

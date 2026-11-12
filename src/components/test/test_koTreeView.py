@@ -34,23 +34,23 @@ class InvalidationRangeTestCase(unittest.TestCase):
         with invalidater:
             # a, b, c
             rowCountChanged(invalidater, 0, 3)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, 3]])
             # a,    c
             rowCountChanged(invalidater, 1, -1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, 2]])
             # a,    c,    d
             rowCountChanged(invalidater, 2, 1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, 3]])
             # a,    c, e, d
             rowCountChanged(invalidater, 2, 1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, 4]])
             # a,    c,    d
             rowCountChanged(invalidater, 2, -1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, 3]])
 
     def test_rowcount_removal(self):
@@ -59,27 +59,27 @@ class InvalidationRangeTestCase(unittest.TestCase):
         with invalidater:
             #    b, c, d, e, f
             rowCountChanged(invalidater, 0, -1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, -1]])
             #    b,       e, f
             rowCountChanged(invalidater, 1, -2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, -1], [2, 2, -2]])
             #             e, f
             rowCountChanged(invalidater, 0, -1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, -4]])
             #             e, f, g
             rowCountChanged(invalidater, 2, 1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, -4], [6, 6, 1]])
             #             e, g
             rowCountChanged(invalidater, 1, -1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 0, -4], [5, 6, 0]])
             # h,          e, g
             rowCountChanged(invalidater, 0, 1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[0, 4, -3], [5, 6, 0]])
 
     def test_invalidate(self):
@@ -89,35 +89,35 @@ class InvalidationRangeTestCase(unittest.TestCase):
         with invalidater:
             # a, B,       C, d, e, f
             invalidater.invalidate(1, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, 0]])
             # a, B, G, H, C, d, e, f
             rowCountChanged(invalidater, 2, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, 2]])
             # a, B, G, H, C, D, e, f
             invalidater.invalidate(4, 5)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 4, 2]])
             # a, B, G, H, C, D, E, f
             invalidater.invalidate(5, 6)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 5, 2]])
             # a, B, G, H, C, D, I, E, f
             rowCountChanged(invalidater, 6, 1)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 5, 3]])
             # a, B, G, H, C, J, K, D, I, E, f
             rowCountChanged(invalidater, 5, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 5, 5]])
             # a, B, G, H, L, M, N, C, J, K, D, I, E, f
             rowCountChanged(invalidater, 4, 3)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 5, 8]])
             # a, B, G, H, L, M, N, C, J, K, D, I, E, f
             invalidater.invalidate(7, 9)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 5, 8]])
 
     def test_invalidate_2(self):
@@ -131,149 +131,149 @@ class InvalidationRangeTestCase(unittest.TestCase):
             # {  }  [  ]
             invalidater.invalidate(10, 20)
             invalidater.invalidate(1, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, 0], [10, 21, 0]])
         with invalidater:
             # {  }  [  ]-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(1, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, 0], [10, 21, 10]])
         with invalidater:
             # {  }  [  ]<--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(1, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, 0], [10, 21, -10]])
         with invalidater:
             # {  [  }  ]
             invalidater.invalidate(10, 20)
             invalidater.invalidate(5, 15)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 21, 0]])
         with invalidater:
             # {  [  }  ]-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(5, 15)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 21, 10]])
         with invalidater:
             # {  [  }  ]<--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(5, 15)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 21, -10]])
         with invalidater:
             # {  [  ]  }
             invalidater.invalidate(10, 20)
             invalidater.invalidate(5, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 26, 0]])
         with invalidater:
             # {  [  ]--}-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(5, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 26, 10]])
         with invalidater:
             # {  [  ]<--}--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(5, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[5, 26, -10]])
         with invalidater:
             # [  {  ]  }
             invalidater.invalidate(10, 20)
             invalidater.invalidate(15, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 26, 0]])
         with invalidater:
             # [  {  ]--}-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(15, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 26, 10]])
         with invalidater:
             # [  {  ]<--}--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(15, 25)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 26, -10]])
         with invalidater:
             # [  ]  {  }
             invalidater.invalidate(10, 20)
             invalidater.invalidate(30, 40)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, 0], [30, 41, 0]])
         with invalidater:
             # [  ]-->  {  }
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(50, 60)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, 10], [40, 51, 0]])
         with invalidater:
             # [  ]<--  {  }
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(50, 60)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, -10], [60, 71, 0]])
         with invalidater:
             # [  ]--{-->  }
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(25, 35)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 26, 10]])
         with invalidater:
             # [  ]<--{--  }
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(25, 35)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, -10], [35, 46, 0]])
         with invalidater:
             # [  ]--{--}-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(23, 28)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, 10]])
         with invalidater:
             # [  ]<--{--}--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(23, 28)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, -10], [33, 39, 0]])
         with invalidater:
             # [  {  }  ]
             invalidater.invalidate(10, 20)
             invalidater.invalidate(13, 18)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, 0]])
         with invalidater:
             # [  {  }  ]-->
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, 10)
             invalidater.invalidate(13, 18)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, 10]])
         with invalidater:
             # [  {  }  ]<--
             invalidater.invalidate(10, 20)
             rowCountChanged(invalidater, 10, -10)
             invalidater.invalidate(13, 18)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[10, 21, -10]])
 
     @tag("bug92682")
@@ -283,20 +283,20 @@ class InvalidationRangeTestCase(unittest.TestCase):
         invalidater = InvalidationRange(self.view, log=self.log)
         with invalidater:
             rowCountChanged(invalidater, 1, -17)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 1, -17]])
             invalidater.invalidate(1, 2)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 3, -17]])
             rowCountChanged(invalidater, 2, 18)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 19, 1]])
         with invalidater:
             rowCountChanged(invalidater, 1, -17)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 1, -17]])
             rowCountChanged(invalidater, 1, 17)
-            self.assertEquals(invalidater.ranges,
+            self.assertEqual(invalidater.ranges,
                               [[1, 18, 0]])
 
 class ParentIndexTestCase(unittest.TestCase):
@@ -355,8 +355,7 @@ class ParentIndexTestCase(unittest.TestCase):
     def dump(self):
         """Dump the current tree"""
         def dump_node(node, indent):
-            attrs = filter(lambda name: getattr(node, name, False),
-                           ("open", "invisible", "hidden"))
+            attrs = [name for name in ("open", "invisible", "hidden") if getattr(node, name, False)]
             attrs = " %s" % (" ".join(attrs)) if attrs else ""
             self.log.info("%s<%s%s @ %r + %r>",
                           indent, node.text, attrs, node.rowIndex, node.rowCount)
@@ -389,11 +388,11 @@ class ParentIndexTestCase(unittest.TestCase):
     def test_parentIndex_basic(self):
         def check_item(parent):
             for child in parent.children:
-                self.assertEquals(parent.rowIndex,
+                self.assertEqual(parent.rowIndex,
                                   self.view.getParentIndex(child.rowIndex))
                 check_item(child)
         for child in self.view.children:
-            self.assertEquals(self.view.getParentIndex(child.rowIndex), -1)
+            self.assertEqual(self.view.getParentIndex(child.rowIndex), -1)
             check_item(child)
 
     def test_close_flush(self):
@@ -403,7 +402,7 @@ class ParentIndexTestCase(unittest.TestCase):
         items = {}
         for name in ("root", "grandparent", "parent", "next-p-sibling"):
             items[name] = self.get_item(name)
-            self.assertEquals(name, items[name].text, "got the wrong item")
+            self.assertEqual(name, items[name].text, "got the wrong item")
             items[name].rowIndex # populate the cache
             items[name].rowCount # populate the cache
         items["root"].open = False
@@ -411,7 +410,7 @@ class ParentIndexTestCase(unittest.TestCase):
         items["parent"].open = False
         items["next-p-sibling"].open = False
         items["root"].open = True
-        self.assertEquals(items["grandparent"].rowCount, 2)
+        self.assertEqual(items["grandparent"].rowCount, 2)
 
 def test_cases():
     return [InvalidationRangeTestCase, ParentIndexTestCase]

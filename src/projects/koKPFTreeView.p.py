@@ -7,6 +7,12 @@ import koToolbox2
 import uriparse
 
 import logging
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 log = logging.getLogger("ProjectTreeView")
 #log.setLevel(logging.DEBUG)
@@ -76,14 +82,14 @@ def _compareNodeClassCheck(a, b):
     """Make sure that the true projects always appear before the
     MRU unopened projects
     """
-    return cmp(a[0], b[0])
+    return _cmp(a[0], b[0])
 
 def _compareNodeValue(a, b, field):
     aval = a[2].getFieldValue(field)
     bval = b[2].getFieldValue(field)
-    if isinstance(aval, types.StringTypes):
-        return cmp(aval.lower(), bval.lower())
-    return cmp(aval, bval)
+    if isinstance(aval, (str,)):
+        return _cmp(aval.lower(), bval.lower())
+    return _cmp(aval, bval)
 
 def compareNodeFolder(a, b, field, sortDir):
     # Each field comes in as a tuple with values
@@ -187,7 +193,7 @@ class KPFTreeView(TreeView):
                         pass
                 if invalidRows:
                     self._tree.beginUpdateBatch()
-                    map(self._tree.invalidateRow, invalidRows)
+                    list(map(self._tree.invalidateRow, invalidRows))
                     self._tree.endUpdateBatch()
             except:
                 log.exception("Failed on file_status")
@@ -374,7 +380,7 @@ class KPFTreeView(TreeView):
             try:
                 nodeIsOpen = eval(nioStr)
                 self._nodeIsOpen.update(nodeIsOpen)
-            except SyntaxError, ex:
+            except SyntaxError as ex:
                 pass
 
     def savePrefs(self, kpf):
@@ -385,7 +391,7 @@ class KPFTreeView(TreeView):
         # nodeIsOpen
         kpf = UnwrapObject(kpf)
         nodeIsOpen = {}
-        for id in self._nodeIsOpen.keys():
+        for id in list(self._nodeIsOpen.keys()):
             if kpf.getChildById(id):
                 nodeIsOpen[id] = self._nodeIsOpen[id]
         prefSvc.setStringPref("kpf_open_nodes_%s" % kpf.id,
@@ -556,19 +562,19 @@ class KPFTreeView(TreeView):
     def getSelectedItem(self):
         try:
             return self._rows[self.selection.currentIndex].part
-        except IndexError, e:
+        except IndexError as e:
             return None
 
     def _getIndexByPart(self, part):
         nodes = [row.part for row in self._rows]
         try:
             return nodes.index(part)
-        except ValueError, e:
+        except ValueError as e:
             return -1
         ids = [row.part.id for row in self._rows]
         try:
             return ids.index(part.id)
-        except ValueError, e:
+        except ValueError as e:
             return -1
 
     def getIndexByPart(self, part):
@@ -660,9 +666,9 @@ class KPFTreeView(TreeView):
         if force or self._sortedBy != sortBy or self._sortDir != sortDir:
             log.debug("KPFTree::_sortNodes()")
             if sortDir != 0:
-                nodes.sort(lambda a,b: compareNodeFolder(a, b, sortBy, sortDir))
+                nodes.sort(key=cmp_to_key(lambda a,b: compareNodeFolder(a, b, sortBy, sortDir)))
             else:
-                nodes.sort(lambda a,b: compareNode(a, b, sortBy))
+                nodes.sort(key=cmp_to_key(lambda a,b: compareNode(a, b, sortBy)))
             self._sortDir = sortDir # cache sort order
             self._sortedBy = sortBy # cache sort order
         else:
@@ -835,7 +841,7 @@ class KPFTreeView(TreeView):
         name = self._getFieldName(column)
         if name == "name":
             part = self._rows[index].part
-            if part._attributes.has_key('icon'):
+            if 'icon' in part._attributes:
                 #print "getImageSrc row %d [%s]"% (index, part._attributes['icon'])
                 return part._attributes['icon']
             else:
@@ -877,7 +883,7 @@ class KPFTreeView(TreeView):
         else:
             text = child.getFieldValue(name)
         #print "field %s text %s" % (name, text)
-        if not isinstance(text, basestring):
+        if not isinstance(text, str):
             if name == 'size':
                 if text < 1024:
                     text = "%d bytes" % text
@@ -921,7 +927,7 @@ class KPFTreeView(TreeView):
             # just get the rows for the node, then insert them into our list
             try:
                 children = self.makeRowsFromParts(node.part.children, node.level, node.project)
-            except AttributeError, ex:
+            except AttributeError as ex:
                 msg = ("Error trying to get children for row %d (%s)" %
                        (index, node.part.get_name()))
                 if ex.message == "'koProject' object has no attribute 'children'":

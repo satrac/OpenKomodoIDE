@@ -46,7 +46,7 @@ class KoFindContext(object):
         try:
             return _names[self.type]
         except (AttributeError, KeyError):
-            raise ServerException, nsError.NS_ERROR_NOT_INITIALIZED
+            raise ServerException(nsError.NS_ERROR_NOT_INITIALIZED)
 
 
 class KoRangeFindContext(KoFindContext):

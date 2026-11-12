@@ -10,8 +10,9 @@ Otherwise it can be deleted with impunity.
 """
 
 import os
+import subprocess
 import sys
 
-uuid=os.popen( "uuidgen" ).read().strip()
-print sys.stdin.read().replace( "__NEW_UUID__", uuid )
+uuid=subprocess.check_output("uuidgen", text=True).strip()
+print(sys.stdin.read().replace( "__NEW_UUID__", uuid ))
 

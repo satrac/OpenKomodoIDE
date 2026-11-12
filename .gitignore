@@ -1,8 +1,12 @@
 *.pyc
 *.pyo
+__pycache__/
 /bkconfig.*
 /mozilla/build/
 /mozilla/config.py
+/mozilla/firefox-*.source.tar.bz2
+/graphify-out/
+/src/graphify-out/
 /mozilla/patches-new/komodo_app/build/Makefile.in
 /mozilla/prebuilt/python2.6/*/
 /mozilla/prebuilt/python2.7/*/

@@ -60,7 +60,7 @@ class Set(Container):
     def remove(self, value):
         """Remove the value from the redis set."""
         if not self.srem(value):
-            raise KeyError, value
+            raise KeyError(value)
         
     def pop(self):
         """Remove and return (pop) a random element from the Set."""
@@ -239,7 +239,7 @@ class List(Container):
 
     def extend(self, iterable):
         """Extend list by appending elements from the iterable."""
-        map(lambda i: self.rpush(i), iterable)
+        list(map(lambda i: self.rpush(i), iterable))
 
     def count(self, value):
         """Return number of occurrences of value."""
@@ -332,7 +332,7 @@ class TypedList(object):
         self._redisco_model = issubclass(self.klass, Model)
 
     def value_type(self, target_type):
-        if isinstance(target_type, basestring):
+        if isinstance(target_type, str):
             t = target_type
             from models.base import get_model_from_key
             target_type = get_model_from_key(target_type)
@@ -348,7 +348,7 @@ class TypedList(object):
 
     def typecast_iter(self, values):
         if self._redisco_model:
-            return filter(lambda o: o is not None, [self.klass.objects.get_by_id(v) for v in values])
+            return [o for o in [self.klass.objects.get_by_id(v) for v in values] if o is not None]
         else:
             return [self.klass(v, *self._klass_args, **self._klass_kwargs) for v in values]
 
@@ -376,13 +376,13 @@ class TypedList(object):
         self.list.append(self.typecast_stor(value))
 
     def extend(self, iter):
-        self.list.extend(map(lambda i: self.typecast_stor(i), iter))
+        self.list.extend([self.typecast_stor(i) for i in iter])
 
     def __setitem__(self, index, value):
         self.list[index] = self.typecast_stor(value)
 
     def __iter__(self):
-        for i in xrange(len(self.list)):
+        for i in range(len(self.list)):
             yield self[i]
 
     def __repr__(self):

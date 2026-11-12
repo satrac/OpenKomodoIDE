@@ -30,8 +30,8 @@ else:
 
 import codecs, encodings, re
 
-re_firstline = re.compile(ur'(.*?)(?:\r|\n|$)')
-re_htmlmeta = re.compile(ur'<meta.*?charset=(.*?)">')
+re_firstline = re.compile(r'(.*?)(?:\r|\n|$)')
+re_htmlmeta = re.compile(r'<meta.*?charset=(.*?)">')
 
 """Komodo will hand this library a buffer and ask it to either convert
 it or auto-detect the type."""
@@ -55,7 +55,7 @@ def checkBOM(buffer):
     """
     
     for i in range(min(4,len(buffer)),0,-1):
-        encoding = autodetect_dict.get( tuple(map(ord, buffer[0:i]) + [None] * (4-i)) )
+        encoding = autodetect_dict.get( tuple(list(map(ord, buffer[0:i])) + [None] * (4-i)) )
         if encoding:
             return (encoding, i)
 
@@ -71,17 +71,17 @@ def tryEncoding(buffer, encoding):
     
     try:
         secret_decoder_ring = codecs.lookup(encoding)[1]
-    except LookupError, e:
+    except LookupError as e:
         # the encoding name doesn't exist, likely a pep263 failure
         # an example is using windows-1250 as the name
         return None
     try:
         (outdata,len) = secret_decoder_ring(buffer)
         return outdata
-    except Exception, e: # Figure out the real exception types
+    except Exception as e: # Figure out the real exception types
         return None
 
-pep263re = re.compile("coding[:=]\s*([\w\-_.]+)")
+pep263re = re.compile(r"coding[:=]\s*([\w\-_.]+)")
 
 def autoDetectEncoding(buffer,
                        tryXMLDecl = 0,
@@ -211,8 +211,8 @@ def autoDetectXMLEncoding(buffer):
         return (None, None, '')
     
     first_line = re_firstline.match(decoded).groups(0)[0]
-    if first_line and first_line.startswith(u"<?xml"):
-        encoding_pos = first_line.find(u"encoding")
+    if first_line and first_line.startswith("<?xml"):
+        encoding_pos = first_line.find("encoding")
         if encoding_pos!=-1:
             # look for double quote
             quote_pos=first_line.find('"', encoding_pos) 
@@ -296,7 +296,7 @@ def recode_unicode(buffer, from_encoding, to_encoding, errors='strict'):
     
     In some instances, unicode object would not change, shortcuts will be taken.
     """
-    assert(type(buffer)==type(u''))
+    assert(type(buffer)==type(''))
     # unicode can always be decoded to utf-*, so we do not need to do
     # anything to recode the string now.
     if to_encoding.startswith('utf'):
@@ -309,7 +309,7 @@ def recode_unicode(buffer, from_encoding, to_encoding, errors='strict'):
         (raw, len) = codecs.getencoder(from_encoding)(buffer, errors)
     # convert back to a unicode string with the new encoding
     # decode to ucs-2 unicode object
-    return unicode(raw, to_encoding, errors)
+    return str(raw, to_encoding, errors)
 
 def recode_raw(buffer, from_encoding, to_encoding, errors='strict'):
     assert(type(buffer)==type(''))
@@ -319,7 +319,7 @@ def recode_raw(buffer, from_encoding, to_encoding, errors='strict'):
     return raw    
 
 def recode(buffer, from_encoding, to_encoding, errors='strict', raw=1):
-    if type(buffer) == type(u''):
+    if type(buffer) == type(''):
         newbuffer = recode_unicode(buffer, from_encoding, to_encoding, errors)
         if raw:
             return makeRaw(newbuffer, to_encoding)

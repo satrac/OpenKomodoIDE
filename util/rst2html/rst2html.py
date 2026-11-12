@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2004-2006 ActiveState Software Inc.
 #
 # Contributors:
@@ -51,7 +51,7 @@ import getopt
 try:
     import logging
 except ImportError:
-    sys.stdout.write("""\
+    sys.stdout.write(r"""\
 rst2html: error: This module requires the 'logging' Python package.
 This package is a standard part of Python 2.3. You can either upgrade:
     http://www.activestate.com/Products/ActivePython/
@@ -65,7 +65,7 @@ try:
     import docutils.utils
     import docutils.core
 except ImportError:
-    sys.stdout.write("""\
+    sys.stdout.write(r"""\
 rst2html: error: This module requires the 'docutils' Python package.
 You can get it here:
     http://sourceforge.net/project/showfiles.php?group_id=38414&package_id=30576
@@ -179,7 +179,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv[1:], "Vvho:b",
             ["version", "verbose", "help", "browse"])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         log.error(str(ex))
         log.error("Try `rst2html --help'.")
         return 1
@@ -190,7 +190,7 @@ def main(argv):
             sys.stdout.write(__doc__)
             return
         elif opt in ("-V", "--version"):
-            print "rst2html %s" % __version__
+            print("rst2html %s" % __version__)
             return
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -222,10 +222,10 @@ def main(argv):
                 fout.close()
             else:
                 sys.stdout.write(html)
-    except (RST2HTMLError, ValueError, EnvironmentError), ex:
+    except (RST2HTMLError, ValueError, EnvironmentError) as ex:
         log.error(str(ex))
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             import traceback
             traceback.print_exception(*sys.exc_info())
         return 1

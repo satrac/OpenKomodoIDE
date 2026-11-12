@@ -7,7 +7,7 @@
 import os
 import sys
 from xpcom import components, COMException, _xpcom
-import ConfigParser
+import configparser
 
 Cc = components.classes
 Ci = components.interfaces

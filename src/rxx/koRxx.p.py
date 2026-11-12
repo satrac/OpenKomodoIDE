@@ -154,7 +154,7 @@ class KoRxxMatchResultsTreeView(TreeView):
             log.error("no %sth match result" % row)
         except KeyError:
             log.error("unknown match results column: '%s'" % column.id)
-        if type(cell) not in types.StringTypes:
+        if type(cell) not in (str,):
             cell = str(cell)
         return cell
 
@@ -314,7 +314,7 @@ class KoRxxSplitResultsTreeView(TreeView):
             log.error("no %sth split result" % row)
         except KeyError:
             log.error("unknown split results column: '%s'" % column.id)
-        if type(cell) not in types.StringTypes:
+        if type(cell) not in (str,):
             cell = str(cell)
         return cell
 
@@ -504,7 +504,7 @@ class koRxxResponseHandler:
                 #log.debug("style %d-%d: %r (%d)", endStyled, index,
                 #          style, styleNum)
                 scimoz.setStyling(index - endStyled + 1, styleNum)
-        except lexregex.LexRegexError, ex:
+        except lexregex.LexRegexError as ex:
             # There was an error in the regex -- some of the regex will
             # not have been styled. Oh well. Mark the error area if the
             # indeces of the error are noted.
@@ -588,7 +588,7 @@ class koRxxResponseHandler:
         #log.debug("**** responseString: %s", responseString)
         try:
             responsePacket = json.loads(responseString)
-        except ValueError, ex:
+        except ValueError as ex:
             log.debug("  Can't json.decode %s: %s", responseString, ex)
             # Some languages, like PHP, return error messages in the output
             # We need to provide some output, or the user will see the last
@@ -1041,6 +1041,6 @@ def _escaped_text_from_text(text, escapes=None):
         # they'll add the 'u' flag.
         return ""
     escaped = text
-    for ch, escape in escapes.items():
+    for ch, escape in list(escapes.items()):
         escaped = escaped.replace(ch, escape)
     return escaped

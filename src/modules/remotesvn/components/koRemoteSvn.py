@@ -70,7 +70,7 @@ def _unique(s):
     except TypeError:
         del u  # move on to the next method
     else:
-        return u.keys()
+        return list(u.keys())
 
 def _splitall(path):
     """Split the given path into all its directory parts and return the list
@@ -336,7 +336,7 @@ class KoSVNRemote:
             svn = self.svn
 
         diff = ''
-        for basedir, files in _files.items():
+        for basedir, files in list(_files.items()):
             #print "files %r basedir %r" %(files, basedir)
             options["remote"] = None
             for f, uri in files:
@@ -459,7 +459,7 @@ class KoSVNRemote:
         # we init the cvs object with the root we retreived
         _files = self._splitFiles(files)
         output = ''
-        for basedir, file_items in _files.items():
+        for basedir, file_items in list(_files.items()):
             # , filetype=mode, msg=message, cwd=basedir
             remoteConnection = getRemoteSSHConnectionForUri(file_items[0][1])
             result, raw = self.svn.add(files=[f[0] for f in file_items],
@@ -497,7 +497,7 @@ class KoSVNRemote:
         try:
             _split = self._splitFiles(files)
             _files = self._convertFiles(files)
-            basedir = _commonprefix(_split.keys())
+            basedir = _commonprefix(list(_split.keys()))
             if svn is None:
                 svn = self.svn
             output = ''
@@ -532,7 +532,7 @@ class KoSVNRemote:
     def _do_remove(self, files, force, recursive, svn=None):
         _files = self._splitFiles(files)
         output = ''
-        for basedir, file_items in _files.items():
+        for basedir, file_items in list(_files.items()):
             # , force, recursive,cwd=basedir
             remoteConnection = getRemoteSSHConnectionForUri(file_items[0][1])
             result, raw = self.svn.delete([f[0] for f in file_items],
@@ -557,7 +557,7 @@ class KoSVNRemote:
     def _do_update(self, files, options, svn=None):
         _files = self._splitFiles(files)
         output = ''
-        for basedir, file_items in _files.items():
+        for basedir, file_items in list(_files.items()):
             # ,cwd=basedir
             remoteConnection = getRemoteSSHConnectionForUri(file_items[0][1])
             result, raw = self.svn.update([f[0] for f in file_items],
@@ -587,7 +587,7 @@ class KoSVNRemote:
         # item properties
         _files = self._splitFiles(files)
         output = ''
-        for basedir, file_items in _files.items():
+        for basedir, file_items in list(_files.items()):
             remoteConnection = getRemoteSSHConnectionForUri(file_items[0][1])
             result, raw = self.svn.revert([f[0] for f in file_items],
                                           _raw=1,
@@ -876,7 +876,7 @@ class koSvnRemoteFileChecker(KoSCCChecker):
         self.svn._svn = self.executable
         try:
             result, out = self.getSvnStatus(dir_nsUri, reason)
-        except svnremotelib.SVNLibError, e:
+        except svnremotelib.SVNLibError as e:
             # we get an exception here if the svn library call errors out
             self.notifyError('SVN Status Error, see SCC Output pane for details', e)
             return False
@@ -896,7 +896,7 @@ class koSvnRemoteFileChecker(KoSCCChecker):
             # Cache all the file scc information
             dir_uri = dir_nsUri.spec
             lenPrePath = len(dir_nsUri.prePath)
-            for fname, fileinfo in result.items():
+            for fname, fileinfo in list(result.items()):
                 try:
                     # Path is given as the relative local file path from
                     # the directory where the command was executed.
@@ -911,7 +911,7 @@ class koSvnRemoteFileChecker(KoSCCChecker):
                         if parent_cache_key != dir_uri:
                             self._lastChecked[parent_cache_key] = time.time()
                     self._cacheSCCInfo(cache, cache_key, fpath, fileinfo)
-                except KeyError, e:
+                except KeyError as e:
                     self.log.info("Can't find fileinfo['Path'] in file %r", fname)
                     pass
         elif _errors:

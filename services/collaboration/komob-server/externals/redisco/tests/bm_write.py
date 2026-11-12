@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 import random
 from redisco import models
@@ -56,13 +56,13 @@ if __name__ == '__main__':
         res = Person.objects.zfilter(date__lt=n)
         for p in res:
             p.date
-        print "Found %d lt" % len(res)
+        print("Found %d lt" % len(res))
 
     def filter_gte(n):
         res = Person.objects.zfilter(date__gte=n)
         for p in res:
             p.date
-        print "Found %d gte" % len(res)
+        print("Found %d gte" % len(res))
 
     tfilter_lt = partial(filter_lt, n)
     tfilter_gte = partial(filter_gte, n)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     f1 = timeit.timeit(tfilter_lt, number=1)
     f2 = timeit.timeit(tfilter_gte, number=1)
 
-    print "Save %f" % st
-    print "enum %f" % en
-    print "Filter lt %f" % f1
-    print "Filter gte %f" % f2
+    print("Save %f" % st)
+    print("enum %f" % en)
+    print("Filter lt %f" % f1)
+    print("Filter gte %f" % f2)

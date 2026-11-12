@@ -39,7 +39,7 @@ class KoStatusMessageStack:
     def _CullExpiredMessages(self):
         cullList = []
         curTime = time.time()
-        for sm in self._messages.values():
+        for sm in list(self._messages.values()):
             try:
                 if sm.expiresAt and sm.expiresAt < curTime:
                     cullList.append(sm.category)

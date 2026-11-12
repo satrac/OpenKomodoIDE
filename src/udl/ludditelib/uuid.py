@@ -61,8 +61,14 @@ class UUID(object):
         self.clock_low = clock_low
         self.node = node
 
-    def __cmp__(self, other):
-        return cmp(self.bytes, getattr(other, 'bytes', other))
+    def __eq__(self, other):
+        return self.bytes == getattr(other, 'bytes', other)
+
+    def __lt__(self, other):
+        return self.bytes < getattr(other, 'bytes', other)
+
+    def __hash__(self):
+        return hash(self.bytes)
 
     def __str__(self):
         return '{%08x-%04x-%04x-%02x%02x-%012x}' % (
@@ -74,19 +80,23 @@ class UUID(object):
 
     def get_bytes(self):
         def byte(n):
-            return chr(n & 0xff)
+            return n & 0xff
 
-        return (byte(self.time_low >> 24) + byte(self.time_low >> 16) +
-                byte(self.time_low >> 8) + byte(self.time_low) +
-                byte(self.time_mid >> 8) + byte(self.time_mid) +
-                byte(self.time_hi_ver >> 8) + byte(self.time_hi_ver) +
-                byte(self.clock_hi_res) + byte(self.clock_low) +
-                byte(self.node >> 40) + byte(self.node >> 32) +
-                byte(self.node >> 24) + byte(self.node >> 16) +
-                byte(self.node >> 8) + byte(self.node))
+        return bytes((
+                byte(self.time_low >> 24), byte(self.time_low >> 16),
+                byte(self.time_low >> 8), byte(self.time_low),
+                byte(self.time_mid >> 8), byte(self.time_mid),
+                byte(self.time_hi_ver >> 8), byte(self.time_hi_ver),
+                byte(self.clock_hi_res), byte(self.clock_low),
+                byte(self.node >> 40), byte(self.node >> 32),
+                byte(self.node >> 24), byte(self.node >> 16),
+                byte(self.node >> 8), byte(self.node)))
 
     def set_bytes(self, bytes):
-        values = map(ord, bytes)
+        if isinstance(bytes, str):
+            values = [ord(c) for c in bytes]
+        else:
+            values = list(bytes)
         self.time_low = ((values[0] << 24) + (values[1] << 16) +
                          (values[2] << 8) + values[3])
         self.time_mid = (values[4] << 8) + values[5]
@@ -193,11 +203,15 @@ def uuid1():
     uuid.version = 1
     return uuid
 
+def _name_bytes(name):
+    return name.encode('utf-8') if isinstance(name, str) else name
+
+
 def uuid3(namespace, name):
     """Generate a UUID from the MD5 hash of a namespace UUID and a name."""
     from hashlib import md5
     uuid = UUID(0, 0, 0, 0, 0, 0)
-    uuid.bytes = md5(namespace.bytes + name).digest()[:16]
+    uuid.bytes = md5(namespace.bytes + _name_bytes(name)).digest()[:16]
     uuid.variant = RFC_4122
     uuid.version = 3
     return uuid
@@ -219,9 +233,9 @@ def uuid4():
 
 def uuid5(namespace, name):
     """Generate a UUID from the SHA-1 hash of a namespace UUID and a name."""
-    from sha import sha
+    from hashlib import sha1
     uuid = UUID(0, 0, 0, 0, 0, 0)
-    uuid.bytes = sha(namespace.bytes + name).digest()[:16]
+    uuid.bytes = sha1(namespace.bytes + _name_bytes(name)).digest()[:16]
     uuid.variant = RFC_4122
     uuid.version = 5
     return uuid

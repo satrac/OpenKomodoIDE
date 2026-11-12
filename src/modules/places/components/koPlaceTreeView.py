@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2010 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -25,6 +25,12 @@ from xpcom.server import WrapObject, UnwrapObject
 from koTreeView import TreeView
 from koLanguageServiceBase import sendStatusMessage
 from koUnicodeEncoding import autoDetectEncoding
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 log = logging.getLogger("koPlaceTreeView")
 #log.setLevel(logging.DEBUG)
 
@@ -264,7 +270,7 @@ class _KoPlaceItem(object):
         self.lastUpdated = -1
 
 import threading
-from Queue import Queue
+from queue import Queue
 
 # some constants used for live folders
 # from koKPFTreeView.p.py
@@ -405,7 +411,7 @@ class KoPlaceTreeView(TreeView):
                       len(self._nodeOpenStatusFromName), lim)
             try:
                 import operator
-                newDict = dict(sorted(self._nodeOpenStatusFromName.items(),
+                newDict = dict(sorted(list(self._nodeOpenStatusFromName.items()),
                                       key=operator.itemgetter(1), reverse=True)[:lim])
                 self._nodeOpenStatusFromName = newDict
             except:
@@ -582,15 +588,15 @@ class KoPlaceTreeView(TreeView):
     # Keep them in this class for namespace purposes only.
     def _compare_item_natural(item1, item2):
         if item1[1].type == item2[1].type:
-            return cmp(item1[0], item2[0])
+            return _cmp(item1[0], item2[0])
         else:
-            return cmp(item1[1].type, item2[1].type)  # folder:1, file:2
+            return _cmp(item1[1].type, item2[1].type)  # folder:1, file:2
 
     def _compare_item_ascending(item1, item2):
-        return cmp(item1[0], item2[0])
+        return _cmp(item1[0], item2[0])
 
     def _compare_item_descending(item1, item2):
-        return cmp(item2[0], item1[0])
+        return _cmp(item2[0], item1[0])
 
     sortFuncTable = [None, _compare_item_natural, _compare_item_ascending,
                      _compare_item_descending]
@@ -598,7 +604,7 @@ class KoPlaceTreeView(TreeView):
     def _sortItems(self, childNodes):
         assert self._sortedBy == "name", 'sorting by %r, expected "name"' % (self._sortedBy,)
         adjustedItems = [(node.name.lower(), node) for node in childNodes]
-        sortedItems = sorted(adjustedItems, cmp=self.sortFuncTable[self._sortDir])
+        sortedItems = sorted(adjustedItems, key=cmp_to_key(self.sortFuncTable[self._sortDir]))
         return [x[1] for x in sortedItems]    
 
     # nsIFileNotificationObserver
@@ -1461,7 +1467,7 @@ class KoPlaceTreeView(TreeView):
             if diff_count > self.OPEN_PLACES_LIMIT * 0.1:
                 # The oldest items are the smallest, and come first
                 keys_sorted_by_time = [a2 for a1, a2 in
-                                       sorted([(y,x) for x, y in self._nodeOpenStatusFromName.items()])
+                                       sorted([(y,x) for x, y in list(self._nodeOpenStatusFromName.items())])
                                        ]
                 for k in keys_sorted_by_time[0 : diff_count]:
                     del self._nodeOpenStatusFromName[k]
@@ -1539,7 +1545,7 @@ class KoPlaceTreeView(TreeView):
             if conn.list(fullPath, False):
                 raise ServerException(nsError.NS_ERROR_INVALID_ARG,
                                       "File %s already exists in %s:%s" % (basename, conn.server, parentPath))
-            conn.createFile(fullPath, 0644)
+            conn.createFile(fullPath, 0o644)
         if parentIndex == -1:
             self.refreshFullTreeView()
         else:
@@ -1644,7 +1650,7 @@ class KoPlaceTreeView(TreeView):
         self._tree.beginUpdateBatch()
         undeleted_paths = []
         try:
-            for uri, index in reversed(zip(uris, indices)):
+            for uri, index in reversed(list(zip(uris, indices))):
                 if not uri in nodes_to_remove:
                     undeleted_paths.append(uriparse.URIToPath(uri))
                     continue
@@ -1799,14 +1805,14 @@ class KoPlaceTreeView(TreeView):
                     properties.append('scc' + sccActionValue.capitalize())
                 sccOkValue = scc['sccOk']
                 if sccOkValue:
-                    if isinstance(sccOkValue, basestring):
+                    if isinstance(sccOkValue, str):
                         if int(sccOkValue):
                             properties.append("sccOk")
                     else:
                         properties.append("sccOk")
                 sccSyncValue = scc['sccSync']
                 if sccSyncValue:
-                    if isinstance(sccSyncValue, basestring):
+                    if isinstance(sccSyncValue, str):
                         if int(sccSyncValue):
                             properties.append("sccSync")
                     else:
@@ -1838,7 +1844,7 @@ class KoPlaceTreeView(TreeView):
         #log.debug(">> isContainerEmpty[%d] => %r", index, len(self._rows[index].childNodes) == 0)
         try:
             return self.isContainer(index) and len(self._rows[index].childNodes) == 0
-        except AttributeError, ex:
+        except AttributeError as ex:
             node = self._rows[index]
             log.exception("level: %d, uri:%s, isContainer:%r",
                            node.level,
@@ -1853,7 +1859,7 @@ class KoPlaceTreeView(TreeView):
             level = self._rows[index].level
             while i >= 0 and self._rows[i].level >= level:
                 i -= 1
-        except IndexError, e:
+        except IndexError as e:
             i = -1
         return i
 
@@ -1867,7 +1873,7 @@ class KoPlaceTreeView(TreeView):
                     return 0
                 elif next_row_level == current_level:
                     return 1
-        except IndexError, e:
+        except IndexError as e:
             pass
         return 0
     
@@ -2330,7 +2336,7 @@ class KoPlaceTreeView(TreeView):
 
     def getDirListFromLocalPath(self, uri):
         path = uriparse.URIToPath(uri)
-        assert isinstance(path, unicode)
+        assert isinstance(path, str)
         # Bug 97419: by spec, os.listdir(unicode) returns unicode encodings
         # of each member as long as it can decode them. On Linux it can't
         # handle latin* encodings, so it returns a str.
@@ -2364,7 +2370,7 @@ class KoPlaceTreeView(TreeView):
             try:
                 item = self._finishGettingItem(uriparse.localPathToURI(full_name), name, itemType)
                 items.append(item)
-            except ValueError, e:
+            except ValueError as e:
                 log.warn('localPathToURI failed: %s' % e)
         return items
 
@@ -2552,7 +2558,7 @@ class _WorkerThread(threading.Thread, Queue):
         indices = requester_data['indices']
         nodes_to_remove = requester_data['nodes_to_remove']
 
-        for uri, index in reversed(zip(uris, indices)):
+        for uri, index in reversed(list(zip(uris, indices))):
             try:
                 if self._do_deleteItem(requester, uri, index):
                     nodes_to_remove.append(uri)
@@ -2575,8 +2581,7 @@ class _WorkerThread(threading.Thread, Queue):
             except:
                 log.exception("sysUtils.MoveToTrash(%s) failed", path)
                 if os.path.isdir(path):
-                    from distutils.dir_util import remove_tree
-                    remove_tree(path)
+                    shutil.rmtree(path)
                 else:
                     os.unlink(path)
             return not os.path.exists(path)
@@ -2629,7 +2634,7 @@ class _WorkerThread(threading.Thread, Queue):
             if not copying:
                 try:
                     shutil.move(srcPath, finalTargetFilePath)
-                except IOError, ex:
+                except IOError as ex:
                     finalMsg = ("doTreeOperation_WorkerThread: can't copy %s to %s: %s" %
                                 (srcPath, finalTargetFilePath, ex.message))
                     return finalMsg
@@ -2790,7 +2795,7 @@ class _WorkerThread(threading.Thread, Queue):
                 else:
                     newPath2 = newPath
                     shutil.copy(srcPath, newPath2)
-            except (Exception, IOError), ex:
+            except (Exception, IOError) as ex:
                 finalMsg = ("doTreeCopyWithDestNameAndURI_WorkerThread: can't copy %s to %s: %s" %
                             (srcPath, newPath2, ex.message))
                 log.exception("%s", finalMsg)
@@ -2801,7 +2806,7 @@ class _WorkerThread(threading.Thread, Queue):
             src_rfi = conn.list(srcPath, True)
             try:
                 self._copyRemoteItem(conn, src_rfi, newPath, requester_data)
-            except Exception, ex:
+            except Exception as ex:
                 finalMsg = ("doTreeCopyWithDestNameAndURI_WorkerThread: can't copy file %s to %s: %s" %
                             (srcPath, newPath, ex.message))
                 log.exception("%s", finalMsg)

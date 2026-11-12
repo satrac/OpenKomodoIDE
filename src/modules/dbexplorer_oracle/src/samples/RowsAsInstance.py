@@ -33,7 +33,7 @@ if False:
 # retrieve the data and display it
 cursor.execute("select * from TestInstances")
 cursor.rowfactory = Test
-print "Rows:"
+print("Rows:")
 for row in cursor:
-    print "a = %s, b = %s, c = %s" % (row.a, row.b, row.c)
+    print("a = %s, b = %s, c = %s" % (row.a, row.b, row.c))
 

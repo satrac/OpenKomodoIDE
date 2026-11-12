@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2006 ActiveState Software Inc.
 # Author:
 #   Trent Mick (TrentM@ActiveState.com)
@@ -74,10 +74,10 @@ import logging
 import optparse
 import copy
 import threading
-import Queue
+import queue
 import socket
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 
 
@@ -496,9 +496,9 @@ class CodeIntelTask(Task):
     def get_cmds(self, machine):
         if machine["platform"].startswith("win"):
             return [
-                'cd %s\\src\\codeintel' % machine[self.build_dir_key],
+                'cd %s\\\\src\\\\codeintel' % machine[self.build_dir_key],
                 _svn_up_str(),
-                'bin\\setenv.bat',
+                'bin\\\\setenv.bat',
                 'python Makefile.py distclean all',
             ]
         else:
@@ -594,7 +594,7 @@ class KomodoDevCleanTask(Task):
             '%s clean' % BK,
         ]
         if machine["platform"].startswith("win"):
-            cmds.append("rd /s/q src\\scintilla")
+            cmds.append("rd /s/q src\\\\scintilla")
         else:
             cmds.append("rm -rf src/scintilla")
         return cmds
@@ -629,7 +629,7 @@ class AdminTask(Task):
             else:
                 mar_cache = "~/.komodo-dev/caches/mar/*"
             return [
-                "df -lh | grep 'Filesystem\|^/dev'",
+                r"df -lh | grep 'Filesystem\|^/dev'",
                 "echo ---",
                 "python ~/tm/tools/rm_if_older_than_5_days.py %s" % mar_cache,
             ]
@@ -769,7 +769,7 @@ class MozillaTask(Task):
                        or release_build_opts)
 
         if machine["platform"].startswith("win"):
-            cmd_prefix = "cmd /c support\\envrun-moz-%s-x86.bat " % self.msvc
+            cmd_prefix = "cmd /c support\\\\envrun-moz-%s-x86.bat " % self.msvc
         else:
             cmd_prefix = ""
         build_tag = self.name
@@ -852,7 +852,7 @@ def rrun(task_names, machine_pats=None, defines=None,
     # Create a Runner for each machine on which one or more tasks will
     # be run. Some tasks are not relevant for some machines.
     runners = []
-    reporter = Queue.Queue()
+    reporter = queue.Queue()
     tasks_remaining = [] # list of (<task-name>, <hostname>)
     for machine in machines:
         relevant_tasks = [] # list of tasks that this machine can run
@@ -898,7 +898,7 @@ def rrun(task_names, machine_pats=None, defines=None,
                 try:
                     runner, task, retval, duration, log_path \
                         = reporter.get_nowait()
-                except Queue.Empty: # no result is ready yet
+                except queue.Empty: # no result is ready yet
                     timestamp = _sec2hms(time.time() - starttime)
                     prefix = "Tasks (%d):" % len(tasks_remaining)
                     len_left = LINELEN - (len(prefix) + 2 + len(timestamp))
@@ -1270,7 +1270,7 @@ def _regex_from_encoded_pattern(s):
             except KeyError:
                 raise ValueError("unsupported regex flag: '%s' in '%s' "
                                  "(must be one of '%s')"
-                                 % (char, s, ''.join(flag_from_char.keys())))
+                                 % (char, s, ''.join(list(flag_from_char.keys()))))
         return re.compile(s[1:idx], flags)
     else: # not an encoded regex
         return re.compile(re.escape(s))
@@ -1626,7 +1626,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

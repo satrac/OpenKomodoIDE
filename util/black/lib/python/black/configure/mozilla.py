@@ -3,8 +3,9 @@
 #
 
 import os, sys, re
+import subprocess
 if sys.platform.startswith("win"):
-    import _winreg
+    import winreg
 import black.configure
 from black.configure import Datum, ConfigureError, RunEnvScript, SetEnvVar, SetPathEnvVar
 
@@ -34,7 +35,7 @@ class SetXpcomDebugBreakDebug(SetEnvVar):
     def _Determine_Do(self):
         self.applicable = 1
         self.value = os.environ.get(self.name, None)
-        if self.value is None and black.configure.items.has_key("buildType"):
+        if self.value is None and "buildType" in black.configure.items:
             buildType = black.configure.items["buildType"].Get()
             if buildType == "debug":
                 self.value = 'warn'
@@ -48,7 +49,7 @@ class SetMozDebug(SetEnvVar):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if black.configure.items.has_key("buildType"):
+        if "buildType" in black.configure.items:
             buildType = black.configure.items["buildType"].Get()
             if buildType == "debug":
                 self.value = 1
@@ -71,7 +72,7 @@ class SetMozillaOfficial(SetEnvVar):
                 self.value = optarg
                 break
         else:
-            if os.environ.has_key(self.name):
+            if self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = 1 # default is set
@@ -92,7 +93,7 @@ class SetBuildOfficial(SetEnvVar):
                 self.value = optarg
                 break
         else:
-            if os.environ.has_key(self.name):
+            if self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = 1 # default is set
@@ -112,7 +113,7 @@ class SetMozDisableJarPackaging(SetEnvVar):
                 self.value = optarg
                 break
         else:
-            if os.environ.has_key(self.name):
+            if self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = None # default is unset
@@ -131,7 +132,7 @@ class SetMozDisableTests(SetEnvVar):
                 self.value = optarg
                 break
         else:
-            if os.environ.has_key(self.name):
+            if self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = 1 # default is set
@@ -155,7 +156,7 @@ class SetMozOsTarget(SetEnvVar):
                     self.value = "WINNT"
                 elif target.lower() in ("win95", "win98", "win9x"):
                     self.value = "WIN95"
-            elif os.environ.has_key(self.name):
+            elif self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = "WINNT"  # default
@@ -170,7 +171,7 @@ class SetMozWinOs(SetEnvVar):
         SetEnvVar.__init__(self, "WINOS")
 
     def _Determine_Do(self):
-        if not black.configure.items.has_key("OS_TARGET"):
+        if "OS_TARGET" not in black.configure.items:
             black.configure.items["OS_TARGET"] = SetMozOsTarget()
         if black.configure.items["OS_TARGET"].Determine():
             self.applicable = 1
@@ -187,7 +188,7 @@ class SetMscVer(SetEnvVar):
     def _Determine_Do(self):
         if sys.platform.startswith("win"):
             self.applicable = 1
-            if os.environ.has_key(self.name):
+            if self.name in os.environ:
                 self.value = os.environ[self.name]
             else:
                 self.value = 1200 # default
@@ -202,7 +203,7 @@ class SetMozBranch(SetEnvVar):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if os.environ.has_key(self.name):
+        if self.name in os.environ:
             self.value = os.environ[self.name]
         else:
             self.value = None  # default is the trunk
@@ -229,7 +230,7 @@ class CreateMozconfig(Datum):
                 os.system("mv %s %s" % (self.value, saveName))
             # create the appropriate ~/.mozconfig
             buildType = None
-            if black.configure.items.has_key("buildType"):
+            if "buildType" in black.configure.items:
                 buildType = black.configure.items["buildType"].Get()
             buildType = black.configure.items["buildType"].Get()
             if not buildType:
@@ -291,9 +292,7 @@ class SetMozTools(SetEnvVar):
             raise ConfigureError("MOZ_TOOLS is bogus, there is no gmake "\
                 "executable (%s) there.\n" % gmakeExe)
         cmd = '"%s" --version' % gmakeExe
-        o = os.popen(cmd)
-        outputLines = o.readlines()
-        o.close()
+        outputLines = subprocess.getoutput(cmd).splitlines()
         versionRe = re.compile("^GNU Make version (?P<version>[0-9.]+)")
         minVersion = "3.79.1"
         versionMatch = versionRe.search(outputLines[0])
@@ -320,7 +319,7 @@ class SetMozTools(SetEnvVar):
                     self.value = os.path.abspath(os.path.normpath(optarg))
                     break
             else:
-                if os.environ.has_key(self.name):
+                if self.name in os.environ:
                     self.value = os.environ[self.name]
                 else:
                     self.value = None
@@ -339,7 +338,7 @@ class SetMozillaFiveHome(SetPathEnvVar):
             self.value = []
             #---- add required entries to the path
             # add the Mozilla bin directory
-            if not black.configure.items.has_key("mozBin"):
+            if "mozBin" not in black.configure.items:
                 black.configure.items["mozBin"] = MozBin()
             
             applicable = black.configure.items["mozBin"].Determine()

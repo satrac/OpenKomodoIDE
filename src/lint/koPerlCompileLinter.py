@@ -54,7 +54,7 @@ def PerlWarnsToLintResults(warns, perlfilename, actualFileName, perlcode):
     warns = newwarns
 
     results = []
-    if type(perlfilename) == unicode:
+    if type(perlfilename) == str:
         perlfilename = perlfilename.encode('utf-8')
     escPerlName = re.escape(perlfilename)
     # Fix bug 96303 (again): Replace any runs of non-ascii characters with unescaped '.*'
@@ -194,7 +194,7 @@ def RemoveDashDFromShebangLine(line):
         remainder = after
 
     # the remainder are perl arguments
-    tokens = re.split("(-\*|- |\s+)", remainder)
+    tokens = re.split(r"(-\*|- |\s+)", remainder)
     while len(tokens) > 0:
         token = tokens[0]
         if token == "":
@@ -203,7 +203,7 @@ def RemoveDashDFromShebangLine(line):
             # "-*" and "- " are ignored for Emacs-style mode lines
             result += token
             tokens = tokens[1:]
-        elif re.match("^\s+$", token):
+        elif re.match(r"^\s+$", token):
             # skip whitespace
             result += token
             tokens = tokens[1:]
@@ -310,13 +310,13 @@ class _CommonPerlLinter(object):
                 fout = open(tmpFileName, 'wb')
                 fout.write(text)
                 fout.close()
-            except (OSError, IOError), ex:
+            except (OSError, IOError) as ex:
                 tmpFileName = None
         if not tmpFileName:
             # Fallback to using a tmp dir if cannot write in cwd.
             try:
                 tmpFileName = tempfile.mktemp()
-            except OSError, ex:
+            except OSError as ex:
                 # Sometimes get this error but don't know why:
                 # OSError: [Errno 13] Permission denied: 'C:\\DOCUME~1\\trentm\\LOCALS~1\\Temp\\~1324-test'
                 errmsg = "error determining temporary filename for "\
@@ -512,7 +512,7 @@ class KoPerlCriticLinter(_CommonPerlLinter):
                 perlcritic_checking_rcfile = prefset.getStringPref("perlcritic_checking_rcfile")
                 if perlcritic_checking_rcfile and os.path.exists(perlcritic_checking_rcfile):
                     settings['-profile'] = perlcritic_checking_rcfile
-                pcOption = "-Mcriticism (" + ", ".join(["'%s' => '%s'" % (key, value) for key, value in settings.items()]) + ")"
+                pcOption = "-Mcriticism (" + ", ".join(["'%s' => '%s'" % (key, value) for key, value in list(settings.items())]) + ")"
             perlExtraPaths = prefset.getStringPref("perlExtraPaths")
             if perlExtraPaths:
                 if sys.platform.startswith("win"):

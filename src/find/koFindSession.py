@@ -66,7 +66,7 @@ class KoFindSession:
             be included in the '_state' because they cannot be compared.
             Rather the XPCOM object's attributes must be listed individually.  
         """
-        changedKeys = [key for key in kwargs.keys()\
+        changedKeys = [key for key in list(kwargs.keys())\
                            if self._state[key] is not None and\
                               self._state[key] != kwargs[key]]
         if len(changedKeys) > 0:
@@ -80,7 +80,7 @@ class KoFindSession:
                 log.debug(msg)
             # reset as appropriate
             self.Reset()
-        for key in kwargs.keys():
+        for key in list(kwargs.keys()):
             self._state[key] = kwargs[key]
 
 
@@ -212,7 +212,7 @@ class KoFindSession:
         # indeces updated to reflect the text change. (XXX This is only
         # currently done for self._findsMap() to assist WasAlreadyFound().
         # self._finds and self._replacements *should* also be updated.)
-        for find in self._findsMap.keys():
+        for find in list(self._findsMap.keys()):
             if find[0] == replaceResult.url and find[1] > replaceResult.start:
                 log.debug("update _findsMap entry: %r -> (%s, %s, %s)",
                           find, find[0], find[1]+delta, find[2]+delta)
@@ -247,9 +247,9 @@ class KoFindSession:
         self._state["url"] = replaceResults[-1].url
 
     def WasAlreadyFound(self, findResult):
-        retval = self._findsMap.has_key((findResult.url,
+        retval = (findResult.url,
                                          findResult.start,
-                                         findResult.end))
+                                         findResult.end) in self._findsMap
         log.debug("was this find result, {url:'%s', start:%d, end:%d}, "\
                   "already found? %s   (_findsMap=%s)",
                   findResult.url, findResult.start, findResult.end, retval,
@@ -260,7 +260,7 @@ class KoFindSession:
         """Return true iff the given findResult overlaps a previous replace
         result, i.e. is a find hit created by a replacement.
         """
-        for url, start, end in self._findsMap.keys():
+        for url, start, end in list(self._findsMap.keys()):
             if findResult.url == url and\
                (  start < findResult.start < end
                or start < findResult.end   < end):
@@ -275,7 +275,7 @@ class KoFindSession:
         return retval
     
     def HaveSearchedThisUrlAlready(self, url):
-        retval = self._urlsSearched.has_key(url)
+        retval = url in self._urlsSearched
         log.debug("has URL '%s' already been search? %s (_urlsSearched=%r)",
                   url, retval, self._urlsSearched)
         return retval

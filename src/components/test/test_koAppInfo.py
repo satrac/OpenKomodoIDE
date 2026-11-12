@@ -24,7 +24,7 @@ class _BaseAppInfoTestCase(unittest.TestCase):
                 p1 = [normcase(normpath(x)) for x in p1]
                 p2 = [normcase(normpath(x)) for x in p2]
             else:
-                assert isinstance(p1, (str, unicode))
+                assert isinstance(p1, str)
                 p1 = normcase(normpath(p1))
                 p2 = normcase(normpath(p2))
         self.assertEqual(p1, p2)
@@ -42,14 +42,14 @@ class _BaseAppInfoTestCase(unittest.TestCase):
 
     def _getExecutableFromRegistry(self, exeName):
         """Windows allow application paths to be registered in the registry."""
-        import _winreg
+        import winreg
         try:
-            key = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\" +\
+            key = "SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\App Paths\\" +\
                   exeName
-            registered = _winreg.QueryValue(_winreg.HKEY_LOCAL_MACHINE, key)
+            registered = winreg.QueryValue(winreg.HKEY_LOCAL_MACHINE, key)
             if registered and os.path.exists(registered):
                 return registered
-        except _winreg.error:
+        except winreg.error:
             pass
         return None
 
@@ -64,7 +64,7 @@ class _BaseAppInfoTestCase(unittest.TestCase):
             if basename(installdir) == "bin":
                 installdir = dirname(installdir)
             return installdir
-        return map(getInstallDir, self._getPathsForInterpreters(interpNames))
+        return list(map(getInstallDir, self._getPathsForInterpreters(interpNames)))
 
     _prefs = None
     @property
@@ -78,7 +78,7 @@ class _BaseAppInfoTestCase(unittest.TestCase):
         env = koprocessutils.getUserEnv()
         encoding = sys.getfilesystemencoding()
         _enc_env = {}
-        for key, value in env.items():
+        for key, value in list(env.items()):
             try:
                 _enc_env[key.encode(encoding)] = value.encode(encoding)
             except UnicodeEncodeError:
@@ -246,7 +246,7 @@ class _BaseAppInfoTestCase(unittest.TestCase):
         if exe:
             self.assertEqual(appInfo.getVersionForBinary(exe), appInfo.version)
         #else:
-        #    self.failUnlessRaises(appInfo.getVersionForBinary(exe))
+        #    self.assertRaises(appInfo.getVersionForBinary(exe))
 
     def test_valid_version(self):
         self.prefs.setStringPref(self.defaultInterpreterPrefName, "")
@@ -264,7 +264,7 @@ class _BaseAppInfoTestCase(unittest.TestCase):
         if exe:
             try:
                 self.assertFalse(appInfo.haveModules(["foozball22"]))
-            except COMException, ex:
+            except COMException as ex:
                 if ex.errno != nsError.NS_ERROR_NOT_IMPLEMENTED:
                     raise
 

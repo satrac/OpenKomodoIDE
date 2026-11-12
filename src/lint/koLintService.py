@@ -5,7 +5,7 @@
 import os, sys
 import threading
 import time
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from zope.cachedescriptors.property import Lazy as LazyProperty
 from xpcom import components, nsError, ServerException, COMException, _xpcom
@@ -23,10 +23,10 @@ class RequestQueue:
     #   - calls are always blocking
     #   - add .prepend() and .remove_uid()
     def __init__(self):
-        import thread
+        import _thread
         self._init()
-        self.mutex = thread.allocate_lock()
-        self.esema = thread.allocate_lock() # if acquired, then queue is empty
+        self.mutex = _thread.allocate_lock()
+        self.esema = _thread.allocate_lock() # if acquired, then queue is empty
         self.esema.acquire()
 
     def put(self, item):
@@ -261,8 +261,8 @@ class KoLintService:
         categoryName = 'category-komodo-linter-aggregator'
         for entry in _xpcom.GetCategoryEntries(categoryName):
             rawName, cid = entry.split(" ", 1)
-            fixedName = urllib2.unquote(rawName)
-            if not self._linterCIDsByLanguageName.has_key(fixedName):
+            fixedName = urllib.parse.unquote(rawName)
+            if fixedName not in self._linterCIDsByLanguageName:
                 self._linterCIDsByLanguageName[fixedName] = {'terminals':[],
                                                      'aggregator':cid}
             else:
@@ -275,13 +275,13 @@ class KoLintService:
         categoryName = 'category-komodo-linter'
         for entry in _xpcom.GetCategoryEntries(categoryName):
             rawName, cid = entry.split(" ", 1)
-            fixedName = urllib2.unquote(rawName)
+            fixedName = urllib.parse.unquote(rawName)
             idx = fixedName.find("&type=")
             if idx == -1:
                 languageName = fixedName
             else:
                 languageName = fixedName[:idx]
-            if not self._linterCIDsByLanguageName.has_key(languageName):
+            if languageName not in self._linterCIDsByLanguageName:
                 self._linterCIDsByLanguageName[languageName] = {'terminals':[],
                                                              'aggregator':None}
             self._linterCIDsByLanguageName[languageName]['terminals'].append(cid)
@@ -291,7 +291,7 @@ class KoLintService:
         nameObj.QueryInterface(components.interfaces.nsISupportsCString)
         rawName = nameObj.data
         try:
-            fixedName = urllib2.unquote(rawName)
+            fixedName = urllib.parse.unquote(rawName)
         except:
             fixedName = rawName
         return rawName, fixedName
@@ -361,11 +361,11 @@ class KoLintService:
                     languageName = linterCID[len(self.GENERIC_LINTER_AGGREGATOR_CID) + 1:]
                     linter = components.classes[self.GENERIC_LINTER_AGGREGATOR_CID].createInstance(components.interfaces.koILinter)
                     UnwrapObject(linter).initialize(languageName, self)
-                elif linterCID not in components.classes.keys():
+                elif linterCID not in list(components.classes.keys()):
                     linter = None
                 else:
                     linter = components.classes[linterCID].createInstance(components.interfaces.koILinter)
-            except COMException, ex:
+            except COMException as ex:
                 errmsg = "Internal Error creating a linter with CID '%s': %s"\
                     % (linterCID, ex)
                 raise ServerException(nsError.NS_ERROR_UNEXPECTED, errmsg)
@@ -408,7 +408,7 @@ class KoLintService:
         try:
             encodedString = content.encode(encoding.python_encoding_name,
                                            "strict")
-        except UnicodeError, ex:
+        except UnicodeError as ex:
             pass  # errors are handled after the try/except/else block
         else:
             return koLintResults() # no encoding errors
@@ -543,13 +543,13 @@ class KoLintService:
                     break
     
                 # process the request
-                if TIME_LINTS: startlint = time.clock()
+                if TIME_LINTS: startlint = time.perf_counter()
                 log.info("manager thread: process request: %r", request)
                 try:
                     # Look for encoding errors first.
                     results = self._getEncodingLintResults(request.content,
                                                            request.encoding)
-                    if TIME_LINTS: endencodinglint = time.clock()
+                    if TIME_LINTS: endencodinglint = time.perf_counter()
 
                     # If there were no encoding errors, try the
                     # requested linter.
@@ -576,7 +576,7 @@ class KoLintService:
                         #if results is None:
                         #   results = koLintResults() 
                         log.debug("manager thread: linter.lint(request) returned")
-                    if TIME_LINTS: endlintlint = time.clock()
+                    if TIME_LINTS: endlintlint = time.perf_counter()
 
                     if request.prefset.getBooleanPref("lintEOLs"):
                         # Also look for mixed-line endings warnings.
@@ -584,15 +584,15 @@ class KoLintService:
                             request.koDoc.new_line_endings)
 
                     if TIME_LINTS:
-                        endeollint = time.clock()
-                        print "lint of '%s': encoding=%.3fs  lint=%.3fs  eol=%.3fs"\
+                        endeollint = time.perf_counter()
+                        print("lint of '%s': encoding=%.3fs  lint=%.3fs  eol=%.3fs"\
                               % (request.koDoc.baseName,
                                  endencodinglint-startlint,
                                  endlintlint-endencodinglint,
-                                 endeollint-endlintlint)
+                                 endeollint-endlintlint))
     
                     request.results = results
-                except (ServerException, COMException), ex:
+                except (ServerException, COMException) as ex:
                     request.errorString = str(ex)
                 except:
                     # Any exceptions that are not ServerException or
@@ -625,7 +625,7 @@ class KoLintService:
                         def reportResults(rq):
                             rq.lintBuffer.reportResults(rq)
                         reportResults(request)
-                    except COMException, ex:
+                    except COMException as ex:
                         # Ignore this error, which will happen if results
                         # are reported after the buffer has gone away (i.e.
                         # the file owning that buffer was closed):
@@ -660,15 +660,15 @@ if __name__ == "__main__":
     if 0:
         q.put(TestRequest("id_1"))
         q.remove_uid("id_1")
-        print "item:"
+        print("item:")
         sys.stdout.flush()
-        print q.get()
+        print(q.get())
     
     if 1:    
         q.put(TestRequest("id_1"))
         q.put(TestRequest("id_2"))
         pprint.pprint(q.queue)
-        print "item: ", q.get()
+        print("item: ", q.get())
         q.put(TestRequest("id_3"))
         q.put(TestRequest("id_4"))
         q.put(TestRequest("id_3"))
@@ -681,7 +681,7 @@ if __name__ == "__main__":
         pprint.pprint(q.queue)
         q.remove_uid("id_4")
         pprint.pprint(q.queue)
-        print "item: ", q.get()
-        print "item: ", q.get()
+        print("item: ", q.get())
+        print("item: ", q.get())
         pprint.pprint(q.queue)
 

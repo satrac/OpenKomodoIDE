@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     An OO interface to 'p4' (the Perforce client command line app).
@@ -41,12 +41,26 @@ import cmd
 import re
 import types
 import marshal
+import subprocess
 import getopt
 import tempfile
 import koprocessutils
 import copy
 
 import logging
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
+
+def _popen3(cmd):
+    """os.popen3 replacement: return (process, stdin, stdout, stderr)."""
+    p = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return p, p.stdin, p.stdout, p.stderr
+
 log = logging.getLogger('p4lib')
 
 #---- exceptions
@@ -125,7 +139,7 @@ def _run(argv, cwd=None, env=None, input=None):
     results.  Returns (<stdout lines>, <stderr lines>, <return value>).
     Note: 'argv' may also just be the command string.
     """
-    if type(argv) in (types.ListType, types.TupleType):
+    if type(argv) in (list, tuple):
         cmd = _joinArgv(argv)
     else:
         cmd = argv
@@ -139,38 +153,13 @@ def _run(argv, cwd=None, env=None, input=None):
         if input is not None:
             raise P4LibError("Cannot handle process input with process.py. "\
                              "cmd=%r" % cmd)
-        if sys.platform.startswith('win'):
-            # XXX The following incantation will hang popen3 on Win9x:
-            #    echo "hi there"
-            #    echo "hi\ there"
-            # but these will not hang popen3:
-            #    echo hi there
-            #    echo "hithere"
-            # Something to do with quoting and spaces, and passing through
-            # w9xpopen.exe, and launching via command.com. Weird quoting
-            # rules for command.com? Should perhaps work on _joinArg and
-            # _escapeArg to ensure safe command strings (if possible).
-            i, o, e = os.popen3(cmd)
-            output = o.readlines()
-            error = e.readlines()
-            i.close()
-            e.close()
-            retval = o.close()
-        else:
-            import popen2
-            p = popen2.Popen3(cmd, 1)
-            i, o, e = p.tochild, p.fromchild, p.childerr
-            output = o.readlines()
-            error = e.readlines()
-            i.close()
-            o.close()
-            e.close()
-            rv = p.wait()
-            if os.WIFEXITED(rv):
-                retval = os.WEXITSTATUS(rv)
-            else:
-                raise P4LibError("Error running '%s', it did not exit "\
-                                 "properly: rv=%d" % (cmd, rv))
+        proc, i, o, e = _popen3(cmd)
+        output = o.readlines()
+        error = e.readlines()
+        i.close()
+        o.close()
+        e.close()
+        retval = proc.wait()
     else:
         if not env:
             env = koprocessutils.getUserEnv()
@@ -193,13 +182,13 @@ def _specialsLast(a, b, specials):
     'special's last.
     """
     if a in specials and b in specials:
-        return cmp(a, b)
+        return _cmp(a, b)
     elif a in specials:
         return 1
     elif b in specials:
         return -1
     else:
-        return cmp(a, b)
+        return _cmp(a, b)
 
 
 #---- public stuff
@@ -224,11 +213,11 @@ def makeForm(**kwargs):
     As well, the 'change' value may be an int.
     """
     # Do special preprocessing on the data.
-    for key, value in kwargs.items():   
+    for key, value in list(kwargs.items()):   
         if key == 'files':
             strval = ''
             for f in value:
-                if f.has_key('action'):
+                if 'action' in f:
                     strval += '%(depotFile)s\t# %(action)s\n' % f
                 else:
                     strval += '%(depotFile)s\n' % f
@@ -239,8 +228,8 @@ def makeForm(**kwargs):
     # Create the form
     form = ''
     specials = ['differences']
-    keys = kwargs.keys()
-    keys.sort(lambda a,b,s=specials: _specialsLast(a,b,s))
+    keys = list(kwargs.keys())
+    keys.sort(key=cmp_to_key(lambda a,b,s=specials: _specialsLast(a,b,s)))
     for key in keys:
         value = kwargs[key]
         if value is None:
@@ -329,7 +318,7 @@ def parseForm(lines):
             spec[currkey] = spec[currkey][:-1]
 
     # Do any special processing on values.
-    for key, value in spec.items():
+    for key, value in list(spec.items()):
         if key == "change":
             try:
                 spec[key] = int(value)
@@ -338,7 +327,7 @@ def parseForm(lines):
         elif key == "files":
             spec[key] = []
             fileRe = re.compile('^(?P<depotFile>//.+?)\t'\
-                                '# (?P<action>\w+)$')
+                                r'# (?P<action>\w+)$')
             for line in value.split('\n'):
                 if not line.strip(): continue
                 match = fileRe.match(line)
@@ -367,7 +356,7 @@ def makeOptv(**options):
         ['-c', 'client']
     """
     optv = []
-    for key, val in options.items():
+    for key, val in list(options.items()):
         if val is None:
             continue
         if key == 'client':
@@ -546,7 +535,7 @@ class P4:
             to the whole client view.
         "allClients" (-a) specifies to list opened files in all clients.
         "change" (-c) is a pending change with which to associate the
-            opened file(s).
+            opened open(s).
 
         Returns a list of dicts, each representing one opened file. The
         dict contains the keys 'depotFile', 'rev', 'action', 'change',
@@ -564,11 +553,11 @@ class P4:
         # - with '-a':
         #   //depot/foo.txt#1 - edit change 12345 (text+w) by trentm@trentm-pliers
         # - none opened:
-        #   foo.txt - file(s) not opened on this client. 
+        #   foo.txt - open(s) not opened on this client. 
         optv = []
         if allClients: optv += ['-a']
         if change: optv += ['-c', str(change)]
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
 
         argv = ['opened'] + optv
@@ -576,7 +565,7 @@ class P4:
             argv += _escapeFilenames(files)
         output, error, retval = self._p4run(argv, **p4options)
 
-        lineRe = re.compile('''^
+        lineRe = re.compile(r'''^
             (?P<depotFile>.*?)\#(?P<rev>\d+)    # //depot/foo.txt#1
             \s-\s(?P<action>\w+)                # - edit
             \s(default\schange|change\s(?P<change>\d+))  # change 12345
@@ -597,7 +586,7 @@ class P4:
                 file['change'] = 'default'
             else:
                 file['change'] = int(file['change'])
-            for key in file.keys():
+            for key in list(file.keys()):
                 if file[key] is None:
                     del file[key]
             files.append(file)
@@ -632,7 +621,7 @@ class P4:
         #  //depot/foo/%1 //trentm-ra/foo/%1 c:\trentm\foo\%1
         # The last one is surprising. It comes from using '*' in the
         # client spec. 
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
 
         argv = ['where']
@@ -688,7 +677,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
 
         argv = ['have']
@@ -745,8 +734,8 @@ class P4:
         output, error, retval = self._p4run(argv, **p4options)
 
         desc = {}
-        changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'\
-                              '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
+        changeRe = re.compile(r'^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'\
+                              r'(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
         desc = changeRe.match(output[0]).groupdict()
         desc['change'] = int(desc['change'])
         filesIdx = output.index("Affected files ...\n")
@@ -758,8 +747,8 @@ class P4:
         else:
             diffsIdx = output.index("Differences ...\n")
         desc['files'] = []
-        fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '\
-                            '(?P<action>\w+)$')
+        fileRe = re.compile(r'^... (?P<depotFile>.+?)#(?P<rev>\d+) '\
+                            r'(?P<action>\w+)$')
         for line in output[filesIdx+2:diffsIdx-1]:
             file = fileRe.match(line).groupdict()
             file['rev'] = int(file['rev'])
@@ -815,7 +804,7 @@ class P4:
         #    allowed: presumed to be forms?
         formfile = None
         try:
-            if type(files) in types.StringTypes:
+            if type(files) in (str,):
                 files = [files]
 
             action = None # note action to know how to parse output below
@@ -881,14 +870,14 @@ class P4:
                 change = parseForm(output)
             elif action in ('create', 'update', 'delete'):
                 resultRes = [
-                    re.compile("^Change (?P<change>\d+)"\
-                               " (?P<action>created|updated|deleted)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>created)"\
-                               " (?P<comment>.+?)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>updated)"\
-                               ", (?P<comment>.+?)\.$"),
-                    # e.g., Change 1 has 1 open file(s) associated with it and can't be deleted.
-                    re.compile("^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
+                    re.compile(r"^Change (?P<change>\d+)"\
+                               r" (?P<action>created|updated|deleted)\.$"),
+                    re.compile(r"^Change (?P<change>\d+) (?P<action>created)"\
+                               r" (?P<comment>.+?)\.$"),
+                    re.compile(r"^Change (?P<change>\d+) (?P<action>updated)"\
+                               r", (?P<comment>.+?)\.$"),
+                    # e.g., Change 1 has 1 open open(s) associated with it and can't be deleted.
+                    re.compile(r"^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
                     ]
                 for resultRe in resultRes:
                     match = resultRe.match(output[0])
@@ -937,13 +926,13 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if max is not None and type(max) != types.IntType:
+        if max is not None and type(max) != int:
             raise P4LibError("Incorrect 'max' value. It must be an integer: "\
                              "'%s' (type '%s')" % (max, type(max)))
         if status is not None and status not in ("pending", "submitted"):
             raise P4LibError("Incorrect 'status' value: '%s'" % status)
 
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
 
         optv = []
@@ -962,9 +951,9 @@ class P4:
 
         changes = []
         if longOutput:
-            changeRe = re.compile("^Change (?P<change>\d+) on "\
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
-                                  "(?P<client>[^\s@]+)$")
+            changeRe = re.compile(r"^Change (?P<change>\d+) on "\
+                                  r"(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
+                                  r"(?P<client>[^\s@]+)$")
             for line in output:
                 if not line.strip(): continue  # skip blank lines
                 if line.startswith('\t'):
@@ -977,9 +966,9 @@ class P4:
                     change['description'] = ''
                     changes.append(change)
         else:
-            changeRe = re.compile("^Change (?P<change>\d+) on "\
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
-                                  "(?P<client>[^\s@]+) (\*pending\* )?"\
+            changeRe = re.compile(r"^Change (?P<change>\d+) on "\
+                                  r"(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
+                                  r"(?P<client>[^\s@]+) (\*pending\* )?"\
                                   "'(?P<description>.*?)'$")
             for line in output:
                 match = changeRe.match(line)
@@ -1016,7 +1005,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if force:
@@ -1037,7 +1026,7 @@ class P4:
         #    ... //depot/foo - must resolve #2 before submitting
         # There are probably others forms.
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile(r'^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
                             '(?P<comment>.+?)$')
         for line in output:
             if line.startswith('... '):
@@ -1078,7 +1067,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if change:
@@ -1098,7 +1087,7 @@ class P4:
         #   ... //depot/build.py - also opened by trentm@trentm-razor
         #   //depot/BuildNum.txt#3 - currently opened for edit
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile(r'^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
                             '(?P<comment>.*)$')
         for line in output:
             if line.startswith("..."): # this is a note for the latest hit
@@ -1136,7 +1125,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if change:
@@ -1159,7 +1148,7 @@ class P4:
         #   //depot/apps/px/t#1 - opened for add
         #
         hits = []
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '\
+        hitRe = re.compile(r'^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '\
                             '(?P<comment>.*)$')
         for line in output:
             match = hitRe.match(line)
@@ -1197,7 +1186,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1206,9 +1195,9 @@ class P4:
         output, error, retval = self._p4run(argv, **p4options)
 
         hits = []
-        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
-                            "(?P<action>\w+) change (?P<change>\d+) "\
-                            "\((?P<type>[\w+]+)\)$")
+        fileRe = re.compile(r"^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
+                            r"(?P<action>\w+) change (?P<change>\d+) "\
+                            r"\((?P<type>[\w+]+)\)$")
         for line in output:
             match = fileRe.match(line)
             hit = match.groupdict()
@@ -1233,7 +1222,7 @@ class P4:
         output, error, retval = self._p4run(argv, cwd=filepath)
         
         hits = []
-        fileRe = re.compile("\/(?P<relativePath>/.*?)$")
+        fileRe = re.compile(r"\/(?P<relativePath>/.*?)$")
         for line in output:
             match = fileRe.match(line)
             hit = match.groupdict()
@@ -1263,12 +1252,12 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if maxRevs is not None and type(maxRevs) != types.IntType:
+        if maxRevs is not None and type(maxRevs) != int:
             raise P4LibError("Incorrect 'maxRevs' value. It must be an "\
                              "integer: '%s' (type '%s')"\
                              % (maxRevs, type(maxRevs)))
 
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1284,10 +1273,10 @@ class P4:
         output, error, retval = self._p4run(argv, **p4options)
 
         hits = []
-        revRe = re.compile("^... #(?P<rev>\d+) change (?P<change>\d+) "\
-                           "(?P<action>\S+) on (?P<date>[\d/]+) by "\
-                           "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "\
-                           "\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
+        revRe = re.compile(r"^... #(?P<rev>\d+) change (?P<change>\d+) "\
+                           r"(?P<action>\S+) on (?P<date>[\d/]+) by "\
+                           r"(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "\
+                           r"\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
         for line in output:
             if longOutput and not line.strip():
                 continue  # skip blank lines
@@ -1335,7 +1324,7 @@ class P4:
         The 'text' key will not be present if the file is binary. If
         both 'quiet' and 'localFile', there will be no hits at all.
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1357,11 +1346,11 @@ class P4:
         cmd = _joinArgv(argv)
         #XXX update with ProcessOpen if available!
         log.debug("popen3 '%s'..." % cmd)
-        i, o, e = os.popen3(cmd)
+        proc, i, o, e = _popen3(cmd)
         hits = []
-        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
-                            "(?P<action>\w+) change (?P<change>\d+) "\
-                            "\((?P<type>[\w+]+)\)$")
+        fileRe = re.compile(r"^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
+                            r"(?P<action>\w+) change (?P<change>\d+) "\
+                            r"\((?P<type>[\w+]+)\)$")
         try:
             startHitWithNextNode = 1
             while 1:
@@ -1379,7 +1368,7 @@ class P4:
                         hit = {'text': node['data']}
                         hits.append(hit)
                     else:
-                        if not hits[-1].has_key('text')\
+                        if 'text' not in hits[-1]\
                            or hits[-1]['text'] is None:
                             hits[-1]['text'] = node['data']
                         else:
@@ -1387,6 +1376,10 @@ class P4:
                     startHitWithNextNode = not node['data']
         except EOFError:
             pass
+        o.close()
+        e.close()
+        retval = proc.wait()
+        output = error = []
 
         if _raw:
             return hits, {'stdout': ''.join(output),
@@ -1433,7 +1426,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
@@ -1486,11 +1479,11 @@ class P4:
         #       ==== //depot/foo.doc#42 - c:\trentm\foo.doc ==== (binary)
         #   - from 'p4 diff2':
         #       ==== //depot/apps/px/p4lib.py#12 - //depot/foo.doc#42 ==== (content)
-        header1Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "\
-                               "\((?P<type>\w+)\) ====$")
-        header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "\
+        header1Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "\
+                               r"\((?P<type>\w+)\) ====$")
+        header2Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "\
                                "(?P<localFile>.+?) ===="\
-                               "(?P<binary> \(binary\))?$")
+                               r"(?P<binary> \(binary\))?$")
         for line in outputLines:
             header1 = header1Re.match(line)
             header2 = header2Re.match(line)
@@ -1504,12 +1497,12 @@ class P4:
                 hit['binary'] = not not hit['binary'] # get boolean value
                 hits.append(hit)
             elif hits:
-                if not hits[-1].has_key('text')\
+                if 'text' not in hits[-1]\
                   and line == "(... files differ ...)\n":
                     hits[-1]['notes'] = [line]
                 else:
                     # This is a diff line.
-                    if not hits[-1].has_key('text'):
+                    if 'text' not in hits[-1]:
                         hits[-1]['text'] = ''
                         # XXX 'p4 describe' diff text includes a single
                         #     blank line after each header line before the
@@ -1560,19 +1553,19 @@ class P4:
         argv = [self.p4, '-G'] + p4optv + ['diff2'] + optv + [file1, file2]
         cmd = _joinArgv(argv)
         #XXX update with ProcessOpen if available!
-        i, o, e = os.popen3(cmd)
+        proc, i, o, e = _popen3(cmd)
         diff = {}
-        infoRe = re.compile("^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "\
-                            "\((?P<type1>[\w+]+)\) - "\
-                            "(?P<depotFile2>.+?)#(?P<rev2>\d+) "\
-                            "\((?P<type2>[\w+]+)\) "\
-                            "==== (?P<summary>\w+)$")
+        infoRe = re.compile(r"^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "\
+                            r"\((?P<type1>[\w+]+)\) - "\
+                            r"(?P<depotFile2>.+?)#(?P<rev2>\d+) "\
+                            r"\((?P<type2>[\w+]+)\) "\
+                            r"==== (?P<summary>\w+)$")
         try:
             while 1:
                 node = marshal.load(o)
                 if node['code'] == 'info'\
                    and node['data'] == '(... files differ ...)':
-                    if diff.has_key('notes'):
+                    if 'notes' in diff:
                         diff['notes'].append(node['data'])
                     else:
                         diff['notes'] = [ node['data'] ]
@@ -1583,12 +1576,16 @@ class P4:
                     d['rev2'] = int(d['rev2'])
                     diff.update( match.groupdict() )
                 elif node['code'] == 'text':
-                    if not diff.has_key('text') or diff['text'] is None:
+                    if 'text' not in diff or diff['text'] is None:
                         diff['text'] = node['data']
                     else:
                         diff['text'] += node['data']
         except EOFError:
             pass
+        o.close()
+        e.close()
+        retval = proc.wait()
+        output = error = []
 
         if _raw:
             return diff, {'stdout': ''.join(output),
@@ -1658,11 +1655,11 @@ class P4:
 
         hit = {}
         if output and len(output) >= 1:
-            headerRe = re.compile("^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "\
-                                  "\((?P<type1>[\w+]+)\) - "\
-                                  "(?P<depotFile2>.+?)#(?P<rev2>\d+) "\
-                                  "\((?P<type2>[\w+]+)\) "\
-                                  "==== (?P<summary>\w+)$")
+            headerRe = re.compile(r"^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "\
+                                  r"\((?P<type1>[\w+]+)\) - "\
+                                  r"(?P<depotFile2>.+?)#(?P<rev2>\d+) "\
+                                  r"\((?P<type2>[\w+]+)\) "\
+                                  r"==== (?P<summary>\w+)$")
             match = headerRe.match(output[0])
             if match:
                 hit = match.groupdict()
@@ -1698,7 +1695,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if change:
@@ -1715,7 +1712,7 @@ class P4:
         #   //depot/hello.txt#1 - was edit, reverted
         #   //depot/test_g.txt#none - was add, abandoned
         hits = []
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '\
+        hitRe = re.compile(r'^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '\
                             '(?P<comment>.*)$')
         for line in output:
             match = hitRe.match(line)
@@ -1776,7 +1773,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if autoMode is None:
@@ -1823,11 +1820,11 @@ class P4:
         #     'action': 'ignored //depot/foo.txt'}]
         #    
         introRe = re.compile('^(?P<localFile>.+?) - (merging|vs) '\
-                             '(?P<depotFile>//.+?)#(?P<rev>\d+)$')
-        diffRe = re.compile('^Diff chunks: (?P<yours>\d+) yours \+ '\
-                            '(?P<theirs>\d+) theirs \+ (?P<both>\d+) both '\
-                            '\+ (?P<conflicting>\d+) conflicting$')
-        actionRe = re.compile('^(?P<clientFile>//.+?) - (?P<action>.+?)(\.)?$')
+                             r'(?P<depotFile>//.+?)#(?P<rev>\d+)$')
+        diffRe = re.compile(r'^Diff chunks: (?P<yours>\d+) yours \+ '\
+                            r'(?P<theirs>\d+) theirs \+ (?P<both>\d+) both '\
+                            r'\+ (?P<conflicting>\d+) conflicting$')
+        actionRe = re.compile(r'^(?P<clientFile>//.+?) - (?P<action>.+?)(\.)?$')
         for line in output:
             match = introRe.match(line)
             if match:
@@ -1893,7 +1890,7 @@ class P4:
         #   - test when submission fails because files need to be
         #     resolved
         #   - Structure this code more like change, client, label, & branch.
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if change and not files and not description:
             argv = ['submit', '-c', str(change)]
@@ -1922,7 +1919,7 @@ class P4:
         output, error, retval = self._p4run(argv, input=input, **p4options)
 
         # Example output:
-        #    Change 1 created with 1 open file(s).
+        #    Change 1 created with 1 open open(s).
         #    Submitting change 1.
         #    Locking 1 files ...
         #    add //depot/test_simple_submit.txt#1
@@ -1941,15 +1938,15 @@ class P4:
         # i.e. only the file actions and the last "submitted" line are
         # looked for.
         skipRes = [
-            re.compile('^Change \d+ created with \d+ open file\(s\)\.$'),
-            re.compile('^Submitting change \d+\.$'),
-            re.compile('^Locking \d+ files \.\.\.$'),
-            re.compile('^(//.+?)#\d+ - refreshing$'),
+            re.compile(r'^Change \d+ created with \d+ open file\(s\)\.$'),
+            re.compile(r'^Submitting change \d+\.$'),
+            re.compile(r'^Locking \d+ files \.\.\.$'),
+            re.compile(r'^(//.+?)#\d+ - refreshing$'),
         ]
-        fileRe = re.compile('^(?P<action>\w+) (?P<depotFile>//.+?)'\
-                            '#(?P<rev>\d+)$')
-        resultRe = re.compile('^Change (?P<change>\d+) '\
-                                '(?P<action>submitted)\.')
+        fileRe = re.compile(r'^(?P<action>\w+) (?P<depotFile>//.+?)'\
+                            r'#(?P<rev>\d+)$')
+        resultRe = re.compile(r'^Change (?P<change>\d+) '\
+                                r'(?P<action>submitted)\.')
         result = {'files': []}
         for line in output:
             match = fileRe.match(line)
@@ -1991,7 +1988,7 @@ class P4:
         """
         Call p4 print and return the result
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if len(files) != 1:
             raise SVNLibError("cat takes exactly one argument")
@@ -2010,7 +2007,7 @@ class P4:
 
         "files" is a list of files or file wildcards to open for delete.
         "change" (-c) is a pending change with which to associate the
-            opened file(s).
+            opened open(s).
 
         Returns a list of dicts each representing a file *attempted* to
         be open for delete. Keys are 'depotFile', 'rev', and 'comment'.
@@ -2022,7 +2019,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if change: optv += ['-c', str(change)]
@@ -2034,7 +2031,7 @@ class P4:
         #   //depot/foo.txt#1 - opened for delete
         #   //depot/foo.txt - can't delete (already opened for edit)
         hits = []
-        hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '\
+        hitRe = re.compile(r'^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '\
                             '(?P<comment>.*)$')
         for line in output:
             match = hitRe.match(line)
@@ -2111,7 +2108,7 @@ class P4:
                 argv = ['client', '-o', name]
             else:
                 action = "create/update"
-                if client.has_key("client"):
+                if "client" in client:
                     name = client["client"]
                 if name is not None:
                     cl = self.client(name=name)
@@ -2136,8 +2133,8 @@ class P4:
                 #   Client trentm-ra not changed. 
                 #   Client bertha-test deleted.
                 #   Client bertha-test saved.
-                resultRe = re.compile("^Client (?P<client>[^\s@]+)"\
-                    " (?P<action>not changed|deleted|saved)\.$")
+                resultRe = re.compile(r"^Client (?P<client>[^\s@]+)"\
+                    r" (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(output[0])
                 if match:
                     rv = match.groupdict()
@@ -2181,8 +2178,8 @@ class P4:
 
         # Examples:
         #   Client trentm-ra 2002/03/18 root c:\trentm\ 'Created by trentm. '
-        clientRe = re.compile("^Client (?P<client>[^\s@]+) "\
-                              "(?P<update>[\d/]+) "\
+        clientRe = re.compile(r"^Client (?P<client>[^\s@]+) "\
+                              r"(?P<update>[\d/]+) "\
                               "root (?P<root>.*?) '(?P<description>.*?)'$")
         clients = []
         for line in output:
@@ -2254,7 +2251,7 @@ class P4:
                 argv = ['label', '-o', name]
             else:
                 action = "create/update"
-                if label.has_key("label"):
+                if "label" in label:
                     name = label["label"]
                 if name is not None:
                     lbl = self.label(name=name, **p4options)
@@ -2279,8 +2276,8 @@ class P4:
                 #   Client trentm-ra not changed. 
                 #   Client bertha-test deleted.
                 #   Client bertha-test saved.
-                resultRe = re.compile("^Label (?P<label>[^\s@]+)"\
-                    " (?P<action>not changed|deleted|saved)\.$")
+                resultRe = re.compile(r"^Label (?P<label>[^\s@]+)"\
+                    r" (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(output[0])
                 if match:
                     rv = match.groupdict()
@@ -2321,8 +2318,8 @@ class P4:
         argv = ['labels']
         output, error, retval = self._p4run(argv, **p4options)
 
-        labelRe = re.compile("^Label (?P<label>[^\s@]+) "\
-                             "(?P<update>[\d/]+) "\
+        labelRe = re.compile(r"^Label (?P<label>[^\s@]+) "\
+                             r"(?P<update>[\d/]+) "\
                              "'(?P<description>.*?)'$")
         labels = []
         for line in output:
@@ -2368,7 +2365,7 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         if force:
@@ -2389,7 +2386,7 @@ class P4:
         #    ... //depot/foo - must resolve #2 before submitting
         # There are probably others forms.
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile(r'^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
                             '(?P<comment>.+?)$')
         for line in output:
             if line.startswith('... '):
@@ -2466,7 +2463,7 @@ class P4:
                 argv = ['branch', '-o', name]
             else:
                 action = "create/update"
-                if branch.has_key("branch"):
+                if "branch" in branch:
                     name = branch["branch"]
                 if name is not None:
                     br = self.branch(name=name, **p4options)
@@ -2491,8 +2488,8 @@ class P4:
                 #   Client trentm-ra not changed. 
                 #   Client bertha-test deleted.
                 #   Client bertha-test saved.
-                resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"\
-                    " (?P<action>not changed|deleted|saved)\.$")
+                resultRe = re.compile(r"^Branch (?P<branch>[^\s@]+)"\
+                    r" (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(output[0])
                 if match:
                     rv = match.groupdict()
@@ -2533,8 +2530,8 @@ class P4:
         argv = ['branches']
         output, error, retval = self._p4run(argv, **p4options)
 
-        branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "\
-                             "(?P<update>[\d/]+) "\
+        branchRe = re.compile(r"^Branch (?P<branch>[^\s@]+) "\
+                             r"(?P<update>[\d/]+) "\
                              "'(?P<description>.*?)'$")
         branches = []
         for line in output:
@@ -2607,7 +2604,7 @@ class P4:
                      'ourLock': 0,
                      }
 
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -2622,7 +2619,7 @@ class P4:
         parsed = re.split(r'(\r\n|\n){2}', parsed)
         
         hits = []
-        fileRe = re.compile("...\s(.*?)\s(.*)")
+        fileRe = re.compile(r"...\s(.*?)\s(.*)")
         
         for stat in parsed:
             matches = fileRe.findall(stat)
@@ -2635,7 +2632,7 @@ class P4:
                 elif m[0] in ['headChange', 'headRev', 'headTime', 'haveRev']:
                     try:
                         hit[m[0]] = int(m[1])
-                    except ValueError, e:
+                    except ValueError as e:
                         hit[m[0]] = m[1]
                 else:
                     hit[m[0]] = m[1]

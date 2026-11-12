@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2001 ActiveState Tool Corporation.
 # See the file LICENSE.txt for licensing information.
 
@@ -10,7 +10,7 @@
 # used by the build system at build time, a la autoconf).
 #
 
-import sys, os, getopt, stat, re, string, shutil, urllib, tempfile, cmd
+import sys, os, getopt, stat, re, string, shutil, urllib.request, urllib.parse, urllib.error, tempfile, cmd
 import functools
 
 # put the Black Python lib directory on sys.path
@@ -71,13 +71,16 @@ def ParseBlackFile(blackFileName):
     """Return an object with the black file configuration items as attrs.
     Currently this just presumes that the Blackfile is Python module.
     """
-    import imp
+    import importlib.machinery, importlib.util
     dirName, baseName = os.path.split(blackFileName)
     baseName, ext = os.path.splitext(baseName) 
-    file, pathname, description = imp.find_module(baseName, [dirName])
     try:
-        blackfile = imp.load_module(baseName, file, pathname, description)
-    except ImportError, e:
+        spec = importlib.machinery.PathFinder.find_spec(baseName, [dirName])
+        if spec is None or spec.loader is None:
+            raise ImportError("No module named %r in %r" % (baseName, dirName))
+        blackfile = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(blackfile)
+    except ImportError as e:
         out.startErrorItem()
         out.write("black: There was a problem importing your project "\
             "configuration file: '%s'\n" % blackFileName)
@@ -92,7 +95,7 @@ def HasOverride(blackFile, commandName):
     command name.
     """
     return hasattr(blackFile, "commandOverrides") and\
-           blackFile.commandOverrides.has_key(commandName)
+           commandName in blackFile.commandOverrides
 
 
 def RunOverride(blackFile, projectConfig, commandName, argv):
@@ -155,7 +158,7 @@ class Shell(tmCmd.AugmentedListCmd):
     def __init__(self, cmd_overrides):
         tmCmd.AugmentedListCmd.__init__(self)
         self.name = "bk"
-        for cmd, handler in cmd_overrides.items():
+        for cmd, handler in list(cmd_overrides.items()):
             func_name = "do_" + cmd
             if not hasattr(self, func_name):
                 self._make_do_wrapper(cmd, handler)
@@ -257,7 +260,7 @@ class Shell(tmCmd.AugmentedListCmd):
         #     whitespace
         newConfArgs = []
         newArgv = []
-        STATE_COMMAND_NAME, STATE_CONF_ARGS, STATE_BUILD_ARGS = range(3)
+        STATE_COMMAND_NAME, STATE_CONF_ARGS, STATE_BUILD_ARGS = list(range(3))
         state = STATE_COMMAND_NAME
         for arg in argv:
             if state == STATE_COMMAND_NAME:
@@ -699,7 +702,7 @@ class Shell(tmCmd.AugmentedListCmd):
             out.write(template % {"name":name})
 
             items = black.configure.Items(blackFile.configuration)
-            for name, item in items.items():
+            for name, item in list(items.items()):
                 if hasattr(item, "optionHelp") and item.optionHelp:
                     out.write(item.optionHelp)
             out.write("\n\n")
@@ -830,7 +833,7 @@ if __name__ == '__main__':
     try:
         optlist, args = getopt.getopt(sys.argv[1:], 'vqf:',\
             ['quiet', 'verbose', 'version'])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         out.startErrorItem()
         out.write("%s: error in options: %s\n" % (sys.argv[0], msg))
         out.write("Try 'bk help'.")
@@ -878,7 +881,7 @@ if __name__ == '__main__':
     #      then that is used.
     if not blackFileName:
         blackFileName = FindBlackFile()
-    if not blackFileName and os.environ.has_key("BLACKFILE_FALLBACK"):
+    if not blackFileName and "BLACKFILE_FALLBACK" in os.environ:
         blackFileName = os.environ["BLACKFILE_FALLBACK"]
         if verbosity > 0:
             out.write("black: using BLACKFILE_FALLBACK (%s) to find "\
@@ -894,7 +897,7 @@ if __name__ == '__main__':
         os.chdir(os.path.dirname(blackFileName))
         try:
             blackFile = ParseBlackFile(blackFileName)
-        except black.BlackError, e:
+        except black.BlackError as e:
             out.write("\n")
             out.startErrorItem()
             out.write("black: error parsing blackfile '%s': %s" %\
@@ -911,7 +914,7 @@ if __name__ == '__main__':
         shell = Shell(getattr(blackFile, "commandOverrides", {}))
         retval = tmCmd.OneCmd(shell, args)
         sys.exit(retval)
-    except black.BlackError, msg:
+    except black.BlackError as msg:
         out.write("\n")
         out.startErrorItem()
         out.write("black: error running '%s': %s" % (" ".join(args), msg))

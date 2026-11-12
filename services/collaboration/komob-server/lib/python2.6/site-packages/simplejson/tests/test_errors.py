@@ -11,7 +11,7 @@ class TestErrors(TestCase):
         err = None
         try:
             json.loads('{}\na\nb')
-        except json.JSONDecodeError, e:
+        except json.JSONDecodeError as e:
             err = e
         else:
             self.fail('Expected JSONDecodeError')

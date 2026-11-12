@@ -55,7 +55,7 @@ class IncrementalDecoder(codecs.BufferedIncrementalDecoder):
                 if codecs.BOM_UTF8.startswith(input):
                     # not enough data to decide if this really is a BOM
                     # => try again on the next call
-                    return (u"", 0)
+                    return ("", 0)
                 else:
                     self.first = None
             else:
@@ -94,7 +94,7 @@ class StreamReader(codecs.StreamReader):
             if codecs.BOM_UTF8.startswith(input):
                 # not enough data to decide if this is a BOM
                 # => try again on the next call
-                return (u"", 0)
+                return ("", 0)
         elif input[:3] == codecs.BOM_UTF8:
             self.decode = codecs.utf_8_decode
             (output, consumed) = codecs.utf_8_decode(input[3:],errors)

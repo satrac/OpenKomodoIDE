@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Code to work with sqlite & sqlite3 databases.
@@ -141,11 +141,11 @@ class Database(dbxlib.CommonDatabase):
                 cu.execute("select name from sqlite_master where type = '%s'" % (typeName,))
                 names = [row[0] for row in cu.fetchall()]
                 return names
-        except NotImplementedError, ex:
+        except NotImplementedError as ex:
             raise OperationalError(ex.message)
-        except sqlite3.OperationalError, ex:
+        except sqlite3.OperationalError as ex:
             raise OperationalError(ex)
-        except sqlite3.DatabaseError, ex:
+        except sqlite3.DatabaseError as ex:
             raise DatabaseError(ex)
         
     def listAllTableNames(self):
@@ -217,7 +217,7 @@ class Database(dbxlib.CommonDatabase):
             if type_affinity is None:
                 log.info("type_affinity: None")
                 value = ""
-            if type_affinity == u'integer':
+            if type_affinity == 'integer':
                 if value is None:
                     new_row_data.append("")
                 else:
@@ -226,7 +226,7 @@ class Database(dbxlib.CommonDatabase):
                     except TypeError:
                         log.error("Can't append value as int: %r", value)
                         new_row_data.append("%r" % value)
-            elif type_affinity == u'real':
+            elif type_affinity == 'real':
                 new_row_data.append("%r" % value)
             elif type_affinity == 'char':
                 new_row_data.append(value)
@@ -238,7 +238,7 @@ class Database(dbxlib.CommonDatabase):
                     log.info("blob data is: None")
                     value = ""
                 new_row_data.append("<BLOB: %d chars>" % (len(value),))
-            elif col_info.type.lower() in (u'date', u'datetime'):
+            elif col_info.type.lower() in ('date', 'datetime'):
                 # Default adapters in sqlite3
                 new_row_data.append(str(value))
             else:
@@ -247,7 +247,7 @@ class Database(dbxlib.CommonDatabase):
                 if type == 'bool':
                     new_row_data.append(str(value))
                 else:
-                    if not _unrec_types.has_key(type):
+                    if type not in _unrec_types:
                         log.info("While converting sqlite3 values: column %s has an unrecognized type of %s", col_info.name, col_info.type)
                         _unrec_types[type] = 1
                     new_row_data.append('%r' % value)

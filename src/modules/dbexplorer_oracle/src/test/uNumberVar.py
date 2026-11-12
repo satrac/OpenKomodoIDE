@@ -14,7 +14,7 @@ class TestNumberVar(BaseTestCase):
           floatCol = i + i * 0.75
           unconstrainedCol = i ** 3 + i * 0.5
           if i % 2:
-              nullableCol = 143L ** i
+              nullableCol = 143 ** i
           else:
               nullableCol = None
           dataTuple = (i, numberCol, floatCol, unconstrainedCol, nullableCol)
@@ -23,7 +23,7 @@ class TestNumberVar(BaseTestCase):
 
     def testBindDecimal(self):
         "test binding in a decimal.Decimal"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where NumberCol - :value1 - :value2 = trunc(NumberCol)""",
                 value1 = decimal.Decimal("0.20"),
@@ -33,7 +33,7 @@ class TestNumberVar(BaseTestCase):
 
     def testBindFloat(self):
         "test binding in a float"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where NumberCol - :value = trunc(NumberCol)""",
                 value = 0.25)
@@ -42,7 +42,7 @@ class TestNumberVar(BaseTestCase):
 
     def testBindInteger(self):
         "test binding in an integer"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where IntCol = :value""",
                 value = 2)
@@ -50,17 +50,17 @@ class TestNumberVar(BaseTestCase):
 
     def testBindSmallLong(self):
         "test binding in a small long integer"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where IntCol = :value""",
-                value = 3L)
+                value = 3)
         self.failUnlessEqual(self.cursor.fetchall(), [self.dataByKey[3]])
 
     def testBindLargeLong(self):
         "test binding in a large long integer"
         valueVar = self.cursor.var(cx_Oracle.NUMBER)
         valueVar.setvalue(0, 6088343244)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := :value + 5;
                 end;""",
@@ -71,7 +71,7 @@ class TestNumberVar(BaseTestCase):
     def testBindIntegerAfterString(self):
         "test binding in an number after setting input sizes to a string"
         self.cursor.setinputsizes(value = 15)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where IntCol = :value""",
                 value = 3)
@@ -79,7 +79,7 @@ class TestNumberVar(BaseTestCase):
 
     def testBindNull(self):
         "test binding in a null"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestNumbers
                 where IntCol = :value""",
                 value = None)
@@ -89,7 +89,7 @@ class TestNumberVar(BaseTestCase):
         "test binding in a number array"
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         array = [r[1] for r in self.rawData]
-        statement = u"""
+        statement = """
                 begin
                   :p_ReturnValue := pkg_TestNumberArrays.TestInArrays(
                       :p_StartValue, :p_Array);
@@ -99,7 +99,7 @@ class TestNumberVar(BaseTestCase):
                 p_StartValue = 5,
                 p_Array = array)
         self.failUnlessEqual(returnValue.getvalue(), 73.75)
-        array = range(15)
+        array = list(range(15))
         self.cursor.execute(statement,
                 p_StartValue = 10,
                 p_Array = array)
@@ -110,7 +110,7 @@ class TestNumberVar(BaseTestCase):
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         self.cursor.setinputsizes(p_Array = [cx_Oracle.NUMBER, 10])
         array = [r[1] for r in self.rawData]
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_ReturnValue := pkg_TestNumberArrays.TestInArrays(
                       :p_StartValue, :p_Array);
@@ -126,7 +126,7 @@ class TestNumberVar(BaseTestCase):
         array = self.cursor.arrayvar(cx_Oracle.NUMBER,
                 [r[1] for r in self.rawData])
         array.setvalue(0, [r[1] for r in self.rawData])
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_ReturnValue := pkg_TestNumberArrays.TestInArrays(
                       :p_IntegerValue, :p_Array);
@@ -140,7 +140,7 @@ class TestNumberVar(BaseTestCase):
         "test binding in a zero length number array (with arrayvar)"
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         array = self.cursor.arrayvar(cx_Oracle.NUMBER, 0)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_ReturnValue := pkg_TestNumberArrays.TestInArrays(
                       :p_IntegerValue, :p_Array);
@@ -158,7 +158,7 @@ class TestNumberVar(BaseTestCase):
         expectedData = [originalData[i - 1] * 10 for i in range(1, 6)] + \
                 originalData[5:]
         array.setvalue(0, originalData)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   pkg_TestNumberArrays.TestInOutArrays(:p_NumElems, :p_Array);
                 end;""",
@@ -170,7 +170,7 @@ class TestNumberVar(BaseTestCase):
         "test binding out a Number array (with arrayvar)"
         array = self.cursor.arrayvar(cx_Oracle.NUMBER, 6)
         expectedData = [i * 100 for i in range(1, 7)]
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   pkg_TestNumberArrays.TestOutArrays(:p_NumElems, :p_Array);
                 end;""",
@@ -181,7 +181,7 @@ class TestNumberVar(BaseTestCase):
     def testBindOutSetInputSizes(self):
         "test binding out with set input sizes defined"
         vars = self.cursor.setinputsizes(value = cx_Oracle.NUMBER)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := 5;
                 end;""")
@@ -190,7 +190,7 @@ class TestNumberVar(BaseTestCase):
     def testBindInOutSetInputSizes(self):
         "test binding in/out with set input sizes defined"
         vars = self.cursor.setinputsizes(value = cx_Oracle.NUMBER)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := :value + 5;
                 end;""",
@@ -200,7 +200,7 @@ class TestNumberVar(BaseTestCase):
     def testBindOutVar(self):
         "test binding out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.NUMBER)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := 5;
                 end;""",
@@ -211,7 +211,7 @@ class TestNumberVar(BaseTestCase):
         "test binding in/out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.NUMBER)
         var.setvalue(0, 2.25)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :value := :value + 5;
                 end;""",
@@ -220,23 +220,23 @@ class TestNumberVar(BaseTestCase):
 
     def testCursorDescription(self):
         "test cursor description is accurate"
-        self.cursor.execute(u"select * from TestNumbers")
+        self.cursor.execute("select * from TestNumbers")
         self.failUnlessEqual(self.cursor.description,
-                [ (u'INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
-                  (u'NUMBERCOL', cx_Oracle.NUMBER, 13, 22, 9, 2, 0),
-                  (u'FLOATCOL', cx_Oracle.NUMBER, 127, 22, 126, -127, 0),
-                  (u'UNCONSTRAINEDCOL', cx_Oracle.NUMBER, 127, 22, 0, -127, 0),
-                  (u'NULLABLECOL', cx_Oracle.NUMBER, 39, 22, 38, 0, 1) ])
+                [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
+                  ('NUMBERCOL', cx_Oracle.NUMBER, 13, 22, 9, 2, 0),
+                  ('FLOATCOL', cx_Oracle.NUMBER, 127, 22, 126, -127, 0),
+                  ('UNCONSTRAINEDCOL', cx_Oracle.NUMBER, 127, 22, 0, -127, 0),
+                  ('NULLABLECOL', cx_Oracle.NUMBER, 39, 22, 38, 0, 1) ])
 
     def testFetchAll(self):
         "test that fetching all of the data returns the correct results"
-        self.cursor.execute(u"select * From TestNumbers order by IntCol")
+        self.cursor.execute("select * From TestNumbers order by IntCol")
         self.failUnlessEqual(self.cursor.fetchall(), self.rawData)
         self.failUnlessEqual(self.cursor.fetchall(), [])
 
     def testFetchMany(self):
         "test that fetching data in chunks returns the correct results"
-        self.cursor.execute(u"select * From TestNumbers order by IntCol")
+        self.cursor.execute("select * From TestNumbers order by IntCol")
         self.failUnlessEqual(self.cursor.fetchmany(3), self.rawData[0:3])
         self.failUnlessEqual(self.cursor.fetchmany(2), self.rawData[3:5])
         self.failUnlessEqual(self.cursor.fetchmany(4), self.rawData[5:9])
@@ -245,7 +245,7 @@ class TestNumberVar(BaseTestCase):
 
     def testFetchOne(self):
         "test that fetching a single row returns the correct results"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select *
                 from TestNumbers
                 where IntCol in (3, 4)
@@ -256,16 +256,16 @@ class TestNumberVar(BaseTestCase):
 
     def testReturnAsLong(self):
         "test that fetching a long integer returns such in Python"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select NullableCol
                 from TestNumbers
                 where IntCol = 9""")
         col, = self.cursor.fetchone()
-        self.failUnless(isinstance(col, long), "long integer not returned")
+        self.failUnless(isinstance(col, int), "long integer not returned")
 
     def testReturnAsFloat(self):
         "test that fetching a floating point number returns such in Python"
-        self.cursor.execute(u"select 1.25 from dual")
+        self.cursor.execute("select 1.25 from dual")
         result, = self.cursor.fetchone()
         self.failUnlessEqual(result, 1.25)
 

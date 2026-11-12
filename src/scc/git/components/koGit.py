@@ -298,7 +298,7 @@ class KoGIT(KoSCCBase):
         basedir, relpaths = self.getCommonBaseAndRelativePathsFromURIs([fileuri])
         data = scc_handler.getremotes(cwd=basedir, env=env)
         result = []
-        for name, url in data["items"].items():
+        for name, url in list(data["items"].items()):
             result.append([url, name])
         return result
     
@@ -408,7 +408,7 @@ class KoGIT(KoSCCBase):
         git_stats = result.get('files', {})
 
         result = []
-        for filepath, stat_info in git_stats.items():
+        for filepath, stat_info in list(git_stats.items()):
             # stat_info will be a dict with the following keys:
             #    History, Locked, Modified, Path, Status, Switched
             status_string = stat_info.get('status')
@@ -567,14 +567,14 @@ class KoGITFileChecker(KoSCCChecker, PathHelperMixin):
             """
 
             if "argv" in _errors:
-                cmdline = u"while running \"%s\"" % (u" ".join(_errors["argv"]),)
+                cmdline = "while running \"%s\"" % (" ".join(_errors["argv"]),)
             else:
-                cmdline = u""
+                cmdline = ""
 
             if "cwd" in _errors:
-                cwd = u"in %s" % (_errors.get("cwd"),)
+                cwd = "in %s" % (_errors.get("cwd"),)
             else:
-                cwd = u""
+                cwd = ""
 
             error = _errors.get("error")
             if error is None:
@@ -585,10 +585,10 @@ class KoGITFileChecker(KoSCCChecker, PathHelperMixin):
                 detail = detail[0].upper() + detail[1:]
 
             if error is not None:
-                desc = u"Git status error: %s" % (error, )
-                error = u"%s:\n%s" % (detail, error)
+                desc = "Git status error: %s" % (error, )
+                error = "%s:\n%s" % (detail, error)
             else:
-                desc = u"Git status error"
+                desc = "Git status error"
                 error = detail
 
             self.notifyError(desc, error)
@@ -597,7 +597,7 @@ class KoGITFileChecker(KoSCCChecker, PathHelperMixin):
         # so we do that now
         try:
             result = self.getGitStatus(path, reason, repo_path)
-        except gitlib.GITLibError, _errors:
+        except gitlib.GITLibError as _errors:
             # we get an exception here if the git library call errors out
             reportError(_errors)
             return False
@@ -621,7 +621,7 @@ class KoGITFileChecker(KoSCCChecker, PathHelperMixin):
                                      'relpath': '' }
             
             # Cache all the file scc information
-            for filepath, fileinfo in files.items():
+            for filepath, fileinfo in list(files.items()):
                 uri = uriparse.localPathToURI(filepath)
                 nsUri = self.iosvc.newURI(uri, None, None)
                 cache_key = nsUri.spec

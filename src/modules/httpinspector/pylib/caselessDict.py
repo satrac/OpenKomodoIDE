@@ -16,7 +16,7 @@ class CaselessDict(dict):
         if other:
             # Doesn't do keyword args
             if isinstance(other, dict):
-                for k,v in other.items():
+                for k,v in list(other.items()):
                     dict.__setitem__(self, k.lower(), v)
             else:
                 for k,v in other:
@@ -32,7 +32,7 @@ class CaselessDict(dict):
         return dict.__contains__(self, key.lower())
 
     def has_key(self, key):
-        return dict.has_key(self, key.lower())
+        return key.lower() in self
 
     def get(self, key, def_val=None):
         return dict.get(self, key.lower(), def_val)
@@ -41,7 +41,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, key.lower(), def_val)
 
     def update(self, other):
-        for k,v in other.items():
+        for k,v in list(other.items()):
             dict.__setitem__(self, k.lower(), v)
 
     def fromkeys(self, iterable, value=None):

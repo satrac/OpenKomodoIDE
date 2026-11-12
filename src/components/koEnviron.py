@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -21,8 +21,8 @@ if sys.platform.startswith("win"):
     _gBashEnvStrRe = re.compile("^(?P<name>[^&=\r\n\t]+)=(?P<value>.*)$")
     _gEnvStrResToSkip = []
 else:
-    _gBashEnvStrRe = re.compile("^(?P<name>[\w]+)=(?P<value>.*)$")
-    _gCshEnvStrRe = re.compile("^(?P<name>[\w]+)\t(?P<value>.*)$")
+    _gBashEnvStrRe = re.compile(r"^(?P<name>[\w]+)=(?P<value>.*)$")
+    _gCshEnvStrRe = re.compile("^(?P<name>[\\w]+)\t(?P<value>.*)$")
     # On linux we want to skip function definitions like this:
     #
     #    mc=()
@@ -43,8 +43,8 @@ else:
     #     unset MC
     #    }
     #
-    _gEnvStrResToSkip = [re.compile("^[_\w]+=\(\).*$"),  # function defs
-                         re.compile("^\s+.*$"), # leading whitespace == in function def
+    _gEnvStrResToSkip = [re.compile(r"^[_\w]+=\(\).*$"),  # function defs
+                         re.compile(r"^\s+.*$"), # leading whitespace == in function def
                          re.compile("^{.*$"), # function start
                          re.compile("^}$"), # function end
                         ]
@@ -93,28 +93,12 @@ def parse_bash_set_output(output):
 def run(cmd, stdin=None):
     log.debug("run '%s'...", cmd)
     try:
-        i,o,e = os.popen3(cmd)
-        # we ignore ioerrors here, which do get raised in some situations,
-        # however even when they are, we still get stdout output from
-        # printenv
-        try:
-            if stdin:
-                i.write(stdin)
-            i.close()
-        except IOError, e:
-            pass
-        try:
-            stdout = o.read()
-        except IOError, e:
-            pass
-        try:
-            stderr = e.read()
-        except IOError, e:
-            pass
-        o.close()
-        retval = e.close()
-        #print stdout
-        return stdout, stderr, retval
+        import subprocess
+        p = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True)
+        stdout, stderr = p.communicate(stdin)
+        return stdout, stderr, p.returncode
     finally:
         log.debug("...done.")
 
@@ -129,7 +113,7 @@ class KoEnviron:
     _reg_desc_ = "System Environment Interaction Service"
 
     def has(self, key):
-        return os.environ.has_key(key)
+        return key in os.environ
     def get(self, key, default=None):
         return os.environ.get(key, default)
     def set(self, key, value):
@@ -193,7 +177,7 @@ class KoUserEnviron:
         try:
             import pwd
             return pwd.getpwnam(os.environ['USER'])[6]
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
         return None
         
@@ -225,7 +209,7 @@ class KoUserEnviron:
         # read in startup env delta file and fill in the startup env
         try:
             fin = open(self.startupEnvFileName, "r")
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self._userEnviron = os.environ.copy()
         else:
             content = fin.read()
@@ -235,7 +219,7 @@ class KoUserEnviron:
                 # Cannot do this on Windows because a "\" at the end of the
                 # line does not imply a continuation.
                 content = content.replace("\\\n", "")
-            content = unicode(content, self.startupEnvironEncoding)
+            content = str(content, self.startupEnvironEncoding)
             for line in content.split("\n"):
                 line = line.rstrip()
                 if not line:
@@ -269,11 +253,11 @@ class KoUserEnviron:
                           'ADDON_PATH', 'SHLIB_PATH']
         
         for item in fullname:
-            if item in self._userEnviron.keys():
+            if item in list(self._userEnviron.keys()):
                 del self._userEnviron[item]
 
         for item in startingwith:
-            for key in self._userEnviron.keys():
+            for key in list(self._userEnviron.keys()):
                 if key.startswith(item):
                     del self._userEnviron[key]
                     
@@ -384,7 +368,7 @@ class KoUserEnviron:
         self._initialize()
         if sys.platform.startswith("win"):
             key = key.upper()  # put everything upper on Windows
-        return self._userEnviron.has_key(key)
+        return key in self._userEnviron
 
     def get(self, key, default=None):
         self._initialize()
@@ -393,7 +377,7 @@ class KoUserEnviron:
         return self._userEnviron.get(key, default)
 
     def keys(self):
-        return self._userEnviron.keys()
+        return list(self._userEnviron.keys())
 
     def getEnvVar(self, name, prefs):
         envStr = ""
@@ -427,7 +411,7 @@ class KoUserEnviron:
     def GetEnvironmentStrings(self):
         self._initialize()
         return ["%s=%s" % (item[0], item[1])\
-            for item in self._userEnviron.items()]
+            for item in list(self._userEnviron.items())]
 
     def GetEncodedEnvironment(self):
         self._initialize()
@@ -437,7 +421,7 @@ class KoUserEnviron:
     def GetEncodedStartupEnvironment(self):
         self._initialize()
         envStrings = ["%s=%s" % (item[0], item[1])\
-            for item in self._origStartupEnv.items()]
+            for item in list(self._origStartupEnv.items())]
         return '\n'.join(envStrings)
 
     def UpdateFromShell(self, shell):
@@ -536,7 +520,7 @@ class KoEnvironUtils:
                 continue
             # an empty value means: remove env. var.
             if value == "":
-                if envDict.has_key(name):
+                if name in envDict:
                     del envDict[name]
                 #print "... delete '%s' variable" % name
             # interpolate any other value into the resultant dictionary
@@ -544,7 +528,7 @@ class KoEnvironUtils:
                 value = self._Interpolate(value, envDict)
                 envDict[name] = value
                 #print "... %s=%s" % (name, value)
-        return ["%s=%s" % item for item in envDict.items()]
+        return ["%s=%s" % item for item in list(envDict.items())]
 
     def _Interpolate(self, envValue, envDict):
         """Interpolate the variable in the given envDict into the envValue.
@@ -587,7 +571,7 @@ class KoEnvironUtils:
             # cgi debugging in a pretty bad way
             if envName in envDict:
                 replacements[envRefMatch.group("envRef")] = envDict[envName]
-        for old, new in replacements.items():
+        for old, new in list(replacements.items()):
             interpolated = interpolated.replace(old, new)
 
         #print "_Interpolate: interpolate '%s' -> '%s'" % (envValue, interpolated)

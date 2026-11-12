@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2006 ActiveState Software Inc.
 # Author:
 #   Trent Mick (TrentM@ActiveState.com)
@@ -186,7 +186,7 @@ def main(argv=sys.argv):
         else:  # string exception
             log.error(exc_info[0])
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

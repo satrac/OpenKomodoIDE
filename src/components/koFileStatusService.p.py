@@ -43,6 +43,12 @@ from xpcom.server import UnwrapObject
 
 import uriparse
 from fileStatusUtils import KoDiskFileChecker
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 log = logging.getLogger('koFileStatusService')
 #log.setLevel(logging.DEBUG)
@@ -60,7 +66,7 @@ def sortFileStatus(a, b):
     except:
         # koIFile can have problems with some unicode paths
         log.exception("unexpected error from koIFile.isDirectory")
-    return cmp(a[1], b[1])
+    return _cmp(a[1], b[1])
 
 def collate_directories_from_uris(uris):
     """Return a dictionary whose keys are the directories from the uri's
@@ -112,7 +118,7 @@ class KoFileStatusService:
         self._prefs = components.classes["@activestate.com/koPrefService;1"]\
                 .getService(components.interfaces.koIPrefService).prefs
 
-        # The reasons why the status service is checking a file(s).
+        # The reasons why the status service is checking a open(s).
         self.REASON_BACKGROUND_CHECK = components.interfaces.koIFileStatusChecker.REASON_BACKGROUND_CHECK
         self.REASON_FILE_CHANGED = components.interfaces.koIFileStatusChecker.REASON_FILE_CHANGED
         self.REASON_FORCED_CHECK = components.interfaces.koIFileStatusChecker.REASON_FORCED_CHECK
@@ -164,7 +170,7 @@ class KoFileStatusService:
                 checker = components.classes[cid].\
                     createInstance(components.interfaces.koIFileStatusChecker)
                 self.addFileStatusChecker(checker)
-            except Exception, e:
+            except Exception as e:
                 log.exception("Unable to load %r status checker: %r", name, cid)
 
         # Start the file status thread running
@@ -300,7 +306,7 @@ class KoFileStatusService:
                     self._cv.notify()
             finally:
                 self._cv.release()
-        except Exception, e:
+        except Exception as e:
             log.exception("Unexpected error in observe")
 
     @components.ProxyToMainThreadAsync
@@ -375,7 +381,7 @@ class KoFileStatusService:
             t.start()
 
     def updateStatusForUris(self, uris, forceRefresh=False):
-        koIFiles = map(self._fileSvc.getFileFromURI, uris)
+        koIFiles = list(map(self._fileSvc.getFileFromURI, uris))
         self.updateStatusForFiles(koIFiles, forceRefresh, None)
 
     def _process(self):
@@ -439,7 +445,7 @@ class KoFileStatusService:
                         last_bg_check_time = time.time()
                         self._updateReason = self.REASON_BACKGROUND_CHECK
                     else:
-                        items_to_check.sort(sortFileStatus)
+                        items_to_check.sort(key=cmp_to_key(sortFileStatus))
                         # The _updateReason will remain unchanged for next loop.
                 finally:
                     self._cv.release()
@@ -491,10 +497,10 @@ class KoFileStatusService:
                 
                 # Record last accessed for directory, so we don't remove the 
                 # observer prematurely
-                for diruri in all_local_dirs_dict.keys():
+                for diruri in list(all_local_dirs_dict.keys()):
                     lastAccessed[diruri] = int(time.time())
 
-                newDirs = set(all_local_dirs_dict.keys()).difference(all_monitored_dirs_dict.keys())
+                newDirs = set(all_local_dirs_dict.keys()).difference(list(all_monitored_dirs_dict.keys()))
                 for diruri in newDirs:
                     # Newly added directories.
                     log.info("Adding directory observer for uri: %r", diruri)
@@ -502,7 +508,7 @@ class KoFileStatusService:
                         fileNotificationSvc.addObserver(self, diruri,
                                                         WATCH_DIR,
                                                         FS_NOTIFY_ALL)
-                    except COMException, ex:
+                    except COMException as ex:
                         # Likely the path does not exist anymore or this diruri
                         # is somehow invalid.
                         # Ensure we remove all the uris for this directory,
@@ -514,7 +520,7 @@ class KoFileStatusService:
                         if diruri in all_local_dirs:
                             all_local_dirs.remove(diruri)
 
-                for diruri in all_monitored_dirs_dict.keys():
+                for diruri in list(all_monitored_dirs_dict.keys()):
                     # Removed unused directories.
                     if diruri not in lastAccessed:
                         continue
@@ -526,10 +532,10 @@ class KoFileStatusService:
                     log.info("Removing directory observer for uri: %r", diruri)
                     try:
                         fileNotificationSvc.removeObserver(self, diruri)
-                        for uri in all_monitored_dirs_dict.keys():
+                        for uri in list(all_monitored_dirs_dict.keys()):
                             self._monitoredUrls.discard(uri)
                         del lastAccessed[diruri]
-                    except COMException, ex:
+                    except COMException as ex:
                         # Likely this diruri is somehow invalid.
                         pass
 
@@ -632,11 +638,11 @@ class KoFileStatusService:
                                     self.notifyObservers(None, 'file_status', '\n'.join(tmpurllist))
                                     #for uri in tmpurllist:
                                     #    print "  %r changed %r" % (checker.name, uri)
-                            except COMException, e:
+                            except COMException as e:
                                 if e.errno == nsError.NS_ERROR_FAILURE:
                                     # noone is listening, we get an exception
                                     pass
-                        except Exception, ex:
+                        except Exception as ex:
                             log.exception("Exception checking uri: %r", uri)
                             try:
                                 log.exception("Exception detail: %r", ex)
@@ -654,7 +660,7 @@ class KoFileStatusService:
                                 self.notifyObservers(None, 'file_status', '\n'.join(tmpurllist))
                                 #for uri in tmpurllist:
                                 #    print "  %r changed %r" % (checker.name, uri)
-                        except COMException, e:
+                        except COMException as e:
                             if e.errno == nsError.NS_ERROR_FAILURE:
                                 # noone is listening, we get an exception
                                 pass

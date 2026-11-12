@@ -8,12 +8,12 @@ import cx_Oracle
 
 def OutputTypeHandler(cursor, name, defaultType, size, precision, scale):
     if defaultType in (cx_Oracle.STRING, cx_Oracle.FIXED_CHAR):
-        return cursor.var(unicode, size, cursor.arraysize)
+        return cursor.var(str, size, cursor.arraysize)
 
 connection = cx_Oracle.Connection("cx_Oracle/password")
 connection.outputtypehandler = OutputTypeHandler
 cursor = connection.cursor()
 cursor.execute("select * from teststrings")
 for row in cursor:
-    print "Row:", row
+    print("Row:", row)
 

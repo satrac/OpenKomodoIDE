@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Adds/removes files in wxs ini files.
@@ -47,14 +47,14 @@ class Merger(object):
         if content_lines is None:
             assert exists(filename), "file %r does not exist" % (filename, )
             log.info("reading contents for %r", filename)
-            content_lines = file(filename).read().splitlines(0)
+            content_lines = open(filename).read().splitlines(0)
             self.contents_for_wxs_file[filename] = content_lines
         return content_lines
 
     def save(self):
-        for filename, content_lines in self.contents_for_wxs_file.items():
+        for filename, content_lines in list(self.contents_for_wxs_file.items()):
             contents = "\n".join(content_lines) + "\n"
-            file(filename, "w").write(contents)
+            open(filename, "w").write(contents)
 
     @staticmethod
     def get_low_high_for_content_lines(content_lines, line):
@@ -98,7 +98,7 @@ class Merger(object):
 
     def addremove(self, path):
         fn = self.handle_unknown
-        for line in file(path):
+        for line in open(path):
             line = line.strip()
             if not line:
                 continue
@@ -123,7 +123,7 @@ def main():
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        print "Usage: addremove.py file.txt"
+        print("Usage: addremove.py file.txt")
         sys.exit(1)
     main()
 

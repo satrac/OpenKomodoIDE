@@ -80,11 +80,11 @@ def createConsoleLaunchScript(actualCommand, cwd, envDict):
             data["cwdcmd"] = r'cd \"%s\";' % cwd
 
         fenv = open(shEnvFile, "w")
-        for name, value in envDict.items():
+        for name, value in list(envDict.items()):
             fenv.write('    %s=%s; export %s\n' % (name, quotevalue(value), name))
         fenv.close()
         fenv = open(cshEnvFile, "w")
-        for name, value in envDict.items():
+        for name, value in list(envDict.items()):
             fenv.write('    setenv %s %s\n' % (name, quotevalue(value)))
         fenv.close()
 
@@ -133,7 +133,7 @@ exit $RETVAL""" % data)
         script.write("export KOMODO_COMMAND_RETVAL\n")
         if sys.platform.startswith("sunos"):
             # Solaris /bin/sh is doesn't understand -n
-            script.write("echo Press ENTER to continue . . .\\c\n")
+            script.write("echo Press ENTER to continue . . .\\\\c\n")
         else:
             script.write("echo -n Press ENTER to continue . . .\n")
         script.write("read KOMODO_DUMMY\n")
@@ -177,7 +177,7 @@ class KoRunProcess(object):
                 # the stdout, stderr data is ready for use.
                 self.__communicating_event.wait()
             return retval
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
 
     def write_stdin(self, input, closeAfterWriting=False):
@@ -203,7 +203,7 @@ class KoRunProcess(object):
                 input = input.encode(sys.getfilesystemencoding())
             try:
                 stdoutData, stderrData = self._process.communicate(input)
-            except IOError, ex:
+            except IOError as ex:
                 if ex.errno == 32: # Broken pipe
                     # If we get this exception, most likely the process has
                     # terminated abruptly (while we're trying to still read
@@ -307,7 +307,7 @@ def _terminalProcessWaiter(runProcess, runListener):
             runProcess.communicate()
         if runListener:
             retval = runProcess.wait(None)
-    except process.ProcessError, ex:
+    except process.ProcessError as ex:
         retval = ex.errno  # Use the error set in the exception.
     if runListener:
         @components.ProxyToMainThread

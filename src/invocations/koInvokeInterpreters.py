@@ -5,8 +5,8 @@
 import sys
 import os
 import string
-import re, urllib
-import urlparse, mimetools, mimetypes
+import re, urllib.request, urllib.parse, urllib.error
+import urllib.parse, mimetools, mimetypes
 import threading
 import tempfile
 
@@ -240,9 +240,9 @@ class koInterpreterInvocation(object):
             shellArgs = prefs.getString("runservice.shell.args", "")
             shellArgs = shellArgs.split("||")
         elif sys.platform.startswith("win"):
-            if os.environ.has_key("SHELL"):
+            if "SHELL" in os.environ:
                 shell = os.environ["SHELL"]
-            elif os.environ.has_key("ComSpec"):
+            elif "ComSpec" in os.environ:
                 shell = os.environ["ComSpec"]
             else:
                 shell = "cmd.exe"
@@ -275,7 +275,7 @@ class koInterpreterInvocation(object):
                 view = currentView.QueryInterface(Ci.koIScintillaView)
                 if view:
                     effectivePrefs = view.koDoc.getEffectivePrefs()
-            except COMException, e:
+            except COMException as e:
                 if e.errno != nsError.NS_ERROR_NO_INTERFACE:
                     raise
         if effectivePrefs is None:
@@ -349,7 +349,7 @@ class koInterpreterInvocation(object):
 
     @LazyProperty
     def cookie(self):
-        return base64.encodestring(uuid.uuid4().bytes).strip()
+        return base64.encodebytes(uuid.uuid4().bytes).strip()
 
     def getDefaultPreferences( self ):
         cat = Cc["@activestate.com/koPreferenceRoot;1"].createInstance()
@@ -434,7 +434,7 @@ class koInterpreterInvocation(object):
                 if self._postData:
                     self.process.write_stdin(self._postData, closeAfterWriting=True)
 
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             msg = "Executing '%s' failed: %s\n" % (argv, str(ex))
             log.warn(msg)
             raise ServerException(nsError.NS_ERROR_FILE_EXECUTION_FAILED, msg)
@@ -491,7 +491,7 @@ class koInterpreterInvocation(object):
                                                stdin=None, stdout=None,
                                                stderr=None,
                                                flags=process.CREATE_NEW_CONSOLE)
-        except process.ProcessError, ex:
+        except process.ProcessError as ex:
             log.exception(ex)
             raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
         
@@ -505,13 +505,13 @@ class koInterpreterInvocation(object):
         if scriptFileName:
             try:
                 os.unlink(scriptFileName)
-            except OSError, ex:
+            except OSError as ex:
                 log.warn("Could not remove temporary script file '%s': %s",
                          scriptFileName, ex)
         if inputFileName:
             try:
                 os.unlink(inputFileName)
-            except OSError, ex:
+            except OSError as ex:
                 log.warn("Could not remove temporary input file '%s': %s",
                          inputFileName, ex)
         
@@ -529,9 +529,9 @@ class koInterpreterInvocation(object):
         penv = self.effectivePrefs.getStringPref(name)
         # if we have a predefined user environment, sort it first
         if len(penv) > 0:
-            penv = string.split(penv, os.linesep)
+            penv = penv.split(os.linesep)
             penv.sort()
-            penv = string.join(penv,os.linesep)
+            penv = os.linesep.join(penv)
         inst.setStringPref(newname,penv)
         
     def _getSystemEnvironment(self, cat, inst, updaterFunc=None):
@@ -545,7 +545,7 @@ class koInterpreterInvocation(object):
             if currentView:
                 try:
                     currentView = currentView.QueryInterface(Ci.koIScintillaView)
-                except COMException, ex:
+                except COMException as ex:
                     if ex.errno != nsError.NS_ERROR_NO_INTERFACE:
                         raise
                     currentView = None
@@ -626,7 +626,7 @@ class koInterpreterInvocation(object):
             
             # add generated cgi env vars (from GET, POST, and Cookie params)
             httpEnvStrs = ["%s=%s" % item
-                           for item in self._build_http_env().items()]
+                           for item in list(self._build_http_env().items())]
             mergedEnvStrs = self._environUtils.MergeEnvironmentStrings(
                 mergedEnvStrs, httpEnvStrs)
 
@@ -675,8 +675,8 @@ class koInterpreterInvocation(object):
         return env
     
     def _build_args_list(self, args, sep="&"):
-        argsList = string.split(string.strip(args), "\n")
-        return string.join(argsList,sep)
+        argsList = args.strip().split("\n")
+        return sep.join(argsList)
     
     def _build_get_line(self):
         getArgs = self.currentInstancePrefs.getStringPref('getparams')
@@ -701,7 +701,7 @@ class koInterpreterInvocation(object):
             boundary = mimetools.choose_boundary()
             # generate the mime headers for regular post variables
             if postArgs:
-                argsList = string.split(postArgs, "\n")
+                argsList = postArgs.split("\n")
                 for i in range(len(argsList)):
                     try:
                         key, value = argsList[i].split("=", 1)
@@ -712,13 +712,13 @@ class koInterpreterInvocation(object):
                         pass
                 
             if postFiles:
-                fileList = string.split(postFiles, "\n")
+                fileList = postFiles.split("\n")
                 # read each file, encode it, then add it to the return data
                 for i in range(len(fileList)):
                     # read each file, base64 encode it, and add to the request
                     if len(fileList[i]) < 3: continue
-                    fvar = string.split(fileList[i], "=")
-                    fn = urllib.unquote(fvar[1])
+                    fvar = fileList[i].split("=")
+                    fn = urllib.parse.unquote(fvar[1])
                     out += "--"+boundary+"\r\n"
                     out += "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n" % (fvar[0], fn)
                     type, encoding = mimetypes.guess_type(fn)
@@ -775,7 +775,7 @@ class koPythonCommonInvocation(koInterpreterInvocation):
                          .getService(Ci.koIAppInfoEx)
             if pythonInfo.version:
                 self._pythonVersion = float(pythonInfo.version)
-        except COMException, ex:
+        except COMException as ex:
             # Usually it's because there is no interpreter found - bug 98499.
             if ex.errno != nsError.NS_ERROR_FILE_NOT_FOUND:
                 log.exception("Unable to find a valid Python executable")
@@ -795,7 +795,7 @@ class koPythonCommonInvocation(koInterpreterInvocation):
             if pythonPathEnv:
                 pythonPath += os.pathsep + pythonPathEnv
             if sys.platform.startswith("win"):
-                pythonPath = string.replace(pythonPath, '\\', '/')
+                pythonPath = pythonPath.replace('\\', '/')
             env['PYTHONPATH'] = pythonPath
         return env
 
@@ -830,7 +830,7 @@ class koPythonCommonInvocation(koInterpreterInvocation):
             cwd = prefset.getStringPref("cwd")
             if cwd and not os.path.isdir(cwd):
                 raise PrefException("cwd", "Directory '%s' does not exist" % cwd)
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
 
@@ -1122,7 +1122,7 @@ class koPerlInvocation(koInterpreterInvocation):
             valid_warning_values = ["enabled", "disabled", "all"]
             if warnings not in valid_warning_values:
                 raise PrefException("warnings", "Must be one of " + ",".join(valid_warning_values))
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
         
@@ -1165,7 +1165,7 @@ class koPerlInvocation(koInterpreterInvocation):
             perlExtraPaths = self.effectivePrefs.getString("perlExtraPaths", "")
         if perlExtraPaths:
             if sys.platform.startswith("win"):
-                perlExtraPaths = string.replace(perlExtraPaths, '\\', '/')
+                perlExtraPaths = perlExtraPaths.replace('\\', '/')
             perlExtraPaths = [x for x in perlExtraPaths.split(os.pathsep) if x.strip()]
             for incpath in perlExtraPaths:
                 argv += ['-I', incpath]
@@ -1202,7 +1202,7 @@ class koPerlInvocation(koInterpreterInvocation):
             if logDir:
                 logDir = logDir.replace("\\", "/")
                 # encode the path
-                logDir = urllib.quote(logDir)
+                logDir = urllib.parse.quote(logDir)
         return logDir
     
     def _getScriptArgs(self):
@@ -1245,7 +1245,7 @@ class koPerlInvocation(koInterpreterInvocation):
 
         # Recreate the env var
         env["PERLDB_OPTS"] = ' '.join([(val is not None and (key + '=' + val) or key)
-                                       for key,val in perldbOpts.items()])
+                                       for key,val in list(perldbOpts.items())])
 
         #XXX Is this block correct for Linux/Solaris?
         koDirSvc = Cc["@activestate.com/koDirs;1"].\
@@ -1254,7 +1254,7 @@ class koPerlInvocation(koInterpreterInvocation):
         perl5db = "BEGIN { require '%s' }"\
                          % os.path.join(koDirSvc.perlDBGPDir, 'perl5db.pl')
         if sys.platform.startswith("win"):
-            env["PERL5DB"] = string.replace(perl5db, '\\', '/')
+            env["PERL5DB"] = perl5db.replace('\\', '/')
         else:
             env["PERL5DB"] = perl5db
         if log.isEnabledFor(logging.DEBUG):
@@ -1411,7 +1411,7 @@ class koPHPInvocation(koInterpreterInvocation):
                 rc = self.get_supportedInvokeTypes()
                 if not rc & invokeType:
                     return 0, "", "PHP is not configured properly for %s." % (invoke_names.get(invokeType))
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
         
@@ -1618,7 +1618,7 @@ class koXSLTInvocation(koInterpreterInvocation):
             if not inputFile:
                 raise PrefException('inputfile', "You must specify the input XML file to be used")
             else:
-                addressingScheme, networkLocation, path, parameters, query, fragmentIdentifier = urlparse.urlparse(inputFile)
+                addressingScheme, networkLocation, path, parameters, query, fragmentIdentifier = urllib.parse.urlparse(inputFile)
                 if not addressingScheme:
                    if not os.path.isfile(inputFile):
                         raise PrefException('inputfile', "File '%s' does not exist" % inputFile)
@@ -1630,7 +1630,7 @@ class koXSLTInvocation(koInterpreterInvocation):
                         if not os.path.isfile(inputFile[addressLocation + len('file:///'):]):
                             raise PrefException('inputfile', "File '%s' does not exist" % inputFile)
 
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
     
@@ -1745,7 +1745,7 @@ class koTclInvocation(koInterpreterInvocation):
                      .getService(Ci.koIAppInfoEx)
             tclInfo.installationPath = tclInfo.getInstallationPathFromBinary(prefset.getStringPref("executable"))
 
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
 
@@ -1785,7 +1785,7 @@ class koTclInvocation(koInterpreterInvocation):
             # This variable is only used when initializing the
             # auto_path variable.  Also escape spaces in paths.
             tclExtraPaths = tclExtraPaths.replace('\\', '/')
-            tclExtraPaths = tclExtraPaths.replace(' ', '\ ')
+            tclExtraPaths = tclExtraPaths.replace(' ', r'\ ')
             TCLLIBPATH = ' '.join(tclExtraPaths.split(os.pathsep))
             environment["TCLLIBPATH"] = TCLLIBPATH
 
@@ -1809,7 +1809,7 @@ class koTclInvocation(koInterpreterInvocation):
             executable = 'dbgp_tcldebug.exe'
             import ctypes
             # _determineExecutable will pick tclsh or wish, following pref
-            tclsh = unicode(self._determineExecutable())
+            tclsh = str(self._determineExecutable())
             if tclsh:
                 binaryType = ctypes.wintypes.DWORD(1)
                 res = ctypes.windll.kernel32.GetBinaryTypeW(tclsh,
@@ -1954,7 +1954,7 @@ class koRubyInvocation(koInterpreterInvocation):
             cwd = prefset.getStringPref("cwd")
             if cwd and not os.path.isdir(cwd):
                 raise PrefException("cwd", "Directory '%s' does not exist" % cwd)
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
 
@@ -1985,7 +1985,7 @@ class koRubyInvocation(koInterpreterInvocation):
             rubyExtraPaths = self.effectivePrefs.getStringPref("rubyExtraPaths")
         if rubyExtraPaths:
             if sys.platform.startswith("win"):
-                rubyExtraPaths = string.replace(rubyExtraPaths, '\\', '/')
+                rubyExtraPaths = rubyExtraPaths.replace('\\', '/')
             rubyExtraPaths = [x for x in rubyExtraPaths.split(os.pathsep) if x.strip()]
             for incpath in rubyExtraPaths:
                 argv += ['-I', incpath]
@@ -2010,7 +2010,7 @@ class koRubyInvocation(koInterpreterInvocation):
             if logDir:
                 logDir = logDir.replace("\\", "/")
                 # encode the path
-                logDir = urllib.quote(logDir)
+                logDir = urllib.parse.quote(logDir)
         return logDir
     
     def _getScriptArgs(self):
@@ -2123,7 +2123,7 @@ class koRubyInvocation(koInterpreterInvocation):
         # and doesn't explicitly load rubygems.
         
         # self._fix_RubyDebuggerEnv(env)
-        if env.has_key('RUBYOPT') and env['RUBYOPT'].lower() == "rubygems":
+        if 'RUBYOPT' in env and env['RUBYOPT'].lower() == "rubygems":
             log.debug("env['RUBYOPT'] = %s", env['RUBYOPT'])
         
         res = self._doLaunch(argv, cwd, env)
@@ -2210,7 +2210,7 @@ class koNodeJSInvocation(koInterpreterInvocation):
             if execParams.find('--host=localhost --port=9222') >= 0:
                 execParams = execParams.replace('--host=localhost --port=9222', '')
                 prefset.setStringPref('executable-params', execParams)
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
 
@@ -2323,7 +2323,7 @@ class koChromeInvocation(koInterpreterInvocation):
         try:
             prefset = self.currentInstancePrefs
             checkFileExists(prefset, 'executable', "You must specify the Chrome executable used for the debug session")
-        except PrefException, exc:
+        except PrefException as exc:
             return 0, exc.prefid, exc.msg
         return 1, None, None
         
@@ -2366,7 +2366,7 @@ class koChromeInvocation(koInterpreterInvocation):
             log.debug("Chrome argv: %r", argv)
             try:
                 runutils.KoTerminalProcess(argv, cwd=os.getcwd(), env=env)
-            except process.ProcessError, ex:
+            except process.ProcessError as ex:
                 msg = "Executing '%s' failed: %s\n" % (argv, str(ex))
                 log.warn(msg)
                 raise ServerException(nsError.NS_ERROR_FILE_EXECUTION_FAILED, msg)

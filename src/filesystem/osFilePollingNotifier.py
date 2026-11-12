@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 #
@@ -74,7 +74,7 @@ def _checkDirectoryForChanges(oldStatCache, statCache, oldDirCache, dirCache,
         dir_changes = _checkPathForChanges(oldStatCache, statCache, oldDirCache,
                                            dirCache, checked_locations, path,
                                            recursive, depth, linked_paths)
-        for changedpath, change in dir_changes.items():
+        for changedpath, change in list(dir_changes.items()):
             changes[changedpath] = changes.get(changedpath, 0) | change
 
     # The directory itself or one/more files inside the directory have changed
@@ -113,13 +113,13 @@ def _checkPathForChanges(oldStatCache, statCache, oldDirCache, dirCache,
     try:
         try:
             lstat = os_lstat(path)
-        except Exception, e:
+        except Exception as e:
             log.debug("polling _checkPathForChanges unable to lstat [%r] - %s",
                       path, e)
             raise
 
         #if S_ISLNK(lstat.st_mode):
-        if (lstat.st_mode & 0170000) == S_IFLNK:    # Taken from stat module
+        if (lstat.st_mode & 0o170000) == S_IFLNK:    # Taken from stat module
             realpath = os_path_realpath(path)
             # linked_paths is used to ensure we don't go in a cyclic loop for symlinks
             if not linked_paths:
@@ -469,7 +469,7 @@ class osFilePollingNotifier(threading.Thread):
         try:
             # Clean out any dead monitors
             self._removeDeadMonitors()
-            allMonitorItems = self.__monitors.items()
+            allMonitorItems = list(self.__monitors.items())
             for path, monitoredPath in allMonitorItems:
                 monitoredPath.initializeNewObservers()
         finally:
@@ -523,7 +523,7 @@ class osFilePollingNotifier(threading.Thread):
 
     # Remove monitors that have no observers, as no need to poll these locations
     def _removeDeadMonitors(self):
-        for path, monitoredPath in self.__monitors.items():
+        for path, monitoredPath in list(self.__monitors.items()):
             monitoredPath.removeDeadObservers()
             if len(monitoredPath) == 0:
                 # Don't need to watch this path anymore
@@ -532,7 +532,7 @@ class osFilePollingNotifier(threading.Thread):
     # Return the number of observers that are watching locations
     def _getNumberObservers(self):
         total_count = 0
-        for path, monitoredPath in self.__monitors.items():
+        for path, monitoredPath in list(self.__monitors.items()):
             total_count += len(monitoredPath)
         return total_count
 
@@ -570,7 +570,7 @@ class osFilePollingNotifier(threading.Thread):
             try:
                 self.__checkMonitoredFilesystem()
                 #profiler.runcall(self.__checkMonitoredFilesystem)
-            except Exception, e:
+            except Exception as e:
                 log.error("Polling service runtime exception:")
                 log.exception(e)
             self.__finished_checking_event.set()
@@ -639,7 +639,7 @@ class osFilePollingNotifier(threading.Thread):
         try:
             self._removeDeadMonitors()
             uri_locations = []
-            for path, monitoredPath in self.__monitors.items():
+            for path, monitoredPath in list(self.__monitors.items()):
                 uri_locations.append(pathToUri(monitoredPath.path))
             return uri_locations
         finally:
@@ -655,7 +655,7 @@ class osFilePollingNotifier(threading.Thread):
         try:
             log.debug("Watching:")
             self._removeDeadMonitors()
-            for monitoredPath in self.__monitors.items():
+            for monitoredPath in list(self.__monitors.items()):
                 log.debug(monitoredPath)
         finally:
             self.__lock_observer_changes.release()

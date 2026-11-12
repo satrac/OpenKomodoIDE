@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """A small library for talking to notifications.as.com.
 
@@ -65,7 +65,7 @@ See <http://notifications.activestate.com/about/#api> for details.
 """
 
 from pprint import pprint, pformat
-from urllib import urlencode
+from urllib.parse import urlencode
 
 if __name__ == "__main__":
     # Magic to allow command line usage.
@@ -164,8 +164,8 @@ class NotificationsAPI(apibase.HttpAPIBase):
         TODO: As a convenience allow "to_sso_id" to be an email address and
             can then lookup the sso_id.
         """
-        assert isinstance(ntid, (int, long, str))
-        assert isinstance(to_sso_id, (int, long))
+        assert isinstance(ntid, (int, str))
+        assert isinstance(to_sso_id, int)
         assert not template_data or isinstance(template_data, dict)
 
         url = self._api_url + "notifications/"
@@ -248,14 +248,14 @@ class NotificationsAPI(apibase.HttpAPIBase):
 def main(argv):
     """Usage: ./notificationsapi.py METHOD ARGS"""
     from os.path import exists, expanduser
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
     
     # Gather configuration info -- in particular "username/password"
     # credentials required for `api.notify(...)`.
     kwargs = {}
     conf_path = expanduser("~/.notificationsapi.ini")
     if exists(conf_path):
-        conf = SafeConfigParser()
+        conf = ConfigParser()
         conf.read(conf_path)
         section = os.environ.get("NOTIFICATIONS_API_URL",
             NotificationsAPI._api_url)
@@ -274,7 +274,7 @@ def main(argv):
             args.append(s)
     response = method(*args)
     #pprint(response)
-    print jsonlib.dumps(response, indent=2)
+    print(jsonlib.dumps(response, indent=2))
 
 if __name__ == "__main__":
     import sys

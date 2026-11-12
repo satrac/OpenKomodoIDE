@@ -1,7 +1,8 @@
 # This will test the mechanisms by which a Blackfile.py is found.
 #
 
-import os, sys, tempfile, re
+import os, subprocess, sys, tempfile, re
+import subprocess
 
 #---- utility routines
 
@@ -40,44 +41,44 @@ startDir = os.getcwd()
 
 
 # a Blackfile specified via "-f <blackfile>"
-lines = os.popen("bk -f %s" % rootBlackfile).readlines()
+lines = subprocess.getoutput("bk -f %s" % rootBlackfile).splitlines()
 assert WhichBlackfileIsSelected(lines) == rootBlackfile
 
 # a Blackfile in the current directory (with BLACKFILE_FALLBACK not defined)
-if os.environ.has_key("BLACKFILE_FALLBACK"):
+if "BLACKFILE_FALLBACK" in os.environ:
     os.environ["BLACKFILE_FALLBACK"] = ""
 os.chdir(rootTmpDir)
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 assert WhichBlackfileIsSelected(lines) == rootBlackfile
 
 # a Blackfile in the current directory (with BLACKFILE_FALLBACK defined)
 os.environ["BLACKFILE_FALLBACK"] = fallbackBlackfile
 os.chdir(rootTmpDir)
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 assert WhichBlackfileIsSelected(lines) == rootBlackfile
 
 # a Blackfile in an ancestral directory (with BLACKFILE_FALLBACK not defined)
-if os.environ.has_key("BLACKFILE_FALLBACK"):
+if "BLACKFILE_FALLBACK" in os.environ:
     os.environ["BLACKFILE_FALLBACK"] = ""
 os.chdir(subTmpDir)
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 assert WhichBlackfileIsSelected(lines) == rootBlackfile
 
 # a Blackfile in an ancestral directory (with BLACKFILE_FALLBACK defined)
 os.environ["BLACKFILE_FALLBACK"] = fallbackBlackfile
 os.chdir(subTmpDir)
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 assert WhichBlackfileIsSelected(lines) == rootBlackfile
 
 
 # no ancestral Blackfile (with BLACKFILE_FALLBACK not defined)
-if os.environ.has_key("BLACKFILE_FALLBACK"):
+if "BLACKFILE_FALLBACK" in os.environ:
     os.environ["BLACKFILE_FALLBACK"] = ""
 if sys.platform.startswith("win"):
     os.chdir("C:\\")
 else:
     os.chdir("/")
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 blackfile = WhichBlackfileIsSelected(lines)
 assert blackfile == None, "blackfile '%s' is not None" % blackfile
 
@@ -87,18 +88,12 @@ if sys.platform.startswith("win"):
     os.chdir("C:\\")
 else:
     os.chdir("/")
-lines = os.popen("bk").readlines()
+lines = subprocess.getoutput("bk").splitlines()
 assert WhichBlackfileIsSelected(lines) == fallbackBlackfile
 
 
 # clean up
+import shutil
 os.chdir(startDir)
-os.rmdir(subTmpDir)
-os.unlink(rootBlackfile)
-os.unlink(rootBlackfile+"c")  # the .pyc
-os.rmdir(rootTmpDir)
-os.unlink(fallbackBlackfile)
-os.unlink(fallbackBlackfile+"c") # the .pyc
-os.rmdir(fallbackTmpDir)
-os.rmdir(tmpDir)
+shutil.rmtree(tmpDir, ignore_errors=True)
 

@@ -47,7 +47,7 @@ def initialize():
         #XXX This unicode conversion is not necessary since
         #    _SaferCreateProcess in process.py. Keeping it for Komodo 2.0
         #    release though.
-        userEnv[unicode(key)] = unicode(val)
+        userEnv[str(key)] = str(val)
     if 'PWD' in userEnv:
         del userEnv['PWD']
     _gUserEnvCache = userEnv

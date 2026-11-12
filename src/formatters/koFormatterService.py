@@ -48,7 +48,7 @@ class koFormatterService(object):
                 formatter = components.classes[cid].\
                                 getService(components.interfaces.koIFormatter)
                 formatters.append(formatter)
-            except Exception, e:
+            except Exception as e:
                 log.exception("Unable to load %r formatter, cid: %r",
                               name, cid)
             else:
@@ -56,7 +56,7 @@ class koFormatterService(object):
                     languagues = formatter.getSupportedLanguages()
                     for lang in languagues:
                         self._formatters_from_language[lang].append(formatter)
-                except Exception, e:
+                except Exception as e:
                     log.exception("Unable to get supported languages for "
                                   "%r formatter, cid: %r", name, cid)
         self._all_formatters = formatters

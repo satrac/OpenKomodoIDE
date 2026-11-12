@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from xpcom import components, ServerException, COMException, nsError
 from xpcom.server import WrapObject, UnwrapObject
@@ -87,18 +87,18 @@ class KomodoWindowData(object):
 
     # **** New tools: verify findPart is used only to find parts, not tools.
     def findPart(self, partType, name, where, part):
-	if where != "*":
-	    log.error("DEPRECATED: calling koIPartService.findPart with container != '*' (set to %s)", where)
+        if where != "*":
+            log.error("DEPRECATED: calling koIPartService.findPart with container != '*' (set to %s)", where)
         # See koIProject for details.
         if not part:
             return None
-	container = part.project
-	if not container:
-	    return None
-	found = container.getChildWithTypeAndStringAttribute(
+        container = part.project
+        if not container:
+            return None
+        found = container.getChildWithTypeAndStringAttribute(
                             partType, 'name', name, 1)
-	if found:
-	    return found
+        if found:
+            return found
         return None
 
     def getPart(self, type, attrname, attrvalue, where, container):
@@ -112,10 +112,10 @@ class KomodoWindowData(object):
         )
 
     def _genParts(self, type, attrname, attrvalue, where, container):
-	if where != "*":
-	    log.error("DEPRECATED: calling koIPartService._genParts with container != '*' (set to %s)", where)
-	#TODO: Unwrap and use iterators to improve efficiency.
-	#      Currently this can be marshalling lots of koIParts.
+        if where != "*":
+            log.error("DEPRECATED: calling koIPartService._genParts with container != '*' (set to %s)", where)
+        #TODO: Unwrap and use iterators to improve efficiency.
+        #      Currently this can be marshalling lots of koIParts.
         if container:
             for part in place.getChildrenByType(type, True):
                 if part.getStringAttribute(attrname) == attrvalue:
@@ -211,23 +211,23 @@ class KoPartService(object):
 
     def set_toolbox(self, project):
         raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE,
-			      "Komodo no longer supports setting the toolbox")
+                              "Komodo no longer supports setting the toolbox")
 
     def get_toolbox(self):
         log.warn("DEPRECATED koIPartService.toolbox, use koIToolbox2Service.getStandardToolbox")
         return components.classes["@activestate.com/koToolbox2Service;1"].\
                        getService(components.interfaces.koIToolbox2Service).\
-		       getStandardToolbox()
+                       getStandardToolbox()
 
     def set_sharedToolbox(self, project):
         raise ServerException(nsError.NS_ERROR_ILLEGAL_VALUE,
-			      "Komodo no longer supports setting the shared toolbox via the project system.")
+                              "Komodo no longer supports setting the shared toolbox via the project system.")
 
     def get_sharedToolbox(self):
         log.error("DEPRECATED koIPartService.toolbox, use koIToolbox2Service.getStandardToolbox")
         return components.classes["@activestate.com/koToolbox2Service;1"].\
                        getService(components.interfaces.koIToolbox2Service).\
-		       getSharedToolbox()
+                       getSharedToolbox()
 
     @components.ProxyToMainThread
     def set_currentProject(self, project):

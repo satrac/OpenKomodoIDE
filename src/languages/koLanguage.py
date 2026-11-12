@@ -180,14 +180,14 @@ class KoLanguageRegistryService:
         # Load 'factoryFileAssociations' pref.
         factoryFileAssociationsRepr \
             = self._globalPrefs.getStringPref("factoryFileAssociations")
-        for pattern, languageName in eval(factoryFileAssociationsRepr).items():
+        for pattern, languageName in list(eval(factoryFileAssociationsRepr).items()):
             self._addOneFileAssociation(pattern, languageName)
 
         # Apply fallback default extensions from all registered languages.
-        for defaultExtension, languageName in self._defaultLanguageExtensions.items():
+        for defaultExtension, languageName in list(self._defaultLanguageExtensions.items()):
             self._addOneFileAssociation('*'+defaultExtension, languageName,
                                         override=False)
-        for pattern, languageName in self._defaultFileAssociations.items():
+        for pattern, languageName in list(self._defaultFileAssociations.items()):
             self._addOneFileAssociation(pattern, languageName,
                                         override=False)
 
@@ -211,7 +211,7 @@ class KoLanguageRegistryService:
                         log.warn("unexpected action in 'fileAssociationDiffs' "
                                  "entry (skipping): %r",
                                  (action, pattern, languageName))
-            except (SyntaxError, ValueError), ex:
+            except (SyntaxError, ValueError) as ex:
                 log.exception("error loading 'fileAssociationDiffs' "
                               "(skipping): %s", fileAssociationDiffsRepr)
 
@@ -299,7 +299,7 @@ class KoLanguageRegistryService:
         if id in self._addonsEnabled:
             return self._addonsEnabled[id]
 
-        if os.environ.has_key("KO_PYXPCOM_PROFILE"):
+        if "KO_PYXPCOM_PROFILE" in os.environ:
             # The addonMgr does not work well with the profiler, so we just
             # let all addons be enabled when profiling is enabled.
             self._addonsEnabled[id] = True
@@ -359,7 +359,7 @@ class KoLanguageRegistryService:
                 pass
 
     def getLanguageNames(self):
-        languageNames = self.__languageFromLanguageName.keys()
+        languageNames = list(self.__languageFromLanguageName.keys())
         languageNames.sort()
         languageNames = [name for name in languageNames
                          if name not in self._internalLanguageNames]
@@ -375,7 +375,7 @@ class KoLanguageRegistryService:
         
         Registers the languages listed in the "komodo-language-info" category..
         """
-        from urllib import unquote
+        from urllib.parse import unquote
         from json import loads
 
         for entry in _xpcom.GetCategoryEntries("komodo-language-info"):
@@ -449,7 +449,7 @@ class KoLanguageRegistryService:
                       category=DeprecationWarning)
 
         name = language.name
-        assert not self.__languageFromLanguageName.has_key(name), \
+        assert name not in self.__languageFromLanguageName, \
                "Language '%s' already registered" % (name)
         log.info("registering language [%s]", name)
         
@@ -536,7 +536,7 @@ class KoLanguageRegistryService:
         #print "Unknown file %r" % (basename, )
         # Next, try each registered filename glob pattern: slower.  Use the
         # longest pattern first
-        for pattern, lang in self.__languageNameFromOther.items():
+        for pattern, lang in list(self.__languageNameFromOther.items()):
             if fnmatch.fnmatch(basename, pattern):
                 self.__languageNameFromExtOrBasename[basename] = lang
                 #print "suggestLanguageForFile: %r %r -> '%s'" % (basename, pattern, lang)
@@ -560,7 +560,7 @@ class KoLanguageRegistryService:
           across XPCOM.
         - The list is sorted.
         """
-        associations = [(p, ln) for (p, ln) in self.__languageNameFromPattern.items()]
+        associations = [(p, ln) for (p, ln) in list(self.__languageNameFromPattern.items())]
         associations.sort()
         return ([p  for p,ln in associations],
                 [ln for p,ln in associations])
@@ -577,16 +577,16 @@ class KoLanguageRegistryService:
         # Massage data for faster lookup.
         #       {'a': 1, 'b': 2}   ->   {('a', 1): True, ('b', 2): True}
         factoryAssociations = dict(
-            ((k,v), True) for k,v in self.__factoryLanguageNameFromPattern.items()
+            ((k,v), True) for k,v in list(self.__factoryLanguageNameFromPattern.items())
         )
         associations = dict(
             ((k,v), True) for k,v in zip(patterns, languageNames)
         )
 
         # Calculate the diffs. ('p' == pattern, 'ln' == language name)
-        additions = [('+', p, ln) for (p, ln) in associations.keys()
+        additions = [('+', p, ln) for (p, ln) in list(associations.keys())
                                    if (p, ln) not in factoryAssociations]
-        deletions = [('-', p, ln) for (p, ln) in factoryAssociations.keys()
+        deletions = [('-', p, ln) for (p, ln) in list(factoryAssociations.keys())
                                    if (p, ln) not in associations]
         diffs = additions + deletions
         return repr(diffs)
@@ -607,12 +607,12 @@ class KoLanguageRegistryService:
         sm.highlight = highlight # boolean, whether or not to highlight
         try:
             observerSvc.notifyObservers(sm, "status_message", None)
-        except COMException, e:
+        except COMException as e:
             # do nothing: Notify sometimes raises an exception if (???)
             # receivers are not registered?
             pass
 
-    emacsLocalVars1_re = re.compile("-\*-\s*(.*?)\s*-\*-")
+    emacsLocalVars1_re = re.compile(r"-\*-\s*(.*?)\s*-\*-")
     # This regular expression is intended to match blocks like this:
     #    PREFIX Local Variables: SUFFIX
     #    PREFIX mode: Tcl SUFFIX
@@ -720,7 +720,7 @@ class KoLanguageRegistryService:
                     langs.insert(0, newLang)
         return langs
         
-    _htmldoctype_re = re.compile('<!DOCTYPE\s+html',
+    _htmldoctype_re = re.compile(r'<!DOCTYPE\s+html',
                                 re.IGNORECASE)
     def guessLanguageFromContents(self, head, tail, returnDetails=False):
         """Guess the language (e.g. Perl, Tcl) of a file from its contents.
@@ -752,10 +752,10 @@ class KoLanguageRegistryService:
             #   but in practice this seems to be "near the top".
             try:
                 localVars = self._getEmacsLocalVariables(head, tail)
-            except ValueError, ex:
+            except ValueError as ex:
                 self._sendStatusMessage(str(ex))
             else:
-                if localVars.has_key("mode"):
+                if "mode" in localVars:
                     mode = localVars["mode"]
                     try:
                         langName = self._modeName2LanguageName[mode.lower()]
@@ -770,7 +770,7 @@ class KoLanguageRegistryService:
             (not langs or 'XML' in langs):
             # it may be an XHTML file
             lhead = head.lower()
-            if lhead.startswith(u'<?xml'):
+            if lhead.startswith('<?xml'):
                 langs.append("XML")
 
             try:
@@ -794,7 +794,7 @@ class KoLanguageRegistryService:
                         langs.append("HTML")
                 elif self._htmldoctype_re.search(lhead):
                     langs.append("HTML5")
-            except Exception, e:
+            except Exception as e:
                 # log this, but keep on going, it's just a failure in xml
                 # parsing and we can live without it.  bug 67251
                 log.exception(e)
@@ -819,7 +819,7 @@ class KoLanguageRegistryService:
 
         # Detect the type from a possible shebang line.
         if (self._globalPrefs.getBooleanPref('shebangDetection') and
-            not langs and head.startswith(u'#!')):
+            not langs and head.startswith('#!')):
             for language, pattern in self.shebangPatterns:
                 if pattern.match(head):
                     shebangLangs.append(language)
@@ -1073,7 +1073,7 @@ class KoLanguageStatusTreeView(TreeView):
             try:
                 key = col.id[len("languageStatus-"):]
                 return self._rows[row_idx][key]
-            except KeyError, ex:
+            except KeyError as ex:
                 raise ValueError("getCellText: unexpected col.id: %r" % col.id)
 
     def isEditable(self, row_idx, col):

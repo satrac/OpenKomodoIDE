@@ -20,6 +20,7 @@ import fnmatch
 import tempfile
 import tarfile
 from distutils import log
+from functools import cmp_to_key
 
 try:
     from site import USER_SITE
@@ -50,7 +51,7 @@ DEFAULT_VERSION = "0.6.10"
 DEFAULT_URL = "http://pypi.python.org/packages/source/d/distribute/"
 SETUPTOOLS_FAKED_VERSION = "0.6c11"
 
-SETUPTOOLS_PKG_INFO = """\
+SETUPTOOLS_PKG_INFO = r"""\
 Metadata-Version: 1.0
 Name: setuptools
 Version: %s
@@ -182,7 +183,7 @@ def download_setuptools(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
     try:
         from urllib.request import urlopen
     except ImportError:
-        from urllib2 import urlopen
+        from urllib.request import urlopen
     tgz_name = "distribute-%s.tar.gz" % version
     url = download_base + tgz_name
     saveto = os.path.join(to_dir, tgz_name)
@@ -447,7 +448,7 @@ def _extractall(self, path=".", members=None):
     if sys.version_info < (2, 4):
         def sorter(dir1, dir2):
             return cmp(dir1.name, dir2.name)
-        directories.sort(sorter)
+        directories.sort(key=cmp_to_key(sorter))
         directories.reverse()
     else:
         directories.sort(key=operator.attrgetter('name'), reverse=True)

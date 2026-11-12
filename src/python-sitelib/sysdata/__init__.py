@@ -148,7 +148,7 @@ def flush(name):
     log.debug("flush(name=%r)", name)
     if name.endswith(".*"):
         prefix = name[:-1]
-        names = [n for n in cache.keys() if n.startswith(prefix)]
+        names = [n for n in list(cache.keys()) if n.startswith(prefix)]
         for n in names:
             log.info("flushing '%s' from cache", n)
             del cache[n]

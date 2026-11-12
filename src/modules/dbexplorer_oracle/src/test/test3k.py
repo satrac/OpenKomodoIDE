@@ -8,7 +8,7 @@ import unittest
 
 inSetup = (os.path.basename(sys.argv[0]).lower() == "setup.py")
 
-print("Running tests for cx_Oracle version", cx_Oracle.version)
+print(("Running tests for cx_Oracle version", cx_Oracle.version))
 
 import TestEnv
 
@@ -50,7 +50,7 @@ failures = []
 for name in moduleNames:
     fileName = name + ".py"
     print()
-    print("Running tests in", fileName)
+    print(("Running tests in", fileName))
     if inSetup:
         fileName = os.path.join("test", fileName)
     module = imp.new_module(name)
@@ -70,6 +70,6 @@ for name in moduleNames:
 if failures:
     print("***** Some tests in the following modules failed. *****")
     for name in failures:
-        print("      %s" % name)
+        print(("      %s" % name))
     sys.exit(1)
 

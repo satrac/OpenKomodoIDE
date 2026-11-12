@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -47,7 +47,7 @@ class KoExtensionsView(TreeView):
             logError("no %sth row of data" % row)
             return ""
 
-        if type(cell) not in (types.StringType, types.UnicodeType):
+        if type(cell) not in (bytes, str):
             cell = str(cell)
         return cell
 
@@ -68,7 +68,7 @@ class KoExtensionsView(TreeView):
     def Remove(self, ext):
         try:
             self._exts.remove(ext)
-        except ValueError, ex:
+        except ValueError as ex:
             pass
         else:
             self._tree.beginUpdateBatch()
@@ -131,7 +131,7 @@ class KoWindowsIntegrationService:
                     if wininteg.removeFileAssociation(ext, untypedAction,
                                                       self._komodo, fromHKLM=True):
                         log.info("Removed untyped action %r", untypedAction)
-                except WindowsError, ex:
+                except WindowsError as ex:
                     if ex.winerror != 5: # ERROR_ACCESS_DENIED
                         raise
                     # can't remove the untyped action, don't add
@@ -141,10 +141,10 @@ class KoWindowsIntegrationService:
                     return
 
             wininteg.addFileAssociation(ext, action, self._komodo)
-        except WindowsError, ex:
+        except WindowsError as ex:
             self.lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, ex.strerror)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self.lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, str(ex))
 
@@ -157,15 +157,15 @@ class KoWindowsIntegrationService:
                                                self._komodo, fromHKLM=True)
             try:
                 wininteg.removeFileAssociation(ext, action, self._komodo)
-            except WindowsError, ex:
+            except WindowsError as ex:
                 if ex.winerror != 2: # FILE_NOT_FOUND
                     raise
                 # perhaps it's under HKLM
                 wininteg.removeFileAssociation(ext, action, self._komodo, fromHKLM=True)
-        except WindowsError, ex:
+        except WindowsError as ex:
             self.lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, ex.strerror)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self.lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, str(ex))
 
@@ -177,7 +177,7 @@ class KoWindowsIntegrationService:
             try:
                 found = wininteg.removeFileAssociation(ext, "Edit with Komodo",
                                                        self._komodo, fromHKLM=True)
-            except WindowsError, ex:
+            except WindowsError as ex:
                 if ex.winerror != 5: # ERROR_ACCESS_DENIED
                     raise
                 return False
@@ -185,10 +185,10 @@ class KoWindowsIntegrationService:
                 return False
             wininteg.addFileAssociation(ext, "Edit with %s" % (self._appName,), self._komodo)
             return True
-        except WindowsError, ex:
+        except WindowsError as ex:
             self.lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, ex.strerror)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self.lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, str(ex))
 
@@ -203,10 +203,10 @@ class KoWindowsIntegrationService:
                 untypedAction = action[:-len(self._appName)] + "Komodo"
                 return wininteg.checkFileAssociation(ext, untypedAction, self._komodo)
             return result
-        except WindowsError, ex:
+        except WindowsError as ex:
             self.lastErrorSvc.setLastError(ex.errno, ex.strerror)
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, ex.strerror)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             self.lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, str(ex))
 
@@ -217,22 +217,22 @@ class KoWindowsIntegrationService:
         @param value {unicode} The value (data) to set to.
         @param root {HKEY or str} The root to start from; defaults to HKCU
         """
-        import _winreg
-        root = ({ "HKCU": _winreg.HKEY_CURRENT_USER,
-                  "HKLM": _winreg.HKEY_LOCAL_MACHINE,
-                  "HKCR": _winreg.HKEY_CLASSES_ROOT,
+        import winreg
+        root = ({ "HKCU": winreg.HKEY_CURRENT_USER,
+                  "HKLM": winreg.HKEY_LOCAL_MACHINE,
+                  "HKCR": winreg.HKEY_CLASSES_ROOT,
             }).get(root, root)
         try:
             try:
-                key = _winreg.OpenKey(root, keyName, 0, _winreg.KEY_SET_VALUE)
-            except WindowsError, ex:
+                key = winreg.OpenKey(root, keyName, 0, winreg.KEY_SET_VALUE)
+            except WindowsError as ex:
                 if ex.winerror != 2: # ERROR_FILE_NOT_FOUND
                     raise
-                _winreg.CreateKey(root, keyName)
-                key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER, keyName,
-                                      0, _winreg.KEY_SET_VALUE)
-            _winreg.SetValueEx(key, valueName, 0, _winreg.REG_SZ, value)
-        except EnvironmentError, ex:
+                winreg.CreateKey(root, keyName)
+                key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, keyName,
+                                      0, winreg.KEY_SET_VALUE)
+            winreg.SetValueEx(key, valueName, 0, winreg.REG_SZ, value)
+        except EnvironmentError as ex:
             self.lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_UNEXPECTED, str(ex))
 
@@ -240,37 +240,37 @@ class KoWindowsIntegrationService:
         """Get the given string value from the registry or None iff it does not
         exist.
         """
-        import _winreg
-        root = ({ "HKCU": _winreg.HKEY_CURRENT_USER,
-                  "HKLM": _winreg.HKEY_LOCAL_MACHINE,
-                  "HKCR": _winreg.HKEY_CLASSES_ROOT,
+        import winreg
+        root = ({ "HKCU": winreg.HKEY_CURRENT_USER,
+                  "HKLM": winreg.HKEY_LOCAL_MACHINE,
+                  "HKCR": winreg.HKEY_CLASSES_ROOT,
             }).get(root, root)
         try:
-            key = _winreg.OpenKey(root, keyName)
-            value, valueType = _winreg.QueryValueEx(key, valueName)
-            if valueType != _winreg.REG_SZ:
+            key = winreg.OpenKey(root, keyName)
+            value, valueType = winreg.QueryValueEx(key, valueName)
+            if valueType != winreg.REG_SZ:
                 return None
             return value.strip('\x00') # see bug 33333
         except WindowsError:
             return None
 
     def _deleteKeyIfEmpty(self, root, keyName):
-        import _winreg
+        import winreg
         while keyName:
-            with _winreg.OpenKey(root, keyName) as key:
+            with winreg.OpenKey(root, keyName) as key:
                 try:
-                    _winreg.EnumValue(key, 0)
+                    winreg.EnumValue(key, 0)
                 except WindowsError:
                     pass
                 else:
                     return # not empty
                 try:
-                    _winreg.EnumKey(key, 0)
+                    winreg.EnumKey(key, 0)
                 except WindowsError:
                     pass
                 else:
                     return # not empty
-            _winreg.DeleteKey(root, keyName)
+            winreg.DeleteKey(root, keyName)
             keyName = keyName.rsplit("\\")[0]
             # try again with the parent
 
@@ -297,7 +297,7 @@ class KoWindowsIntegrationService:
         currAssocs = [a.strip()
             for a in _gExtSplitter.split(self.getEditAssociations())
             if a.strip()]
-        newAssocs = [unicode(a.strip())
+        newAssocs = [str(a.strip())
             for a in _gExtSplitter.split(encodedAssocs)
             if a.strip()]
         for currAssoc in currAssocs:
@@ -309,12 +309,12 @@ class KoWindowsIntegrationService:
                                      encodedAssocs)
         # remove the obsolete HKLM value if it exists
         try:
-            import _winreg
-            with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                  r"Software\ActiveState\Komodo", 0,
-                                 _winreg.KEY_ALL_ACCESS) as key:
-                _winreg.DeleteValue(key, "editAssociations")
-            self._deleteKeyIfEmpty(_winreg.HKEY_LOCAL_MACHINE,
+                                 winreg.KEY_ALL_ACCESS) as key:
+                winreg.DeleteValue(key, "editAssociations")
+            self._deleteKeyIfEmpty(winreg.HKEY_LOCAL_MACHINE,
                                    r"Software\ActiveState\Komodo")
         except WindowsError:
             pass # not elevated
@@ -337,7 +337,7 @@ class KoWindowsIntegrationService:
         currAssocs = [a.strip()
             for a in _gExtSplitter.split(self.getEditWithAssociations())
             if a.strip()]
-        newAssocs = [unicode(a.strip())
+        newAssocs = [str(a.strip())
             for a in _gExtSplitter.split(encodedAssocs)
             if a.strip()]
         for currAssoc in currAssocs:
@@ -353,12 +353,12 @@ class KoWindowsIntegrationService:
                                      encodedAssocs)
         # remove the obsolete HKLM value if it exists
         try:
-            import _winreg
-            with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                  r"Software\ActiveState\Komodo", 0,
-                                 _winreg.KEY_ALL_ACCESS) as key:
-                _winreg.DeleteValue(key, "editWithAssociations")
-            self._deleteKeyIfEmpty(_winreg.HKEY_LOCAL_MACHINE,
+                                 winreg.KEY_ALL_ACCESS) as key:
+                winreg.DeleteValue(key, "editWithAssociations")
+            self._deleteKeyIfEmpty(winreg.HKEY_LOCAL_MACHINE,
                                    r"Software\ActiveState\Komodo")
         except WindowsError:
             pass # not elevated

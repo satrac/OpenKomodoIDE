@@ -46,7 +46,7 @@ def unzip_file_into_dir(filepath, dirpath):
     import zipfile
     dirpath = abspath(dirpath)
     if not exists(dirpath):
-        os.mkdir(dirpath, 0777)
+        os.mkdir(dirpath, 0o777)
     zfobj = zipfile.ZipFile(filepath)
     for name in zfobj.namelist():
         path = join(dirpath, name)
@@ -57,30 +57,30 @@ def unzip_file_into_dir(filepath, dirpath):
             mkdir_paths.append(parent_path)
             parent_path = dirname(parent_path)
         for parent_path in reversed(mkdir_paths):
-            os.mkdir(parent_path, 0777)
+            os.mkdir(parent_path, 0o777)
 
         if path.endswith('/'):
             if not exists(path):
                 os.mkdir(path)
         else:
-            file(path, 'wb').write(zfobj.read(name))
+            open(path, 'wb').write(zfobj.read(name))
 
 def DownloadAndExtractPackage(url, dst_dir, alternativeUrls=None):
     import tempfile
-    import urllib2
+    import urllib.request, urllib.error, urllib.parse
     all_urls = [url]
     if alternativeUrls:
         all_urls += alternativeUrls
     for url in all_urls:
         try:
-            print "Downloading: %s" % (url, )
-            response = urllib2.urlopen(url)
+            print("Downloading: %s" % (url, ))
+            response = urllib.request.urlopen(url)
             break
         except:
-            print "  FAILED to download: %s" % (url, )
+            print("  FAILED to download: %s" % (url, ))
             pass
     else:
-        print "\nERROR: Unable to download %s" % (", ".join(all_urls), )
+        print("\nERROR: Unable to download %s" % (", ".join(all_urls), ))
         sys.exit(2)
     fd, filename = tempfile.mkstemp()
     bname = basename(url)
@@ -235,7 +235,7 @@ class XdebugBuild:
         if isWin:
             # PHP 7.1 added a bunch testing files with unicode names which breaks
             # shutil.copytree on Windows.  Converting to a Unicode object fixes it.
-            self.php_src_dir = unicode(self.php_src_dir)
+            self.php_src_dir = str(self.php_src_dir)
         if not exists(self.php_build_dir):
             shutil.copytree(self.php_src_dir, self.php_build_dir)
 
@@ -257,7 +257,7 @@ class XdebugBuild:
         src_path = self.xdebug_library
         dst_path = join(self.komodo_prebuilt_dir, basename(self.xdebug_library))
         assert exists(src_path), "No xdebug library at: %s" % (src_path, )
-        print "Copying %s to %s" % (src_path, dst_path)
+        print("Copying %s to %s" % (src_path, dst_path))
         if not exists(dirname(dst_path)):
             os.makedirs(dirname(dst_path))
         shutil.copy(src_path, dst_path)
@@ -268,7 +268,7 @@ class WindowsXdebugBuild(XdebugBuild):
     def php_build(self):
         if not exists(join(self.obj_dir, "php.exe")) or \
            not exists(join(self.obj_dir, "php_xdebug.dll")):
-            print "Building %s" % (self.pkg_name)
+            print("Building %s" % (self.pkg_name))
             self.php_src()
             self.xdebug_clean()
             self.xdebug_src()
@@ -292,7 +292,7 @@ nmake
            self.architecture == "amd64" and "amd64" or "x86",
            phpsdk_dir,
            options)
-            file(configure_filepath, "w").write(configure_contents)
+            open(configure_filepath, "w").write(configure_contents)
             subprocess.check_call(r".\ko_configure", cwd=self.php_build_dir, shell=True)
 
 
@@ -478,11 +478,11 @@ def update_prebuilt():
         build.update_prebuilt()
 
 def usage():
-    print 'Usage: %s [options]\n' % (basename(__file__))
-    print '  where options can be any of:'
-    print '    "build"  - build the PHP/Xdebug binaries'
-    print '    "update" - copy across to Komodo\'s prebuilt directory'
-    print '    "clean" - remove all xdebug related files'
+    print('Usage: %s [options]\n' % (basename(__file__)))
+    print('  where options can be any of:')
+    print('    "build"  - build the PHP/Xdebug binaries')
+    print('    "update" - copy across to Komodo\'s prebuilt directory')
+    print('    "clean" - remove all xdebug related files')
     return 1
 
 def main():

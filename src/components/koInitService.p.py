@@ -7,6 +7,7 @@
 # #if BUILD_FLAVOUR == "dev"
 # Record when the module was first loaded.
 import time
+import importlib
 _module_load_time = time.time()
 import benchmark
 benchmark.initialise(_module_load_time)   # Base time (i.e. time 0)
@@ -49,12 +50,12 @@ log = None
 
 #---- Startup support routines
 
-if os.environ.has_key("KO_PYXPCOM_PROFILE"):
+if "KO_PYXPCOM_PROFILE" in os.environ:
     # insert the xpcom tracer
     import pyxpcomProfiler
 
 # #if BUILD_FLAVOUR == "dev"
-if os.environ.has_key("KO_DEBUG_PORT"):
+if "KO_DEBUG_PORT" in os.environ:
     try:
         from dbgp.client import brk
         brk(port=int(os.environ["KO_DEBUG_PORT"]))
@@ -120,9 +121,9 @@ def _copy(src, dst, overwriteExistingFiles=True, ignoreErrors=False,
                        "src='%s' dst='%s'" % (src, dst)
     # determine if filename wildcarding is being used
     # (only raise error if non-wildcarded source file does not exist)
-    if string.find(src, '*') != -1 or \
-       string.find(src, '?') != -1 or \
-       string.find(src, '[') != -1:
+    if src.find('*') != -1 or \
+       src.find('?') != -1 or \
+       src.find('[') != -1:
         usingWildcards = 1
         srcFiles = glob.glob(src)
     else:
@@ -150,7 +151,7 @@ def _copy(src, dst, overwriteExistingFiles=True, ignoreErrors=False,
             if _isdir(dstFile):
                 dstFile = os.path.join(dstFile, os.path.basename(srcFile))
             #print "copy %s %s" % (srcFile, dstFile)
-            mode = (os.access(srcFile, os.X_OK) and 0755 or 0644)
+            mode = (os.access(srcFile, os.X_OK) and 0o755 or 0o644)
             if os.path.isfile(dstFile):
                 if not overwriteExistingFiles:
                     continue
@@ -170,7 +171,7 @@ def _copy(src, dst, overwriteExistingFiles=True, ignoreErrors=False,
                     _copy(s, d, overwriteExistingFiles=overwriteExistingFiles,
                           ignoreErrors=ignoreErrors,
                           ignoredFileNames=ignoredFileNames)
-                except (IOError, os.error), why:
+                except (IOError, os.error) as why:
                     if ignoreErrors:
                         log.warn("Failed to copy %r to %r - %r", s, d, why)
                     else:
@@ -186,7 +187,7 @@ def _copy(src, dst, overwriteExistingFiles=True, ignoreErrors=False,
 def _rmtreeOnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 
 def _rmtree(dirname):
@@ -235,13 +236,13 @@ def _splitall(path):
 def _diffFileAssociations(a, b):
     # Massage data for faster lookup.
     #       {'a': 1, 'b': 2}   ->   {('a', 1): True, ('b', 2): True}
-    a_massaged = dict( ((k,v), True) for k,v in a.items() )
-    b_massaged = dict( ((k,v), True) for k,v in b.items() )
+    a_massaged = dict( ((k,v), True) for k,v in list(a.items()) )
+    b_massaged = dict( ((k,v), True) for k,v in list(b.items()) )
 
     # Calculate the diffs. ('p' == pattern, 'ln' == language name)
-    additions = [('+', p, ln) for (p, ln) in b_massaged.keys()
+    additions = [('+', p, ln) for (p, ln) in list(b_massaged.keys())
                                if (p, ln) not in a_massaged]
-    deletions = [('-', p, ln) for (p, ln) in a_massaged.keys()
+    deletions = [('-', p, ln) for (p, ln) in list(a_massaged.keys())
                                if (p, ln) not in b_massaged]
     diff = additions + deletions
     return diff
@@ -291,7 +292,7 @@ class KoInitService(object):
 
         try:
             self.checkStartupFlags()
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
             
         self.upgradeUserSettings()
@@ -584,7 +585,7 @@ class KoInitService(object):
         """
         savedStdout = sys.stdout
         savedStderr = sys.stderr
-        reload(sys)
+        importlib.reload(sys)
         sys.stdout = savedStdout
         sys.stderr = savedStderr
 
@@ -602,11 +603,8 @@ class KoInitService(object):
                 if encoding[1] == "utf8":
                     encoding = (encoding[0], "utf-8")
 
-                self._safelyReloadSys()
-                sys.setdefaultencoding(encoding[1])
-                del sys.setdefaultencoding
                 return encoding
-        except ValueError, e:
+        except ValueError as e:
             # XXX Also getting this error occassionaly (as reported on
             # Komodo-beta). Should handle that.
             #    LookupError: unknown encoding
@@ -616,7 +614,7 @@ class KoInitService(object):
             else:
                 log.error('Unable to set encoding for locale %s'%\
                          os.getenv('LANG'))
-        except LookupError, e:
+        except LookupError as e:
             # windows sets codepages into the locale without
             # the leading 'cp' that python wants.  If the encoding
             # we received is a number, try cp# and see if it works.
@@ -625,7 +623,7 @@ class KoInitService(object):
                 if sys.platform.startswith("win") and int(encoding[1]):
                     encoding[1] = 'cp'+encoding[1]
                     return self._setencoding(encoding)
-            except ValueError,e:
+            except ValueError as e:
                 # not an int
                 #XXX Change inherited (an untested) from bug 24439.
                 # check if it has "cp"
@@ -636,11 +634,11 @@ class KoInitService(object):
                 if alias:
                     try:
                         return self._setencoding(locale._parse_localename(alias))
-                    except ValueError, e:
+                    except ValueError as e:
                         pass
             log.debug('Unsupported encoding for locale %s.%s'%\
                      (encoding[0],encoding[1]))
-        except TypeError, e:
+        except TypeError as e:
             if not sys.platform.startswith("win") and os.getenv("LANG") == "C":
                 return ("en_US","iso8859-1")
             else:
@@ -693,9 +691,6 @@ class KoInitService(object):
             # at least support European chars transparently.
             # (and if we use "mbcs" we should be able to use
             # _any_ language supported by Windows, latin or otherwise.)
-            self._safelyReloadSys()
-            sys.setdefaultencoding("mbcs")
-            del sys.setdefaultencoding
             log.debug("encoding set to '%s'" % sys.getdefaultencoding())
             if not self._startup_locale:
                 log.warn("Unable to determine the current locale "+\
@@ -706,9 +701,6 @@ class KoInitService(object):
         elif sys.platform.startswith('darwin'):
             # http://developer.apple.com/documentation/MacOSX/Conceptual/BPInternational/Articles/FileEncodings.html
             # on darwin, and possibly other BSD systems, filesystem is UTF8
-            self._safelyReloadSys()
-            sys.setdefaultencoding("utf-8")
-            del sys.setdefaultencoding
             log.debug("encoding set to '%s'" % sys.getdefaultencoding())
             if not self._startup_locale:
                 log.warn("Unable to determine the current locale "+\
@@ -786,7 +778,7 @@ class KoInitService(object):
                 new_locale = self._startup_locale[0]+'.UTF-8'
                 log.info("Setting LC_CTYPE to utf-8")
                 locale.setlocale(locale.LC_CTYPE,new_locale)
-            except Exception,e:
+            except Exception as e:
                 log.warn("cannot reset LOCALE set to %s : %s" % (new_locale,e))
 
             if sys.platform.startswith("sunos"):
@@ -864,7 +856,7 @@ class KoInitService(object):
         pass
 
     def _upgradeFiles(self, dstNameFromSrcName, srcDir, dstDir):
-        for srcName, dstName in dstNameFromSrcName.items():
+        for srcName, dstName in list(dstNameFromSrcName.items()):
             src = os.path.join(srcDir, srcName)
             dst = os.path.join(dstDir, dstName)
             if not os.path.exists(src):
@@ -876,7 +868,7 @@ class KoInitService(object):
             try:
                 log.info("upgrading '%s' from '%s'" % (dst, src))
                 _copy(src, dst, ignoreErrors=True)
-            except OSError, ex:
+            except OSError as ex:
                 log.error("Could not upgrade '%s' from '%s': %s"\
                          % (dst, src, ex))
 
@@ -986,7 +978,7 @@ class KoInitService(object):
         languages = {}
         associationMap = prefs.getString("factoryFileAssociations")
         associationMap = ast.literal_eval(associationMap)
-        for k,language in associationMap.iteritems():
+        for k,language in associationMap.items():
             languages[language] = True
         
         for prefId in prefIds:
@@ -1019,7 +1011,7 @@ class KoInitService(object):
                       "useTabs": "bool",
                       "useSmartTabs": "bool"}
         
-        for pref,kind in prefsToSet.iteritems():
+        for pref,kind in prefsToSet.items():
             if not prefs.hasPrefHere(pref):
                 if kind == "long":
                     prefs.setLong(pref, prefs.getLong(pref))
@@ -1369,7 +1361,7 @@ class KoInitService(object):
 
     def _hostUserDataDir(self, userDataDir):
         """Support for Komodo profiles that contain a host-$HOST directory."""
-        if os.environ.has_key("KOMODO_HOSTNAME"):
+        if "KOMODO_HOSTNAME" in os.environ:
             hostname = os.environ["KOMODO_HOSTNAME"]
         else:
             import socket
@@ -1443,7 +1435,7 @@ class KoInitService(object):
         for datadir in datadirs:
             try:
                 ver_strs = os.listdir(datadir)  # e.g. ["3.5", "4.0", "bogus"]
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 continue
             for ver_str in ver_strs:
                 if not ver_pat.match(ver_str):  # e.g. "bogus" doesn't match
@@ -1468,11 +1460,11 @@ class KoInitService(object):
 
         Note: For Komodo 4.0.2 the APPDATADIR changed to include the product
         type (IDE or Edit). Before:
-            windows: C:\Documents and Settings\USER\Application Data\ActiveState\Komodo\X.Y
+            windows: C:\\Documents and Settings\\USER\\Application Data\\ActiveState\\Komodo\\X.Y
             macosx:  ~/Library/Application Support/Komodo/X.Y
             linux:   ~/.komodo/X.Y
         After:
-            windows: C:\Documents and Settings\USER\Application Data\ActiveState\Komodo[IDE|Edit]\X.Y
+            windows: C:\\Documents and Settings\\USER\\Application Data\\ActiveState\\Komodo[IDE|Edit]\\X.Y
             macosx:  ~/Library/Application Support/Komodo[IDE|Edit]/X.Y
             linux:   ~/.komodo[ide|edit]/X.Y
 
@@ -1559,7 +1551,7 @@ class KoInitService(object):
         # First determine if we need to upgrade at all.
         # If any of the above exist in the current version's user data
         # dir then do NOT upgrade.
-        for base in filesToUpgrade.keys():
+        for base in list(filesToUpgrade.keys()):
             path = join(currUserDataDir, base)
             if exists(path):
                 log.debug("not upgrading userdatadir files: '%s' exists", path)

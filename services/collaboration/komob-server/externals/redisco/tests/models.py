@@ -460,7 +460,7 @@ class ModelTestCase(RediscoTestCase):
         class Tweet(models.Model):
             status_id = models.IntegerField()
 
-        t = Tweet(status_id=int(u'14782201061'))
+        t = Tweet(status_id=int('14782201061'))
         self.assertTrue(t.is_valid())
         t.save()
 

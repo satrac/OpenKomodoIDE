@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Some additions (or improvements) to Python's std "shutil" module:
 # 
@@ -27,14 +27,14 @@ def Which(exeName, path=None):
     """
     # first, if on Windows, look up the Path in the "App Paths" registry
     if sys.platform.startswith('win'):
-        import _winreg
+        import winreg
         try:
-            ret = _winreg.QueryValue(_winreg.HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths"\
+            ret = winreg.QueryValue(winreg.HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\App Paths"\
                 "\\" + exeName + ".exe")
             # And quote the name incase it has spaces.
             return '"' + ret + '"'
-        except _winreg.error:
+        except winreg.error:
             pass
     # otherwise use the PATH environment variable
     if path is None:
@@ -76,7 +76,7 @@ def WhichFollowSymLinks(exeName, path=None):
     while p.islink(fullExeName):
         fullExeName = p.normpath( p.join(p.dirname(fullExeName),
             os.readlink(fullExeName)) )
-        print fullExeName
+        print(fullExeName)
     return fullExeName
 
 
@@ -98,7 +98,7 @@ def Mkdir(newdir):
         if head and not os.path.isdir(head):
             Mkdir(head)
         if verbosity > 1:
-            print "mkdir %s" % repr(newdir)
+            print(("mkdir %s" % repr(newdir)))
         if tail:
             os.mkdir(newdir)
 
@@ -115,9 +115,9 @@ def Copy(src, dst):
 
     # determine if filename wildcarding is being used
     # (only raise error if non-wildcarded source file does not exist)
-    if string.find(src, '*') != -1 or \
-       string.find(src, '?') != -1 or \
-       string.find(src, '[') != -1:
+    if src.find('*') != -1 or \
+       src.find('?') != -1 or \
+       src.find('[') != -1:
         usingWildcards = 1
         srcFiles = glob.glob(src)
     else:
@@ -140,10 +140,10 @@ def Copy(src, dst):
             if not os.path.isdir(dstFileHead):
                 Mkdir(dstFileHead)
             if verbosity > 1:
-                print "copy %s to %s" % (repr(srcFile), repr(dstFile))
+                print(("copy %s to %s" % (repr(srcFile), repr(dstFile))))
             if os.path.isfile(dstFile):
                 # make sure 'dstFile' is writeable
-                os.chmod(dstFile, 0755)
+                os.chmod(dstFile, 0o755)
             shutil.copy(srcFile, dstFile)
         elif os.path.isdir(srcFile):
             srcFiles = os.listdir(srcFile)
@@ -154,7 +154,7 @@ def Copy(src, dst):
                 d = os.path.join(dst, f)
                 try:
                     Copy(s, d)
-                except (IOError, os.error), why:
+                except (IOError, os.error) as why:
                     raise InstallError("Can't copy %s to %s: %s"\
                           % (repr(s), repr(d), str(why)))
         elif not usingWildcards:

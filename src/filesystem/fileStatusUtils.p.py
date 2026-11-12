@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -7,22 +7,22 @@ import types
 import re
 import logging
 import copy
-from urllib import unquote as unescapeURL
+from urllib.parse import unquote as unescapeURL
 
 from xpcom import components, COMException
 from xpcom.server import UnwrapObject
 
 # Pref names each checker should have, will be monitored when the checker
 # is first added and gets automatically updated through a pref observer.
-monitoredPrefNames = { "enabledPrefName": { 'type': types.BooleanType,
+monitoredPrefNames = { "enabledPrefName": { 'type': bool,
                                             'default': True },
-                       "executablePrefName": { 'type': types.StringType,
+                       "executablePrefName": { 'type': bytes,
                                                'default': None },
-                       "backgroundEnabledPrefName": { 'type': types.BooleanType,
+                       "backgroundEnabledPrefName": { 'type': bool,
                                                       'default': True },
-                       "backgroundDurationPrefName": { 'type': types.LongType,
+                       "backgroundDurationPrefName": { 'type': int,
                                                        'default': 15 },
-                       "recursivePrefName": { 'type': types.BooleanType,
+                       "recursivePrefName": { 'type': bool,
                                               'default': False },
 }
 
@@ -122,20 +122,20 @@ class KoFileCheckerBase(object):
     #  Interface method
     def initialize(self):
         prefObserverSvc = self._globalPrefs.prefObserverService
-        for prefSetting, prefData in monitoredPrefNames.items():
+        for prefSetting, prefData in list(monitoredPrefNames.items()):
             prefType = prefData['type']
             prefDefault = prefData['default']
             prefName = getattr(self, prefSetting)
             if prefName:
                 variableName = prefSetting.replace("PrefName", "")
                 # Update from the preference
-                if prefType == types.BooleanType:
+                if prefType == bool:
                     setattr(self, variableName,
                             self._globalPrefs.getBoolean(prefName, prefDefault))
-                elif prefType == types.SliceType:
+                elif prefType == slice:
                     setattr(self, variableName,
                             self._globalPrefs.getString(prefName, prefDefault))
-                elif prefType == types.LongType:
+                elif prefType == int:
                     value = self._globalPrefs.getLong(prefName, prefDefault)
                     if variableName == "backgroundDuration":
                         # Convert from minutes to seconds.
@@ -363,7 +363,7 @@ class KoSCCChecker(KoFileCheckerBase):
         kind_other = components.interfaces.nsIMemoryReporter.KIND_OTHER
         units_count = components.interfaces.nsIMemoryReporter.UNITS_COUNT
 
-        amount = sum(len(x) for x in self._cached_info.values())
+        amount = sum(len(x) for x in list(self._cached_info.values()))
         if amount > 0:
             reportHandler.callback(process,
                                    "komodo scc-%s-known-files" % (self.name, ),
@@ -416,10 +416,10 @@ class KoSCCChecker(KoFileCheckerBase):
         notif.queryInterface(components.interfaces.koIStatusMessage)
         notif.queryInterface(components.interfaces.koINotificationText)
         notif.category = "scc_error_message"
-        notif.msg = unicode(error)
+        notif.msg = str(error)
         notif.timeout = 5000
         notif.highlight = True
-        notif.details = unicode(detail)
+        notif.details = str(detail)
         notif.log = True
         notif.severity = components.interfaces.koINotification.SEVERITY_ERROR
         self.error = notif
@@ -601,7 +601,7 @@ class KoSCCChecker(KoFileCheckerBase):
         # TODO: This needs to disappear. Only SVN seems to depend on this horrible
         # redundancy
         cache = {} # directory -> { path: scc_info }
-        for dirpath, scc_info_from_path in dircache.items():
+        for dirpath, scc_info_from_path in list(dircache.items()):
             dirpath = dirpath.rstrip("/")
             directory = dirpath.rsplit("/", 1)[0]
             if not directory in cache:
@@ -612,7 +612,7 @@ class KoSCCChecker(KoFileCheckerBase):
             cache[diruri_cache_key] = dircache.get(diruri_cache_key, {})
             
         # update the cache
-        for directory, dircache in cache.items():
+        for directory, dircache in list(cache.items()):
             # key is already normalized
             self._cached_info[directory] = dircache
             # update the time too
@@ -680,17 +680,17 @@ class KoSCCChecker(KoFileCheckerBase):
 
     def printCache(self):
         from pprint import pprint
-        print
-        print "Last checked:"
-        for path, time in self._lastChecked.items():
-            print "  %r: %r" % (path, time)
-        print
-        print "Cache:"
-        for path, d in self._cached_info.items():
-            print "  %r:" % (path, )
-            for childpath, sccdata in d.items():
-                print "        %r:" % (childpath, )
-                for scckey, sccvalue in sccdata.items():
-                    print "            %r: %r" % (scckey, sccvalue)
-        print
+        print()
+        print("Last checked:")
+        for path, time in list(self._lastChecked.items()):
+            print("  %r: %r" % (path, time))
+        print()
+        print("Cache:")
+        for path, d in list(self._cached_info.items()):
+            print("  %r:" % (path, ))
+            for childpath, sccdata in list(d.items()):
+                print("        %r:" % (childpath, ))
+                for scckey, sccvalue in list(sccdata.items()):
+                    print("            %r: %r" % (scckey, sccvalue))
+        print()
 # #endif

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005 ActiveState Corp.
 #
 # Authors:
@@ -156,7 +156,7 @@ def main(argv):
     try:
         opts, path_patterns = getopt.getopt(argv[1:], "Vvqhin",
             ["version", "verbose", "quiet", "help", "interactive", "dry-run"])
-    except getopt.GetoptError, ex:
+    except getopt.GetoptError as ex:
         log.error(str(ex))
         log.error("Try `rm_empty_dirs --help'.")
         return 1
@@ -167,7 +167,7 @@ def main(argv):
             sys.stdout.write(__doc__)
             return
         elif opt in ("-V", "--version"):
-            print "rm_empty_dirs %s" % __version__
+            print("rm_empty_dirs %s" % __version__)
             return
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -197,7 +197,7 @@ if __name__ == "__main__":
             log.error(exc_info[0])
         if log.isEnabledFor(logging.DEBUG):
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

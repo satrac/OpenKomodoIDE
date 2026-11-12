@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Preprocess a file.
@@ -117,7 +117,7 @@ def _evaluate(expr, defines):
     """Evaluate the given expression string with the given context."""
     try:
         rv = eval(expr, {'defined':lambda v: v in defines}, defines)
-    except Exception, ex:
+    except Exception as ex:
         raise PreprocessError(str(ex), defines['__FILE__'], defines['__LINE__'])
     log.debug("evaluate %r -> %s (defines=%r)", expr, rv, defines)
     return rv
@@ -155,28 +155,28 @@ def preprocess(infile, outfile=sys.stdout, defines={}):
                               % (contentType, infile))
 
     # Generate statement parsing regexes.
-    stmts = ['#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
-             '#\s*(?P<op>else|endif)',
-             '#\s*(?P<op>error)\s+(?P<error>.*?)',
-             '#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
-             '#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)']
-    patterns = ['^\s*%s\s*%s\s*%s\s*$'
+    stmts = [r'#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
+             r'#\s*(?P<op>else|endif)',
+             r'#\s*(?P<op>error)\s+(?P<error>.*?)',
+             r'#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
+             r'#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)']
+    patterns = [r'^\s*%s\s*%s\s*%s\s*$'
                 % (re.escape(cg[0]), stmt, re.escape(cg[1]))
                 for cg in cgs for stmt in stmts]
     stmtRes = [re.compile(p) for p in patterns]
 
     # Process the input file.
     fin = open(infile, 'r')
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if os.path.exists(outfile):
-            os.chmod(outfile, 0777)
+            os.chmod(outfile, 0o777)
             os.remove(outfile)
         fout = open(outfile, 'w')
     else:
         fout = outfile
 
     defines['__FILE__'] = infile
-    SKIP, EMIT = range(2) # states
+    SKIP, EMIT = list(range(2)) # states
     states = [(EMIT,   # a state is (<emit-or-skip-lines-in-this-section>,
                0,      #             <have-emitted-in-this-if-block>,
                0)]     #             <have-seen-'else'-in-this-if-block>)
@@ -311,7 +311,7 @@ def preprocess(infile, outfile=sys.stdout, defines={}):
 def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], 'hvo:D:', ['help', 'verbose'])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("preprocess: error: %s" % msg)
         sys.stderr.write("See 'preprocess --help'.\n")
         return 1
@@ -345,7 +345,7 @@ def main(argv):
 
     try:
         preprocess(infile, outfile, defines)
-    except PreprocessError, ex:
+    except PreprocessError as ex:
         sys.stderr.write("preprocess: error: %s\n" % str(ex))
 
 if __name__ == "__main__":

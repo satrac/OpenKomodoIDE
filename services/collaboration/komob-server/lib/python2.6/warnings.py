@@ -50,11 +50,11 @@ def filterwarnings(action, message="", category=Warning, module="", lineno=0,
     import re
     assert action in ("error", "ignore", "always", "default", "module",
                       "once"), "invalid action: %r" % (action,)
-    assert isinstance(message, basestring), "message must be a string"
-    assert isinstance(category, (type, types.ClassType)), \
+    assert isinstance(message, str), "message must be a string"
+    assert isinstance(category, type), \
            "category must be a class"
     assert issubclass(category, Warning), "category must be a Warning subclass"
-    assert isinstance(module, basestring), "module must be a string"
+    assert isinstance(module, str), "module must be a string"
     assert isinstance(lineno, int) and lineno >= 0, \
            "lineno must be an int >= 0"
     item = (action, re.compile(message, re.I), category,
@@ -92,8 +92,8 @@ def _processoptions(args):
     for arg in args:
         try:
             _setoption(arg)
-        except _OptionError, msg:
-            print >>sys.stderr, "Invalid -W option ignored:", msg
+        except _OptionError as msg:
+            print("Invalid -W option ignored:", msg, file=sys.stderr)
 
 # Helper for _processoptions()
 def _setoption(arg):
@@ -267,9 +267,9 @@ def warn_explicit(message, category, filename, lineno,
     # build thanks to 'warnings' being imported by setup.py.
     fxn_code = None
     if hasattr(showwarning, 'func_code'):
-        fxn_code = showwarning.func_code
+        fxn_code = showwarning.__code__
     elif hasattr(showwarning, '__func__'):
-        fxn_code = showwarning.__func__.func_code
+        fxn_code = showwarning.__func__.__code__
     if fxn_code:
         args = fxn_code.co_varnames[:fxn_code.co_argcount]
         CO_VARARGS = 0x4

@@ -4,7 +4,7 @@
 import os
 import sys
 import logging
-import cPickle as pickle
+import pickle as pickle
 from os.path import join, exists, isfile
 from hashlib import md5
 
@@ -44,7 +44,7 @@ class LocalSyncInfo(object):
                    self.mtime != stat.st_mtime or
                    self.size != stat.st_size)
         if changed and self.md5hash:
-            return self.md5hash != md5(file(localpath, 'rb').read()).hexdigest()
+            return self.md5hash != md5(open(localpath, 'rb').read()).hexdigest()
         return changed
 
 class RemoteSyncInfo(object):
@@ -127,7 +127,7 @@ class koPublishingSettings(PreferenceSerializer):
             # All sync data is stored under the Komodo user data dir.
             publishing_data_dir = join(koDirSvc.userDataDir, "publishing")
             if not exists(publishing_data_dir):
-                os.mkdir(publishing_data_dir, 0700)
+                os.mkdir(publishing_data_dir, 0o700)
             self._sync_data_filepath = join(publishing_data_dir, self.id)
         return self._sync_data_filepath
 
@@ -137,8 +137,8 @@ class koPublishingSettings(PreferenceSerializer):
         if self._sync_data is None:
             if exists(self.syncDataFilepath):
                 try:
-                    pickle_file = file(self.syncDataFilepath, "rb")
-                except Exception, ex:
+                    pickle_file = open(self.syncDataFilepath, "rb")
+                except Exception as ex:
                     log.warn("Could not open publishing data file %r. Error: %r",
                              self.syncDataFilepath, str(ex))
                 else:
@@ -165,7 +165,7 @@ class koPublishingSettings(PreferenceSerializer):
                 # Updgrade to version 2 format.
                 newLocal = {}
                 fake_stat = os.stat(__file__)
-                for localpath, oldLocalSync in self._sync_data.get('local').items():
+                for localpath, oldLocalSync in list(self._sync_data.get('local').items()):
                     if oldLocalSync is None:
                         newLocal[localpath] = None
                         continue
@@ -178,7 +178,7 @@ class koPublishingSettings(PreferenceSerializer):
                     # Try to make the md5 hash now.
                     try:
                         if isfile(localpath) and not newLocalSync.hasChanged(localpath):
-                            newLocalSync.md5hash = md5(file(localpath, 'rb').read()).hexdigest()
+                            newLocalSync.md5hash = md5(open(localpath, 'rb').read()).hexdigest()
                     except OSError:
                         pass
                     newLocal[localpath] = newLocalSync
@@ -194,8 +194,8 @@ class koPublishingSettings(PreferenceSerializer):
 
     def _store_sync_data(self):
         try:
-            pickle_file = file(self.syncDataFilepath, "wb")
-        except Exception, ex:
+            pickle_file = open(self.syncDataFilepath, "wb")
+        except Exception as ex:
             log.warn("Could not write to publishing data file %r. Error: %r",
                      self.syncDataFilepath, str(ex))
         else:
@@ -221,7 +221,7 @@ class koPublishingSettings(PreferenceSerializer):
 
         localSyncInfos = [x and LocalSyncInfo(x, y) or None for x, y in zip(unwrappedOp._local_stats,
                                                                             unwrappedOp._local_md5hashes)]
-        remoteSyncInfos = map(RemoteSyncInfo, unwrappedOp._rf_infos)
+        remoteSyncInfos = list(map(RemoteSyncInfo, unwrappedOp._rf_infos))
 
         # We have what we need - now update the stored sync data with this new
         # info.
@@ -267,7 +267,7 @@ class koPublishingSettings(PreferenceSerializer):
         orig_uri = uri
         local_uri = self.local_uri
         # https://github.com/Komodo/KomodoEdit/issues/40
-        from urllib import unquote
+        from urllib.parse import unquote
         local_uri = unquote(local_uri)
         uri = unquote(uri)
         if is_windows:

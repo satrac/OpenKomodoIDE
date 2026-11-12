@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # See the accompanying LICENSE file.
 #
@@ -14,10 +14,10 @@ class APSWTracer(object):
     def __init__(self, options):
         if sys.version_info<(3,):
             self.u=eval("u''")
-            import thread
-            self.threadid=thread.get_ident
-            self.stringtypes=(unicode,str)
-            self.numtypes=(int, long, float)
+            import _thread
+            self.threadid=_thread.get_ident
+            self.stringtypes=(str,str)
+            self.numtypes=(int, int, float)
             self.binarytypes=(buffer,)
         else:
             self.u=""
@@ -171,7 +171,7 @@ class APSWTracer(object):
         return row
 
     def flagme(self, value, mapping, strip=""):
-        v=[(k,v) for k,v in mapping.items() if isinstance(k, int)]
+        v=[(k,v) for k,v in list(mapping.items()) if isinstance(k, int)]
         v.sort()
         op=[]
         for k,v in v:
@@ -207,27 +207,27 @@ class APSWTracer(object):
         import __main__
         d=__main__.__dict__
         if sys.version_info<(3,):
-            execfile(sys.argv[0],d, d)
+            exec(compile(open(sys.argv[0], "rb").read(), sys.argv[0], 'exec'),d, d)
         else:
             # We use compile so that filename is present in printed exceptions
             code=compile(open(sys.argv[0], "rb").read(), sys.argv[0], "exec")
             exec(code, d, d)
 
     def mostpopular(self, howmany):
-        all=[(v,k) for k,v in self.queries.items()]
+        all=[(v,k) for k,v in list(self.queries.items())]
         all.sort()
         all.reverse()
         return all[:howmany]
         
     def longestrunningaggregate(self, howmany):
-        all=[(sum(v),len(v),k) for k,v in self.timings.items()]
+        all=[(sum(v),len(v),k) for k,v in list(self.timings.items())]
         all.sort()
         all.reverse()
         return all[:howmany]
 
     def longestrunningindividual(self, howmany):
         res=[]
-        for k,v in self.timings.items():
+        for k,v in list(self.timings.items()):
             for t in v:
                 res.append( (t, k) )
         res.sort()
@@ -248,7 +248,7 @@ class APSWTracer(object):
             w("Total cursors                      ", str(self.numcursors))
             w("Number of threads used for queries ", str(len(self.threadsused)))
         total=0
-        for k,v in self.queries.items():
+        for k,v in list(self.queries.items()):
             total+=v
         fmtq=len("%d" % (total,))+1
         if "summary" in self.options.reports:
@@ -256,7 +256,7 @@ class APSWTracer(object):
             w("Number of distinct queries         ", str(len(self.queries)))
             w("Number of rows returned            ", str(self.rowsreturned))
             total=0
-            for k,v in self.timings.items():
+            for k,v in list(self.timings.items()):
                 for v2 in v:
                     total+=v2
             w("Time spent processing queries      ", "%.03f seconds" % (total/1000000000.0))

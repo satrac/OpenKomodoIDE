@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -62,7 +62,7 @@ class Repository(object):
         if exists(db_path):
             try:
                 os.remove(db_path)
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 log.warn("error removing repo database `%s': %s", db_path, ex)
     
     def add_task(self, data):

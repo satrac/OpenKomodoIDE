@@ -85,7 +85,7 @@ class Scheme(SchemeBase):
             sys.path.append(fpath)
 
             namespace = {}
-            execfile(fname, namespace)
+            exec(compile(open(fname, "rb").read(), fname, 'exec'), namespace)
 
             sys.path.remove(fpath)
 
@@ -96,7 +96,7 @@ class Scheme(SchemeBase):
         except SyntaxError:
             log.exception("Syntax Error loading scheme %s:", fname)
             return False
-        except Exception, ex:
+        except Exception as ex:
             log.exception("Error loading scheme %s:", fname)
             return False
 
@@ -251,7 +251,7 @@ class Scheme(SchemeBase):
                 # (but only if the user doesn't have that font)
                 # XXX: nsIFontEnumerator crashes komodo under bk test.
                 if (sys.platform.startswith("linux") and
-                    "koITestService" not in components.interfaces.keys()):
+                    "koITestService" not in list(components.interfaces.keys())):
                     if not hasattr(Scheme, "__has_bitstream_vera_sans_mono"):
                         fontenum = components.classes["@mozilla.org/gfx/fontenumerator;1"]\
                                              .getService(components.interfaces.nsIFontEnumerator)
@@ -263,9 +263,9 @@ class Scheme(SchemeBase):
                                 return
                             if item.get("face", None) == "Bitstream Vera Sans Mono":
                                 item["face"] = "DejaVu Sans Mono"
-                            for value in item.values():
+                            for value in list(item.values()):
                                 check_item(value)
-                        for language in self._languageStyles.values() + [self._commonStyles]:
+                        for language in list(self._languageStyles.values()) + [self._commonStyles]:
                             check_item(language)
                 version += 1
 
@@ -356,7 +356,7 @@ class Scheme(SchemeBase):
                 self.save()
                 log.warn("Upgraded scheme %r from version %d to %d.",
                          self.name, orig_version, self._current_scheme_version)
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 log.warn("Unable to save scheme upgrade for %r, error: %r",
                          self.name, ex)
 
@@ -832,7 +832,7 @@ class Scheme(SchemeBase):
 
         self._appliedData['default'] = defaultStyle
         self.defaultStyle = defaultStyle
-        for aspect, setter in setters.items():
+        for aspect, setter in list(setters.items()):
             value = defaultStyle[aspect]
             setter(scimoz.STYLE_DEFAULT, value)
         if sys.platform.startswith('win'):
@@ -923,7 +923,7 @@ class Scheme(SchemeBase):
                         font = style['face']
                     scimoz.styleSetFont(scimoz_no, font)
                 defaultStyleIsNotApplicable = common_name in stylesThatDontUseDefault
-                for aspect, setter in setters.items():
+                for aspect, setter in list(setters.items()):
                     value = style[aspect]
                     if (value is not None
                         and (defaultStyleIsNotApplicable
@@ -1018,7 +1018,7 @@ class Scheme(SchemeBase):
                 continue
             if "alpha" in self._indicators[indic_name]:
                 self._indicators[indic_name]["outline_alpha"] = self._indicators[indic_name]["alpha"]
-            for key, value in self._indicators[indic_name].items():
+            for key, value in list(self._indicators[indic_name].items()):
                 setter = indicator_setters.get(key)
                 if setter is None:
                     log.warn("applyScheme:: no indicator setter for %r", key)
@@ -1243,7 +1243,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
         return names
 
     def getLanguageStyles(self, language):
-        names = StateMap[language].keys()
+        names = list(StateMap[language].keys())
         names.sort()
         return names
     
@@ -1365,7 +1365,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
         scheme = self.getScheme(schemeName)
         scheme.applyScheme(scimoz, language, encoding, 0);
         self._htmlStyleTags = {}
-        from cStringIO import StringIO
+        from io import StringIO
         html = StringIO()
         # Encoding has to be utf-8, as scimoz uses utf-8 and we use scimoz's
         # getStyledText method to retrieve the bytes.
@@ -1426,13 +1426,13 @@ class KoScintillaSchemeService(SchemeServiceBase):
             f = open(fname, 'wb')
             f.write(text)
             f.close()
-        except Exception, ex:
+        except Exception as ex:
             errmsg = str(ex)
             self.lastErrorSvc.setLastError(nsError.NS_ERROR_FAILURE,
                                            errmsg)
             raise ServerException(nsError.NS_ERROR_FAILURE, errmsg)
             
-    _invalidSchemeCharacterSet = re.compile('[^\w\d\-_=+,. @#$%,]')
+    _invalidSchemeCharacterSet = re.compile(r'[^\w\d\-_=+,. @#$%,]')
     def schemeNameIsValid(self, candidateName):
         return not self._invalidSchemeCharacterSet.search(candidateName)
         
@@ -1722,7 +1722,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
 
     def getStyleTags(self, language, styleNumber):
         """ Returns a tuple containing the open and close HTML tags"""
-        if self._htmlStyleTags.has_key(styleNumber):
+        if styleNumber in self._htmlStyleTags:
             return self._htmlStyleTags[styleNumber]
         language = str(language)
         if (styleNumber, language) in ScimozStyleNo2CommonName:
@@ -1745,7 +1745,7 @@ def _initializeLanguageStyles(languageName):
     log.info("initializing style info for %s", languageName)
     languageStyles = []
     ISciMoz = components.interfaces.ISciMoz
-    for common_name, scimoz_names in StateMap[languageName].items():
+    for common_name, scimoz_names in list(StateMap[languageName].items()):
         for scimoz_name in scimoz_names:
             if isinstance(scimoz_name, str):
                 scimoz_no = getattr(ISciMoz, scimoz_name)
@@ -1767,7 +1767,7 @@ def _initializeStyleInfo():
     """Initialize the global style info variables."""
     log.debug("initializing style info...")
     koILintResult = components.interfaces.koILintResult
-    for indic_name, component_name in IndicatorNameMap.items():
+    for indic_name, component_name in list(IndicatorNameMap.items()):
         indic_no = getattr(koILintResult, component_name, None)
         if indic_no is None:
             log.warn("applyScheme:: no koILintResult value for %r", component_name)

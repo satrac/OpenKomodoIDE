@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 from xml.dom import pulldom
 import logging
@@ -19,7 +19,7 @@ def dirwalker(dirname, pat=None):
     import fnmatch
     try:
         contents = os.listdir(os.path.normpath(dirname))
-    except OSError, e:
+    except OSError as e:
         if e.errno != 13: # permission denied
             raise
         contents = []
@@ -53,7 +53,7 @@ class DTDinst:
         el = "<!ELEMENT %s %s>"
         al = "<!ATTLIST %s\n%s\n>"
         attr = "%s CDATA #IMPLIED"
-        for tag, elements in self.elements.items():
+        for tag, elements in list(self.elements.items()):
             celem = set()
             for e in elements:
                 celem.update(list(e))
@@ -63,17 +63,17 @@ class DTDinst:
                 ctags = {}
                 for c in celem:
                     ctags[c.tagName] = 0
-                children = "(%s)*" % " | ".join(ctags.keys())
-            print el % (tag, children)
+                children = "(%s)*" % " | ".join(list(ctags.keys()))
+            print(el % (tag, children))
             
             attrs = {}
             attlist = []
             for c in celem:
                 attrs.update(c.attrib)
-            for attrib in attrs.keys():
+            for attrib in list(attrs.keys()):
                 attlist.append(attr % attrib)
             if attlist:
-                print al % (tag, "\n".join(attlist))
+                print(al % (tag, "\n".join(attlist)))
             
     
     def parsexml(self, xmlfile):
@@ -96,4 +96,3 @@ if __name__=="__main__":
     for xmlFile in dirwalker(path, pattern):
         dtd.parsexml(xmlFile)
     dtd.write()
-        

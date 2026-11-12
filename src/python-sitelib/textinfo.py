@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Software Inc.
 
 r"""Determine information about text files.
@@ -109,6 +109,12 @@ import locale
 from zope.cachedescriptors.property import LazyClassAttribute
 
 import langinfo
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 
 
@@ -259,7 +265,7 @@ class TextInfo(object):
                    % _one_line_summary_from_text(self.content, 30)
 
     def as_dict(self):
-        return dict((k,v) for k,v in self.__dict__.items()
+        return dict((k,v) for k,v in list(self.__dict__.items())
                     if not k.startswith('_'))
 
     def as_summary(self):
@@ -481,7 +487,7 @@ class TextInfo(object):
                     log.debug("encoding: BOM encoding (%r) was *wrong*",
                               bom_encoding)
                     self._encoding_bozo(
-                        u"BOM encoding (%s) could not decode %s"
+                        "BOM encoding (%s) could not decode %s"
                          % (bom_encoding, self._accessor))
 
         head_bytes = self._accessor.head_bytes
@@ -534,7 +540,7 @@ class TextInfo(object):
                     log.debug("encoding: lang-spec encoding (%r) was *wrong*",
                               lang_encoding)
                     self._encoding_bozo(
-                        u"lang-spec encoding (%s) could not decode %s"
+                        "lang-spec encoding (%s) could not decode %s"
                          % (lang_encoding, self._accessor))
 
         # 5. XML prolog
@@ -552,7 +558,7 @@ class TextInfo(object):
                     log.debug("encoding: XML prolog encoding (%r) was *wrong*",
                               norm_xml_encoding)
                     self._encoding_bozo(
-                        u"XML prolog encoding (%s) could not decode %s"
+                        "XML prolog encoding (%s) could not decode %s"
                          % (norm_xml_encoding, self._accessor))
             
         # 6. HTML: Attempt to use Content-Type meta tag.
@@ -570,7 +576,7 @@ class TextInfo(object):
                     log.debug("encoding: HTTP content-type encoding (%r) was *wrong*",
                               norm_http_encoding)
                     self._encoding_bozo(
-                        u"HTML content-type encoding (%s) could not decode %s"
+                        "HTML content-type encoding (%s) could not decode %s"
                          % (norm_http_encoding, self._accessor))
 
         # 7. Emacs-style local vars.
@@ -591,7 +597,7 @@ class TextInfo(object):
                 log.debug("encoding: Emacs coding var (%r) was *wrong*",
                           norm_emacs_encoding)
                 self._encoding_bozo(
-                    u"Emacs coding var (%s) could not decode %s"
+                    "Emacs coding var (%s) could not decode %s"
                      % (norm_emacs_encoding, self._accessor))
 
         # 8. Vi[m]-style local vars.
@@ -611,7 +617,7 @@ class TextInfo(object):
                 log.debug("encoding: Vi[m] coding var (%r) was *wrong*",
                           norm_vi_encoding)
                 self._encoding_bozo(
-                    u"Vi[m] coding var (%s) could not decode %s"
+                    "Vi[m] coding var (%s) could not decode %s"
                      % (norm_vi_encoding, self._accessor))
 
         # 9. Heuristic checks for UTF-16 without BOM.
@@ -678,7 +684,7 @@ class TextInfo(object):
                 log.debug("encoding: %s fallback encoding (%r) was *wrong*",
                           fallback_lang, fallback_encoding)
                 self._encoding_bozo(
-                    u"%s fallback encoding (%s) could not decode %s"
+                    "%s fallback encoding (%s) could not decode %s"
                      % (fallback_lang, fallback_encoding, self._accessor))
 
         # 12. chardet (http://chardet.feedparser.org/)
@@ -780,7 +786,7 @@ class TextInfo(object):
 
     @LazyClassAttribute
     def _html_meta_tag_pat(self):
-        return re.compile("""
+        return re.compile(r"""
             (<meta
             (?:\s+[\w-]+\s*=\s*(?:".*?"|'.*?'))+  # attributes
             \s*/?>)
@@ -792,12 +798,12 @@ class TextInfo(object):
     def _html_attr_pat(self):
         return re.compile(
             # Currently requiring XML attrs (i.e. quoted value).
-            '''(?:\s+([\w-]+)\s*=\s*(".*?"|'.*?'))'''
+            r'''(?:\s+([\w-]+)\s*=\s*(".*?"|'.*?'))'''
         )
 
     @LazyClassAttribute
     def _http_content_type_splitter(self):
-        return re.compile(";\s*")
+        return re.compile(r";\s*")
 
     def _get_http_content_type_info(self, head_bytes):
         """Returns info extracted from an HTML content-type meta tag if any.
@@ -902,12 +908,12 @@ class TextInfo(object):
         system_id = d.get("system_id_a") or d.get("system_id_b")
         public_id = d.get("public_id_b")
         if public_id:
-            public_id = re.sub("\s+", ' ', public_id.strip())  # normalize
+            public_id = re.sub(r"\s+", ' ', public_id.strip())  # normalize
         return (True, m.group(0), name, public_id, system_id)
 
     @LazyClassAttribute
     def _emacs_vars_head_pat(self):
-        return re.compile("-\*-\s*(.*?)\s*-\*-")
+        return re.compile(r"-\*-\s*(.*?)\s*-\*-")
 
     _emacs_head_vars_cache = None
     def _get_emacs_head_vars(self, head_bytes):
@@ -956,7 +962,7 @@ class TextInfo(object):
                         emacs_vars[variable.lower()] = value.strip()
 
         # Unquote values.
-        for var, val in emacs_vars.items():
+        for var, val in list(emacs_vars.items()):
             if len(val) > 1 and (val.startswith('"') and val.endswith('"')
                or val.startswith('"') and val.endswith('"')):
                 emacs_vars[var] = val[1:-1]
@@ -1066,7 +1072,7 @@ class TextInfo(object):
                     emacs_vars[variable] = value
 
         # Unquote values.
-        for var, val in emacs_vars.items():
+        for var, val in list(emacs_vars.items()):
             if len(val) > 1 and (val.startswith('"') and val.endswith('"')
                or val.startswith('"') and val.endswith('"')):
                 emacs_vars[var] = val[1:-1]
@@ -1297,11 +1303,11 @@ class Accessor(object):
         head_bytes = self.head_bytes
         try:
             head_bytes.decode(encoding, 'strict')
-        except LookupError, ex:
+        except LookupError as ex:
             log.debug("encoding lookup error: %r", encoding)
             self._unsuccessful_encodings.add(encoding)
             return False
-        except UnicodeError, ex:
+        except UnicodeError as ex:
             # If the decode failed in the last few bytes, it might be
             # because a multi-surrogate was cutoff by the head. Ignore
             # the error here, if it is truly not of this encoding, the
@@ -1315,7 +1321,7 @@ class Accessor(object):
                 return False
         try:
             self.text = self.bytes.decode(encoding, 'strict')
-        except UnicodeError, ex:
+        except UnicodeError as ex:
             self._unsuccessful_encodings.add(encoding)
             return False
         self.encoding = encoding
@@ -1327,7 +1333,7 @@ class PathAccessor(Accessor):
     (READ_NONE,             # _file==None, file not opened yet
      READ_HEAD,             # _bytes==<head bytes>
      READ_TAIL,             # _bytes==<head>, _bytes_tail==<tail>
-     READ_ALL) = range(4)   # _bytes==<all>, _bytes_tail==None, _file closed
+     READ_ALL) = list(range(4))   # _bytes==<all>, _bytes_tail==None, _file closed
     _read_state = READ_NONE # one of the READ_* states
     _file = None
     _bytes = None
@@ -1416,7 +1422,7 @@ class PathAccessor(Accessor):
                     
             if self._read_state == self.READ_ALL:
                 self.close()
-        except Exception, ex:
+        except Exception as ex:
             log.warn("Could not read file: %r due to: %r", self.path, ex)
             raise
 
@@ -1489,7 +1495,7 @@ def _regex_from_encoded_pattern(s):
             except KeyError:
                 raise ValueError("unsupported regex flag: '%s' in '%s' "
                                  "(must be one of '%s')"
-                                 % (char, s, ''.join(flag_from_char.keys())))
+                                 % (char, s, ''.join(list(flag_from_char.keys()))))
         return re.compile(s[1:idx], flags)
     else: # not an encoded regex
         return re.compile(re.escape(s))
@@ -1518,7 +1524,7 @@ def _escaped_text_from_text(text, escapes="eol"):
     # - Add _escaped_html_from_text() with a similar call sig.
     import re
     
-    if isinstance(escapes, basestring):
+    if isinstance(escapes, str):
         if escapes == "eol":
             escapes = {'\r\n': "\\r\\n\r\n", '\n': "\\n\n", '\r': "\\r\r"}
         elif escapes == "whitespace":
@@ -1533,12 +1539,12 @@ def _escaped_text_from_text(text, escapes="eol"):
 
     # Sort longer replacements first to allow, e.g. '\r\n' to beat '\r' and
     # '\n'.
-    escapes_keys = escapes.keys()
+    escapes_keys = list(escapes.keys())
     try:
         escapes_keys.sort(key=lambda a: len(a), reverse=True)
     except TypeError:
         # Python 2.3 support: sort() takes no keyword arguments
-        escapes_keys.sort(lambda a,b: cmp(len(a), len(b)))
+        escapes_keys.sort(key=cmp_to_key(lambda a,b: _cmp(len(a), len(b))))
         escapes_keys.reverse()
     def repl(match):
         val = escapes[match.group(0)]
@@ -1627,7 +1633,7 @@ def _walk(top, topdown=True, onerror=None, follow_symlinks=False):
     # left to visit.  That logic is copied here.
     try:
         names = os.listdir(top)
-    except OSError, err:
+    except OSError as err:
         if onerror is not None:
             onerror(err)
         return
@@ -1753,7 +1759,7 @@ def _paths_from_path_patterns(path_patterns, files=True, dirs="never",
                         lexists, islink, realpath
     from glob import glob
 
-    assert not isinstance(path_patterns, basestring), \
+    assert not isinstance(path_patterns, str), \
         "'path_patterns' must be a sequence, not a string: %r" % path_patterns
     GLOB_CHARS = '*?['
 
@@ -1945,11 +1951,11 @@ def main(argv):
             ti = textinfo_from_path(path, encoding=opts.encoding,
                                     follow_symlinks=opts.follow_symlinks,
                                     quick_determine_lang=opts.quick_determine_lang)
-        except OSError, ex:
+        except OSError as ex:
             log.error("%s: %s", path, ex)
             continue
         if opts.format == "summary":
-            print ti.as_summary()
+            print(ti.as_summary())
         elif opts.format == "dict":
             d = ti.as_dict()
             if "text" in d:
@@ -1975,7 +1981,7 @@ if __name__ == "__main__":
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

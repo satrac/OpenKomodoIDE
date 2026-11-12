@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2008 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -42,7 +42,7 @@ class ZendHooksTestCase(CodeIntelTestCase):
         # Ensure the Zend Framework is where we expect it to be, else download
         # it and make it so.
         if not ZendHooksTestCase._onetime_setup_completed:
-            import urllib
+            import urllib.request, urllib.parse, urllib.error
             import zipfile
             #print "One time setup"
             ZendHooksTestCase._onetime_setup_completed = True
@@ -51,8 +51,8 @@ class ZendHooksTestCase(CodeIntelTestCase):
             if not exists(zend_dir):
                 zippath = "zend.zip"
                 if not exists(zippath):
-                    urlOpener = urllib.urlopen("http://framework.zend.com/releases/ZendFramework-1.5.2/ZendFramework-1.5.2.zip")
-                    f = file(zippath, "wb")
+                    urlOpener = urllib.request.urlopen("http://framework.zend.com/releases/ZendFramework-1.5.2/ZendFramework-1.5.2.zip")
+                    f = open(zippath, "wb")
                     f.write(urlOpener.read())
                     f.close()
                 try:
@@ -65,7 +65,7 @@ class ZendHooksTestCase(CodeIntelTestCase):
                             os.makedirs(absdirpath)
                         filename = join(absdirpath, filename)
                         if not exists(filename):
-                            file(filename, "wb").write(zf.read(zfile.filename))
+                            open(filename, "wb").write(zf.read(zfile.filename))
                 finally:
                     #print "Leaving zip file: %s" % (zippath)
                     os.remove(zippath)
@@ -73,7 +73,7 @@ class ZendHooksTestCase(CodeIntelTestCase):
 
     def test_zend_view_hooks(self):
         test_dir = join(self.test_dir, "test_zend_view_hooks")
-        content, positions = unmark_text(dedent("""\
+        content, positions = unmark_text(dedent(r"""\
             <?php if($this->values) { ?>
             <h3>You just submitted the following values:</h3>
             <ul>

@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 This script checks that we're not accidentally imaging files that are not being
 shipped.
 """
 
-import imp
 import os
 import os.path
 import sys
@@ -124,18 +123,22 @@ def main(features, config={}):
     if missing:
         msg.append("Missing files:\n%s" % ("\n".join("\t%s" % (f,) for f in sorted(missing))))
     if extra or missing:
-        raise Exception("""\
+        raise Exception(r"""\
 The Komodo install manifests are out of date; please update the appropriate
 feature-*.ini in "src/install/wix".
 
 %s
 """ % ("\n\n".join(msg,)))
-    print "Features %s appears to have correct manifests" % (", ".join(features))
+    print("Features %s appears to have correct manifests" % (", ".join(features)))
 
 
 if __name__ == '__main__':
     abspath = os.path.abspath
     config_path = abspath(os.path.join(abspath(__file__), "../../../.."))
-    file, pathname, description = imp.find_module("bkconfig", [config_path])
-    config = imp.load_module("bkconfig", file, pathname, description)
+    import importlib.machinery, importlib.util
+    spec = importlib.machinery.PathFinder.find_spec("bkconfig", [config_path])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named 'bkconfig' in %r" % (config_path,))
+    config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config)
     main(sys.argv[1:], config=config)

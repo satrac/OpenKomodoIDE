@@ -16,7 +16,7 @@ sys.path.insert(0, pkgdir)
 # prevent attempts to register internal packages in PyPI
 for cmd in ('register', 'upload'):
     if cmd in sys.argv:
-        raise SystemExit, 'error: cannot "%s" internal packages in PyPI' % cmd
+        raise SystemExit('error: cannot "%s" internal packages in PyPI' % cmd)
 
 setup(
     name = 'activeapis2',

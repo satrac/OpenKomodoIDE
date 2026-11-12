@@ -108,8 +108,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """
     DEBUG = False
     if DEBUG: 
-        print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
-              % (tabsize, skip_first_line)
+        print("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
+              % (tabsize, skip_first_line))
     indents = []
     margin = None
     for i, line in enumerate(lines):
@@ -126,12 +126,12 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 break
         else:
             continue # skip all-whitespace lines
-        if DEBUG: print "dedent: indent=%d: %r" % (indent, line)
+        if DEBUG: print("dedent: indent=%d: %r" % (indent, line))
         if margin is None:
             margin = indent
         else:
             margin = min(margin, indent)
-    if DEBUG: print "dedent: margin=%r" % margin
+    if DEBUG: print("dedent: margin=%r" % margin)
 
     if margin is not None and margin > 0:
         for i, line in enumerate(lines):
@@ -143,7 +143,7 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 elif ch == '\t':
                     removed += tabsize - (removed % tabsize)
                 elif ch in '\r\n':
-                    if DEBUG: print "dedent: %r: EOL -> strip up to EOL" % line
+                    if DEBUG: print("dedent: %r: EOL -> strip up to EOL" % line)
                     lines[i] = lines[i][j:]
                     break
                 else:
@@ -151,8 +151,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                                      "line %r while removing %d-space margin"
                                      % (ch, line, margin))
                 if DEBUG:
-                    print "dedent: %r: %r -> removed %d/%d"\
-                          % (line, ch, removed, margin)
+                    print("dedent: %r: %r -> removed %d/%d"\
+                          % (line, ch, removed, margin))
                 if removed == margin:
                     lines[i] = lines[i][j+1:]
                     break
@@ -308,7 +308,7 @@ def relpath(path, relto=None):
 #---- remote file utilities
 
 # Recipe: remote (0.7.4)
-_remote_path_re = re.compile("(\w+@)?\w+:/(?!/)")
+_remote_path_re = re.compile(r"(\w+@)?\w+:/(?!/)")
 def is_remote_path(rpath):
     return _remote_path_re.search(rpath) is not None
 
@@ -473,7 +473,7 @@ def remote_glob(rpattern, log=None):
     rpaths = []
     try:
         output = capture_stdout(argv)
-    except OSError, ex:
+    except OSError as ex:
         print(ex)
     else:
         # Skip stderr lines like this (see ActiveState bug 79857):
@@ -506,7 +506,7 @@ def remote_find(rdir, options={}, log=None):
         # Windows (see Komodo bug 79857). Eventual best fix is probably
         # to use `subprocess.Popen().communicate()`.
         output = capture_output(argv)
-    except OSError, ex:
+    except OSError as ex:
         pass
     else:
         remote_run(src_login, " ".join(cmd), log=log)
@@ -578,7 +578,7 @@ def remote_md5sum(rpath, log=None):
         md5sum, rv_path = stdout.splitlines(0)[0].split()
         assert path == rv_path
         assert len(md5sum) == 32
-    except (AssertionError, ValueError, IndexError), ex:
+    except (AssertionError, ValueError, IndexError) as ex:
         raise OSError("error getting remote md5sum: unexpected output: %r"
                       % stdout)
     return md5sum
@@ -606,7 +606,7 @@ def remote_size(rpath, log=None):
         bytes, rv_path = stdout.splitlines(0)[0].split()
         assert path == rv_path
         bytes = int(bytes)
-    except (AssertionError, ValueError, IndexError), ex:
+    except (AssertionError, ValueError, IndexError) as ex:
         raise OSError("error getting remote md5sum: unexpected output: %r"
                       % stdout)
     return bytes
@@ -681,7 +681,7 @@ def split_full_ver(ver_str):
     def _isdigit(ch):
         return '0' <= ch <= '9'
     def split_quality(s):
-        for i in reversed(range(1, len(s)+1)):
+        for i in reversed(list(range(1, len(s)+1))):
             if not _isdigit(s[i-1]):
                 break
         if i == len(s):
@@ -714,7 +714,7 @@ def split_full_ver(ver_str):
     
     return tuple(bits)
 
-_short_ver_re = re.compile("(\d+)(\.\d+)*([a-z](\d+)?)?")
+_short_ver_re = re.compile(r"(\d+)(\.\d+)*([a-z](\d+)?)?")
 def split_short_ver(ver_str, intify=False, pad_zeros=None):
     """Parse the given version into a tuple of "significant" parts.
 
@@ -754,7 +754,7 @@ def split_short_ver(ver_str, intify=False, pad_zeros=None):
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if bit == '.':
             continue
         if intify:

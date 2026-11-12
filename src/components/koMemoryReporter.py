@@ -17,7 +17,7 @@ Cc = components.classes
 class KoMemoryReporter:
     # Support Mozilla 24 and 31 (name change)
     nsIMemoryReporter = Ci.nsIMemoryReporter
-    if "nsIMemoryMultiReporter" in Ci.keys():
+    if "nsIMemoryMultiReporter" in list(Ci.keys()):
         nsIMemoryReporter = Ci.nsIMemoryMultiReporter
 
     _com_interfaces_ = [nsIMemoryReporter,
@@ -31,7 +31,7 @@ class KoMemoryReporter:
 
     def __init__(self):
         # Register ourself with the memory manager.
-        if "nsIMemoryMultiReporter" not in Ci.keys():
+        if "nsIMemoryMultiReporter" not in list(Ci.keys()):
             # Mozilla 31
             Cc["@mozilla.org/memory-reporter-manager;1"]\
               .getService(Ci.nsIMemoryReporterManager)\
@@ -90,7 +90,7 @@ class KoMemoryReporter:
                 reporter = components.classes[cid].\
                     getService(components.interfaces.koIPythonMemoryReporter)
                 total -= reporter.reportMemory(reportHandler, closure)
-            except Exception, e:
+            except Exception as e:
                 log.exception("Unable to report memory for %r: %r", name, cid)
 
         reportHandler.callback(process,

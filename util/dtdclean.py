@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Clean DTD references from an XML file.
@@ -42,14 +42,14 @@ _version_ = (0, 1, 0)
 #---- internal logging facility
 
 class Logger:
-    DEBUG, INFO, WARN, ERROR, FATAL = range(5)
+    DEBUG, INFO, WARN, ERROR, FATAL = list(range(5))
     def __init__(self, name, level=None, streamOrFileName=sys.stderr):
         self.name = name
         if level is None:
             self.level = self.WARN
         else:
             self.level = level
-        if type(streamOrFileName) == types.StringType:
+        if type(streamOrFileName) == bytes:
             self.stream = open(streamOrFileName, 'w')
             self._opennedStream = 1
         else:
@@ -161,10 +161,10 @@ def dtdclean(xmlfile, dtdfile, outfile=sys.stdout, force=0):
     fin.close()
 
     # Prep 'fout', the output steam.
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if os.path.exists(outfile):
             if force:
-                os.chmod(outfile, 0777)
+                os.chmod(outfile, 0o777)
                 os.remove(outfile)
             else:
                 raise DTDCleanError("'%s' already exists, use '--force' to "\
@@ -175,7 +175,7 @@ def dtdclean(xmlfile, dtdfile, outfile=sys.stdout, force=0):
 
     # Clean the XML content.
     cleanContent = xmlContent
-    for name, value in entities.items():
+    for name, value in list(entities.items()):
         ref = "&"+name+";"
         cleanContent = cleanContent.replace(ref, value)
 
@@ -214,7 +214,7 @@ def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "hVvo:if",
             ["help", "version", "verbose", "force"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("dtdclean: error: %s. Your invocation was: %s\n"\
                          % (msg, argv))
         sys.stderr.write("See 'dtdclean --help'.\n")
@@ -258,7 +258,7 @@ def main(argv):
 
     try:
         dtdclean(xmlfile, dtdfile, outfile, force)
-    except DTDCleanError, ex:
+    except DTDCleanError as ex:
         if log.isDebugEnabled():
             import traceback
             traceback.print_exc(file=sys.stderr)

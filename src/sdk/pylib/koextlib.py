@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2007 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -61,7 +61,6 @@ import sys
 import re
 import uuid
 import shutil
-import distutils.dir_util
 import logging
 import tempfile
 from glob import glob
@@ -135,7 +134,7 @@ def validate_ext_id(id):
 def validate_ext_version(version):
     if not version.strip():
         return "You must specify a version."
-    if not re.match("^\d+\.\d+(\.\d+([a-z]\d*)?)?$", version):
+    if not re.match(r"^\d+\.\d+(\.\d+([a-z]\d*)?)?$", version):
         return "The version must be of the form X.Y.Z or X.Y where"
 
 def validate_ext_creator(creator):
@@ -163,7 +162,7 @@ def create_ext_skel(base_dir, name=None, id=None, version=None, desc="",
         difference(set(["content", "prefs", "skin", "locale"]))
     unpack = dirs and "true" or "false"
     while need_to_query:
-        print _banner("Gathering extension information")
+        print(_banner("Gathering extension information"))
         
         if name is None:
             name = ' '.join(s.capitalize()
@@ -196,8 +195,8 @@ def create_ext_skel(base_dir, name=None, id=None, version=None, desc="",
             default=homepage or "",
             prompt="  homepage: ")
 
-        print
-        print _banner(None, '-')
+        print()
+        print(_banner(None, '-'))
         sys.stdout.write(_dedent("""
             Extension information:
                   name: %(name)s
@@ -209,10 +208,10 @@ def create_ext_skel(base_dir, name=None, id=None, version=None, desc="",
             """ % locals()).lstrip())
         answer = _query_yes_no_quit("Are these details correct?")
         if answer == "yes":
-            print _banner(None)
+            print(_banner(None))
             break
         elif answer == "no":
-            print _banner(None, '-')
+            print(_banner(None, '-'))
             continue
         elif answer == "quit":
             raise SystemExit("aborting")
@@ -270,11 +269,11 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
         log.info("create %s (lexer definition)", mainlex_path)
         if not dry_run:
             if is_html_based:
-                template = file(join(ko_info.sdk_dir, "share", "html_template.udl")).read()
+                template = open(join(ko_info.sdk_dir, "share", "html_template.udl")).read()
             elif is_xml_based:
-                template = file(join(ko_info.sdk_dir, "share", "xml_template.udl")).read()
+                template = open(join(ko_info.sdk_dir, "share", "xml_template.udl")).read()
             else:
-                template = file(join(ko_info.sdk_dir, "share", "ssl_template.udl")).read()
+                template = open(join(ko_info.sdk_dir, "share", "ssl_template.udl")).read()
             open(mainlex_path, 'w').write(template % locals())
 
     # Create components/ko${lang}_UDL_Language.py
@@ -310,7 +309,7 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
         log.info("create %s (language service)", lang_svc_path)
         if not dry_run:
             template_path = join(ko_info.sdk_dir, "share", "koLANG_UDL_Language.py")
-            lang_svc_template = file(template_path).read() % locals()
+            lang_svc_template = open(template_path).read() % locals()
             open(lang_svc_path, 'w').write(lang_svc_template)
 
     # Create templates.
@@ -587,7 +586,7 @@ def build_ext(base_dir, support_devinstall=True, unjarred=False,
             elif not exists(src) and src == "chrome.manifest":
                 # When the chrome.manifest file doesn't exist yet, create an
                 # empty one in the build directory.
-                file(join(xpi_build_dir, "chrome.manifest"), "w")
+                open(join(xpi_build_dir, "chrome.manifest"), "w")
             else:
                 _cp(src, xpi_build_dir, log.info)
 
@@ -650,7 +649,7 @@ def build_ext(base_dir, support_devinstall=True, unjarred=False,
             os.chdir(orig_dir)
             base_dir = orig_base_dir
 
-    print "'%s' created." % xpi_path
+    print("'%s' created." % xpi_path)
     return xpi_path
 
 
@@ -793,7 +792,7 @@ def komodo_unpack_xpi(xpi_path, log=None, destdir=None):
     try:
         _run('"%s" -q "%s" -d "%s"' % (unzip_exe, xpi_path, tmp_dir), log.info)
         ext_info = ExtensionInfo(tmp_dir)
-    except (OSError, KoExtError), e:
+    except (OSError, KoExtError) as e:
         _rm(tmp_dir, logstream=log.info)
         log.error(e)
         raise KoExtError("%s xpi_path is not a valid .xpi file" % xpi_path)
@@ -802,7 +801,7 @@ def komodo_unpack_xpi(xpi_path, log=None, destdir=None):
         _rm(install_dir, logstream=log.info)
     _mv(tmp_dir, install_dir)
     
-    print "installed to `%s'" % install_dir
+    print("installed to `%s'" % install_dir)
 
 def komodo_distunpack_xpi(xpi_path, log=None):
     """Unpack an extension .xpi file into a Komodo build.
@@ -1055,11 +1054,16 @@ def _code_safe_lang_from_lang(lang):
 
 # Recipe: module_from_path (1.0.1)
 def _module_from_path(path):
-    import imp, os
+    import importlib.machinery, importlib.util, os
+    path = os.path.expanduser(path)
     dir = os.path.dirname(path) or os.curdir
     name = os.path.splitext(os.path.basename(path))[0]
-    iinfo = imp.find_module(name, [dir])
-    return imp.load_module(name, *iinfo)
+    spec = importlib.machinery.PathFinder.find_spec(name, [dir])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named %r in %r" % (name, dir))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 # Recipe: query_yes_no_quit (1.0)
@@ -1089,10 +1093,10 @@ def _query_yes_no_quit(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please repond with 'yes', 'no' or 'quit'.\n")
@@ -1100,7 +1104,7 @@ def _query_yes_no_quit(question, default="yes"):
 
 # Recipe: query (1.0)
 def _query(preamble, default=None, prompt="> ", validate=None):
-    """Ask the user a question using raw_input() and looking something
+    r"""Ask the user a question using raw_input() and looking something
     like this:
 
         PREAMBLE
@@ -1126,7 +1130,7 @@ def _query(preamble, default=None, prompt="> ", validate=None):
 
             By default no validation is done.
     """
-    if isinstance(validate, (str, unicode)):
+    if isinstance(validate, str):
         if validate == "notempty":
             def validate_notempty(answer):
                 if not answer:
@@ -1152,7 +1156,7 @@ def _query(preamble, default=None, prompt="> ", validate=None):
         sys.stdout.write("Hit <Enter> to leave blank.\n")
     while True:
         if True:
-            answer = raw_input(prompt)
+            answer = input(prompt)
         else:
             sys.stdout.write(prompt)
             sys.stdout.flush()
@@ -1234,8 +1238,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """
     DEBUG = False
     if DEBUG: 
-        print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
-              % (tabsize, skip_first_line)
+        print("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
+              % (tabsize, skip_first_line))
     indents = []
     margin = None
     for i, line in enumerate(lines):
@@ -1252,12 +1256,12 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 break
         else:
             continue # skip all-whitespace lines
-        if DEBUG: print "dedent: indent=%d: %r" % (indent, line)
+        if DEBUG: print("dedent: indent=%d: %r" % (indent, line))
         if margin is None:
             margin = indent
         else:
             margin = min(margin, indent)
-    if DEBUG: print "dedent: margin=%r" % margin
+    if DEBUG: print("dedent: margin=%r" % margin)
 
     if margin is not None and margin > 0:
         for i, line in enumerate(lines):
@@ -1269,7 +1273,7 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 elif ch == '\t':
                     removed += tabsize - (removed % tabsize)
                 elif ch in '\r\n':
-                    if DEBUG: print "dedent: %r: EOL -> strip up to EOL" % line
+                    if DEBUG: print("dedent: %r: EOL -> strip up to EOL" % line)
                     lines[i] = lines[i][j:]
                     break
                 else:
@@ -1277,8 +1281,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                                      "line %r while removing %d-space margin"
                                      % (ch, line, margin))
                 if DEBUG:
-                    print "dedent: %r: %r -> removed %d/%d"\
-                          % (line, ch, removed, margin)
+                    print("dedent: %r: %r -> removed %d/%d"\
+                          % (line, ch, removed, margin))
                 if removed == margin:
                     lines[i] = lines[i][j+1:]
                     break
@@ -1367,7 +1371,7 @@ def _trim_files_in_dir(dir, patterns, log=None):
 def _rmtree_OnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 def _rmtree(dirname):
     shutil.rmtree(dirname, 0, _rmtree_OnError)
@@ -1479,7 +1483,7 @@ def _cp(src, dest, logstream=None):
         _mkdir(dest_parent)
     if isdir(src):
         #shutil.copytree(src, dest)
-        distutils.dir_util.copy_tree(src, dest)
+        shutil.copytree(src, dest, dirs_exist_ok=True)
     else:
         shutil.copy(src, dest)
 
@@ -1546,7 +1550,7 @@ def _walk(top, topdown=True, onerror=None, follow_symlinks=False):
     # left to visit.  That logic is copied here.
     try:
         names = os.listdir(top)
-    except OSError, err:
+    except OSError as err:
         if onerror is not None:
             onerror(err)
         return
@@ -1672,7 +1676,7 @@ def _paths_from_path_patterns(path_patterns, files=True, dirs="never",
                         lexists, islink, realpath
     from glob import glob
 
-    assert not isinstance(path_patterns, basestring), \
+    assert not isinstance(path_patterns, str), \
         "'path_patterns' must be a sequence, not a string: %r" % path_patterns
     GLOB_CHARS = '*?['
 

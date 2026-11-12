@@ -91,7 +91,7 @@ class _GenericPythonLinter(object):
     def _get_fixed_env(self, prefset, cwd=None):
         env = koprocessutils.getUserEnv()
         prefName = "%sExtraPaths" % self.language_name_lc
-        newParts = filter(bool, prefset.getString(prefName, "").split(os.pathsep))
+        newParts = list(filter(bool, prefset.getString(prefName, "").split(os.pathsep)))
         if cwd:
             newParts.append(cwd)
         if not newParts:
@@ -247,7 +247,7 @@ class KoPythonCommonPyLintChecker(_GenericPythonLinter):
                             #
                             # If the message is about a bad module that isn't
                             # the temporary module, let it ride as is
-                    elif statusCode == "0406" and re.match("^\\s*from\\s+\\.", textlines[lineNo - 1]):
+                    elif statusCode == "0406" and re.match("^\\\\s*from\\\\s+\\.", textlines[lineNo - 1]):
                         # When attempting to perform relative imports, pylint
                         # does not take the cwd into account, but the path of
                         # the temporary file being linted. As a result pylint
@@ -454,7 +454,7 @@ class KoPythonCommonPyflakesChecker(_GenericPythonLinter):
             warnLines = []
             errorLines = []
             if p.returncode and stderr and not stdout:
-                m = re.match("^(.*?):(\d+):(\d+): (invalid syntax|unexpected indent)", stderr)
+                m = re.match(r"^(.*?):(\d+):(\d+): (invalid syntax|unexpected indent)", stderr)
                 if m is None:
                     _complainIfNeeded(stderr, "Error running pyflakes on file %r\n%s",
                                       request.koDoc.displayPath, stderr)
@@ -547,7 +547,7 @@ class KoPythonCommonPycheckerLinter(_GenericPythonLinter):
         # Check raw output for an exception
         results = koLintResults()
         re_escaped_filename = re.escape(tmpfilename)
-        exception_ptn = re.compile('''Caught exception importing module.+?File "%s", line (\d+), in <module>.+?\s*(\w+(?:Error|Exception):\s+.*)''' % re_escaped_filename, re.DOTALL)
+        exception_ptn = re.compile(r'''Caught exception importing module.+?File "%s", line (\d+), in <module>.+?\s*(\w+(?:Error|Exception):\s+.*)''' % re_escaped_filename, re.DOTALL)
         m = exception_ptn.search(stderr)
         if m:
             lineNo = int(m.group(1))
@@ -660,7 +660,7 @@ class KoPythonCommonLinter(_GenericPythonLinter):
         textlines = text.splitlines(1)
         if leadingWS:
             del textlines[0]
-        warningRe = re.compile("^(?P<fname>.*?):(?P<line>\d+): (?P<desc>.*)$")
+        warningRe = re.compile(r"^(?P<fname>.*?):(?P<line>\d+): (?P<desc>.*)$")
         results = koLintResults()
         for line in warntext.splitlines():
             match = warningRe.match(line)

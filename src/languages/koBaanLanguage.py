@@ -22,7 +22,7 @@ function main()
 {
 | Comments go here
 
-	string	tmp.file(1024)		| Temporary file name.
+	string	tmp.open(1024)		| Temporary file name.
 	tmp.file = creat.tmp.file$( bse.tmp.dir$() )
 	wait.and.activate("foobar", argv$(1), tmp.file, argv$(3),argv$(4))
 }

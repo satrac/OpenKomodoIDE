@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009-2010 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -19,6 +19,7 @@ from contextlib import contextmanager
 import sqlite3
 from pprint import pprint, pformat
 import time
+from functools import cmp_to_key
 
 try:
     from xpcom import components
@@ -26,6 +27,11 @@ try:
     _xpcom_ = True
 except ImportError:
     _xpcom_ = False
+
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
 
 
 
@@ -125,7 +131,7 @@ class Database(object):
         else:
             try:
                 self.upgrade()
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("error upgrading `%s': %s", self.path, ex)
                 self.reset()
         koDirSvc = components.classes["@activestate.com/koDirs;1"].getService()
@@ -175,7 +181,7 @@ class Database(object):
         else:
             cx = sqlite3.connect(self.path)
             # This is required
-            cx.text_factory = lambda x:unicode(x, "utf-8", "ignore")
+            cx.text_factory = lambda x:str(x, "utf-8", "ignore")
             cu = cx.cursor()
             try:
                 yield cu
@@ -294,7 +300,7 @@ class Database(object):
         Add the Tutorial table 
         """
         with self.connect(commit=True) as cu:
-            cu.execute("create table tutorial(\
+            cu.execute(r"create table tutorial(\
                        path_id INTEGER PRIMARY KEY NOT NULL,\
                        logic text)")
 
@@ -374,7 +380,7 @@ class Database(object):
         Add file template table
         """
         with self.connect(commit=True) as cu:
-            cu.execute("create table folder_template (\
+            cu.execute(r"create table folder_template (\
                         path_id INTEGER PRIMARY KEY NOT NULL,\
                         language text,\
                         author text,\
@@ -398,7 +404,7 @@ class Database(object):
         Add file template table
         """
         with self.connect(commit=True) as cu:
-            cu.execute("create table template (\
+            cu.execute(r"create table template (\
                         path_id INTEGER PRIMARY KEY NOT NULL,\
                         treat_as_ejs bool default false,\
                         lang_default bool default false,\
@@ -492,7 +498,7 @@ class Database(object):
         Add the Tutorial table 
         """
         with self.connect(commit=True) as cu:
-            cu.execute("create table printdebug(\
+            cu.execute(r"create table printdebug(\
                        path_id INTEGER PRIMARY KEY NOT NULL,\
                        language text,\
                        logic text,\
@@ -528,7 +534,7 @@ class Database(object):
                     newTool['treat_as_ejs'] = 1
                     # Specifically look for the original print statements that
                     # had a special name.
-                    r = re.compile("([\w\.]*)[_| ]Print[_| ]Statement")
+                    r = re.compile(r"([\w\.]*)[_| ]Print[_| ]Statement")
                     match =  r.search(f)
                     try:
                         language = match.group(1)
@@ -1034,7 +1040,7 @@ class Database(object):
         cu.execute(stmt, [language])
 
     def _add_template(self, id, data, item_type, cu):
-        if (data.get("lang_default", "false") is "true" or data.get("lang_default", "false") is True):
+        if (data.get("lang_default", "false") == "true" or data.get("lang_default", "false") is True):
             self._unsetTemplateDefault(self, data["language"])
 
         self.addCommonToolDetails(id, data, cu)
@@ -1076,7 +1082,7 @@ class Database(object):
             
     def addMiscProperties(self, id, data, cu):
         notifications = []
-        for key, value in data.items():
+        for key, value in list(data.items()):
             log.debug("Adding misc. property %s:%s on id:%d", key, value, id)
             stmt = '''insert into misc_properties values(?, ?, ?)'''
             cu.execute(stmt, (id, key, value))
@@ -1093,7 +1099,7 @@ class Database(object):
         _, content, keyboard_shortcut = values
         if not content:
             content = ""
-        elif not isinstance(content, basestring):
+        elif not isinstance(content, str):
             if not content[-1]:
                 del content[-1]
             if content and not content[0]:
@@ -1687,7 +1693,7 @@ class Database(object):
                           self.getPrintDebugInfo)
     
     def saveTemplateInfo(self, path_id, name, value, attributes):
-        if (attributes["lang_default"] is "true" or attributes["lang_default"] is True):
+        if (attributes["lang_default"] == "true" or attributes["lang_default"] is True):
             self._unsetTemplateDefault(self, attributes["language"])
 
         self.saveToolInfo(path_id, 'template', name, value, attributes,
@@ -1711,8 +1717,8 @@ class Database(object):
         names_to_insert = []
         vals_to_insert = []
         names_to_delete = []
-        new_names = newAttrList.keys()
-        old_names = oldAttrList.keys()
+        new_names = list(newAttrList.keys())
+        old_names = list(oldAttrList.keys())
         for name in new_names:
             if name in old_names:
                 if newAttrList[name] != oldAttrList[name]:
@@ -1723,7 +1729,7 @@ class Database(object):
                 names_to_insert.append(name)
                 vals_to_insert.append(newAttrList[name])
             del newAttrList[name]
-        names_to_delete += oldAttrList.keys()
+        names_to_delete += list(oldAttrList.keys())
             
         log.debug("misc updates: names:%s, values:%s", names_to_update, vals_to_update)
         log.debug("misc inserts: names:%s, values:%s", names_to_insert, vals_to_insert)
@@ -1841,7 +1847,7 @@ class Database(object):
             
             q_list = " or ".join(["path_id = ?"] * len(processed_ids))
             cu.execute("""select path_id, name, type from common_details
-                          where %s""" % q_list, processed_ids.keys())
+                          where %s""" % q_list, list(processed_ids.keys()))
             rows = cu.fetchall()
             row_info_by_id = dict([(row[0], list(row)) for row in rows])
             ret_table = []
@@ -1858,10 +1864,10 @@ class Database(object):
         id2, name2, type2 = row2
         isFolder1 = type1 in self.folderTypes
         isFolder2 = type2 in self.folderTypes
-        folderDiff = cmp(not isFolder1, not isFolder2)
+        folderDiff = _cmp(not isFolder1, not isFolder2)
         if folderDiff:
             return folderDiff
-        return cmp(name1.lower(), name2.lower())        
+        return _cmp(name1.lower(), name2.lower())        
 
     def _completeTable(self, parent_id, children_by_id, row_info_by_id,
                        processed_ids, level,
@@ -1869,7 +1875,7 @@ class Database(object):
         children_ids = children_by_id.get(parent_id, [])
         row_infos_to_sort = [row_info_by_id[x] for x in children_ids]
         sorted_ids = [row[0] for row in sorted(row_infos_to_sort,
-                                               cmp=self._compareRowInfo)]
+                                               key=cmp_to_key(self._compareRowInfo))]
         for id in sorted_ids:
             ret_table.append(row_info_by_id[id] + [processed_ids[id], level])
             self._completeTable(id, children_by_id, row_info_by_id,
@@ -2002,7 +2008,7 @@ class ToolboxLoader(object):
             langRegistry = components.classes["@activestate.com/koLanguageRegistryService;1"].getService(components.interfaces.koILanguageRegistryService);
             UnwrapObject(langRegistry)
             langNames = langRegistry.getLanguageNames()
-            if json_data['type'] == "snippet" and ("language" not in json_data or json_data["language"] is ""):
+            if json_data['type'] == "snippet" and ("language" not in json_data or json_data["language"] == ""):
                 json_data["language"] = ""
                 processedPath = path #so I can munge the path up while searching it
                 if "Abbreviations" in processedPath:
@@ -2337,10 +2343,10 @@ class ToolboxLoader(object):
         
     def markAllTopLevelItemsUnloaded(self):
         self._loadedPaths = dict([(x, False) for x in self.db.getTopLevelPaths()])
-        print "" #debug
+        print("") #debug
         
     def deleteUnloadedTopLevelItems(self):
-        for path, isLoaded in self._loadedPaths.items():
+        for path, isLoaded in list(self._loadedPaths.items()):
             if not isLoaded:
                 id = self.db.get_id_from_path(path)
                 if id is not None:
@@ -2597,7 +2603,7 @@ class DataParser:
         writeData += "%s%s\n" % (namePrefix, data["name"])
         writeData += separator
 
-        keys = data.keys()
+        keys = list(data.keys())
         keys.sort()
 
         multiLineKeys = ["value","logic"]
@@ -2608,7 +2614,7 @@ class DataParser:
             if key == "value" or key == "name" or key == "logic" or value == "":
                 continue
 
-            if isinstance(value, basestring) and "\n" in value:
+            if isinstance(value, str) and "\n" in value:
                 multiLineKeys.append(key)
                 continue
             
@@ -2630,7 +2636,7 @@ class DataParser:
                 writeData += "%skomodo meta: %s\n" % (metaPrefix, key)
                 writeData += endSeparator
             
-            if isinstance(content, basestring):
+            if isinstance(content, str):
                 writeData += content
             else:
                 writeData += eol.join(content)

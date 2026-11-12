@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Base functionality for creating API client classes.
 See `nullapi.py` for an example on how to use this.
@@ -11,9 +11,9 @@ from pprint import pprint, pformat
 import re
 import socket
 import time
-from urllib import urlencode
-import urlparse
-import httplib
+from urllib.parse import urlencode
+import urllib.parse
+import http.client
 
 from activeapis2 import utils
 httplib2 = utils.httplib2
@@ -94,7 +94,7 @@ class HttpAPIBase(APIBase):
         json_str = self._request(url, method, body, headers)
         try:
             return jsonlib.loads(json_str)
-        except ValueError, ex:
+        except ValueError as ex:
             raise self.APIError("unexpected response from <%s>: invalid "
                 "JSON:\n  url: %s\n  body: %r\n  "
                 "response content: %r\n  json decoding error: %s" % (
@@ -128,14 +128,14 @@ class HttpAPIBase(APIBase):
         if isinstance(body, dict):
             headers["Content-Type"] = "application/x-www-form-urlencoded"
             body_utf8 = {}
-            for k,v in body.items():
-                if isinstance(k, unicode):
+            for k,v in list(body.items()):
+                if isinstance(k, str):
                     k = k.encode('utf-8')
-                if isinstance(v, unicode):
+                if isinstance(v, str):
                     v = v.encode('utf-8')
                 body_utf8[k] = v
             body_enc = urlencode(body_utf8)
-        elif isinstance(body, unicode):
+        elif isinstance(body, str):
             body_enc = body.encode('utf-8')
         else:
             body_enc = body
@@ -143,12 +143,12 @@ class HttpAPIBase(APIBase):
         try:
             resp, content = self._http.request(url, method, body_enc,
                 headers=headers)
-        except httplib2.ServerNotFoundError, ex:
+        except httplib2.ServerNotFoundError as ex:
             raise self.ServerNotFoundError(ex)
         #TODO: catch other httplib2 and httplib errors and wrap in generic APIError class
-        except httplib.BadStatusLine, ex:
+        except http.client.BadStatusLine as ex:
             raise self.APIError("Bad HTTP Status Line: %s" % ex)
-        except socket.error, ex:
+        except socket.error as ex:
             self._raise_on_socket_error(ex, url)
         
         status = resp["status"]
@@ -300,9 +300,9 @@ class XmlrpcTransport(object):
         if sys.version_info[:2] >= (2,5):
             self._parser_kwargs["use_datetime"] = use_datetime
     def request(self, host, handler, body, verbose=False):
-        import xmlrpclib
+        import xmlrpc.client
         content = self._api._request(self._api_url, "POST", body)
-        parser, unmarshaller = xmlrpclib.getparser(*self._parser_kwargs)
+        parser, unmarshaller = xmlrpc.client.getparser(*self._parser_kwargs)
         parser.feed(content)
         parser.close()
         return unmarshaller.close()
@@ -335,13 +335,13 @@ class XmlrpcAPIBase(HttpAPIBase):
             class to convert datetime attributes to Python datetime objects.
             This is only available if using Python >=2.5.
         """
-        import xmlrpclib
+        import xmlrpc.client
         super(XmlrpcAPIBase, self).__init__(http_cache_dir=http_cache_dir,
             request_headers=request_headers, auth_name=auth_name,
             auth_password=auth_password, auth_domain=auth_domain,
             timeout=timeout, api_url=api_url)
         transport = XmlrpcTransport(self, use_datetime)
-        self._server = xmlrpclib.ServerProxy(self._api_url,
+        self._server = xmlrpc.client.ServerProxy(self._api_url,
             verbose=verbose, transport=transport)
 
     _handler_from_name_cache = None

@@ -14,7 +14,7 @@ class TestNumberVar(BaseTestCase):
           floatCol = i + i * 0.75
           unconstrainedCol = i ** 3 + i * 0.5
           if i % 2:
-              nullableCol = 143L ** i
+              nullableCol = 143 ** i
           else:
               nullableCol = None
           dataTuple = (i, numberCol, floatCol, unconstrainedCol, nullableCol)
@@ -53,7 +53,7 @@ class TestNumberVar(BaseTestCase):
         self.cursor.execute("""
                 select * from TestNumbers
                 where IntCol = :value""",
-                value = 3L)
+                value = 3)
         self.failUnlessEqual(self.cursor.fetchall(), [self.dataByKey[3]])
 
     def testBindLargeLong(self):
@@ -99,7 +99,7 @@ class TestNumberVar(BaseTestCase):
                 p_StartValue = 5,
                 p_Array = array)
         self.failUnlessEqual(returnValue.getvalue(), 73.75)
-        array = range(15)
+        array = list(range(15))
         self.cursor.execute(statement,
                 p_StartValue = 10,
                 p_Array = array)
@@ -261,7 +261,7 @@ class TestNumberVar(BaseTestCase):
                 from TestNumbers
                 where IntCol = 9""")
         col, = self.cursor.fetchone()
-        self.failUnless(isinstance(col, long), "long integer not returned")
+        self.failUnless(isinstance(col, int), "long integer not returned")
 
     def testReturnAsFloat(self):
         "test that fetching a floating point number returns such in Python"

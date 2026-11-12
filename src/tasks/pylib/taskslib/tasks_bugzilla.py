@@ -1,15 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
 """Bugzilla support for taskslib."""
 
 import sys
-import xmlrpclib
+import xmlrpc.client
 from posixpath import join as urljoin
-from urlparse import urlsplit, urlunsplit
-from urllib import splituser, urlencode
-from urllib import quote as urlquote
+from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import splituser, urlencode
+from urllib.parse import quote as urlquote
 import socket
 from pprint import pprint
 import logging
@@ -47,7 +47,7 @@ class BugzillaRepository(repository.Repository):
         log.info("Attempting to connect to `%s'...", self.base_url)
         try:
             response, content = http.request(self.base_url, method="HEAD")
-        except socket.error, ex:
+        except socket.error as ex:
             if ex.errno == 61: # Connection refused
                 raise errors.TasksSocketError(ex, self.base_url)
             raise
@@ -92,7 +92,7 @@ class BugzillaRepository(repository.Repository):
         log.info("Verifying sufficient Trac XML-RPC plugin API version...")
         try:
             api_version = self.xmlrpc_server.system.getAPIVersion()
-        except socket.error, ex:
+        except socket.error as ex:
             if ex.errno == 61: # Connection refused
                 raise errors.TasksSocketError(ex, self.base_url)
             raise
@@ -110,7 +110,7 @@ class BugzillaRepository(repository.Repository):
     #See i.as.com/thesite/apps/iactivestate/bugzillalib.py
     @property
     def xmlrpc_server(self):
-        return xmlrpclib.ServerProxy(
+        return xmlrpc.client.ServerProxy(
             self.xmlrpc_url,
             use_datetime=True,
             #verbose=True
@@ -135,7 +135,7 @@ class BugzillaRepository(repository.Repository):
         XXX
         fetched_tasks = []
         server = self.xmlrpc_server
-        multicall = xmlrpclib.MultiCall(server)
+        multicall = xmlrpc.client.MultiCall(server)
         for id in ids:
             multicall.ticket.get(id)
         for t in multicall():

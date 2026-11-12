@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # See the accompanying LICENSE file.
 #
@@ -19,12 +19,12 @@ import optparse
 write=sys.stdout.write
 if sys.version_info>=(3,):
     xrange=range
-    unichr=chr
+    chr=chr
 
 # Sigh
 try:
     maxuni=0x10ffff
-    unichr(maxuni)
+    chr(maxuni)
 except ValueError:
     maxuni=0xffff
 
@@ -102,9 +102,9 @@ def doit():
         return txt
 
     def unicodify(text):
-        if options.unicode and len(text):
+        if options.str and len(text):
             newt=[]
-            c=options.unicode/100.0
+            c=options.str/100.0
             for t in text:
                 if random.random()>c:
                     newt.append(t)
@@ -113,11 +113,11 @@ def doit():
                     t=random.randint(0xa1, maxuni)
                     # we don't want the surrogate range or apostrophe
                     if t<0xd800 or t>0xdfff: break
-                newt.append(unichr(t))
+                newt.append(chr(t))
             text="".join(newt)
         return text
 
-    if options.unicode:
+    if options.str:
         ones=tuple([unicodify(s) for s in ones])
         tens=tuple([unicodify(s) for s in tens])
         others=tuple([unicodify(s) for s in others])
@@ -149,7 +149,7 @@ def doit():
 
         # 50,000 inserts on an unindexed table
         yield ("BEGIN",)
-        for i in xrange(1,scale*10000+1):
+        for i in range(1,scale*10000+1):
             r=random.randint(0,500000)
             if bindings:
                 yield ("INSERT INTO t1 VALUES(:1, :2, number_name(:2))", (i, r))
@@ -160,7 +160,7 @@ def doit():
         # 50,000 inserts on an indexed table
         t1c_list=[]
         yield ("BEGIN",)
-        for i in xrange(1,scale*10000+1):
+        for i in range(1,scale*10000+1):
             r=random.randint(0,500000)
             x=number_name(r)
             t1c_list.append(x)
@@ -172,13 +172,13 @@ def doit():
 
         # 50 SELECTs on an integer comparison.  There is no index so
         # a full table scan is required.
-        for i in xrange(scale):
+        for i in range(scale):
             yield ("SELECT count(*), avg(b) FROM t1 WHERE b>=%d AND b<%d" % (i*100, (i+10)*100),)
 
 
         # 50 SELECTs on an LIKE comparison.  There is no index so a full
         # table scan is required.
-        for i in xrange(scale):
+        for i in range(scale):
             yield ("SELECT count(*), avg(b) FROM t1 WHERE c LIKE '%%%s%%'" % (number_name(i),),)
 
         # Create indices
@@ -191,19 +191,19 @@ def doit():
 
         # 5000 SELECTs on an integer comparison where the integer is
         # indexed.
-        for i in xrange(scale*100):
+        for i in range(scale*100):
             yield ("SELECT count(*), avg(b) FROM t1 WHERE b>=%d AND b<%d" % (i*100, (i+10)*100),)
 
         # 100000 random SELECTs against rowid.
-        for i in xrange(1,scale*2000+1):
+        for i in range(1,scale*2000+1):
             yield ("SELECT c FROM t1 WHERE rowid=%d" % (1+random.randint(0,50000),),)
 
         # 100000 random SELECTs against a unique indexed column.
-        for i in xrange(1,scale*2000+1):
+        for i in range(1,scale*2000+1):
             yield ("SELECT c FROM t1 WHERE a=%d" % (1+random.randint(0,50000),),)
 
         # 50000 random SELECTs against an indexed column text column
-        for i in xrange(scale*1000):
+        for i in range(scale*1000):
             if bindings:
                 yield ("SELECT c FROM t1 WHERE c=?", (random.choice(t1c_list),),)
             else:
@@ -216,13 +216,13 @@ def doit():
 
         # 5000 updates of ranges where the field being compared is indexed.
         yield ("BEGIN",)
-        for i in xrange(scale*100):
+        for i in range(scale*100):
             yield ("UPDATE t1 SET b=b*2 WHERE a>=%d AND a<%d" % (i*2, (i+1)*2),)
         yield ("COMMIT",)
 
         # 50000 single-row updates.  An index is used to find the row quickly.
         yield ("BEGIN",)
-        for i in xrange(scale*1000):
+        for i in range(scale*1000):
             if bindings:
                 yield ("UPDATE t1 SET b=? WHERE a=%d" % (i,), (random.randint(0,500000),))
             else:
@@ -235,7 +235,7 @@ def doit():
         # Many individual text updates.  Each row in the table is
         # touched through an index.
         yield ("BEGIN",)
-        for i in xrange(1,scale*1000+1):
+        for i in range(1,scale*1000+1):
             if bindings:
                 yield ("UPDATE t1 SET c=? WHERE a=%d" % (i,), (number_name(random.randint(0,500000)),))
             else:
@@ -337,7 +337,7 @@ def doit():
                 write(str(len(res[name]))+"\n")
 
         # All elements of res should be identical
-        elements=res.keys()
+        elements=list(res.keys())
         elements.sort()
         for i in range(0,len(elements)-1):
             write("%s == %s %s\n" % (elements[i], elements[i+1], res[elements[i]]==res[elements[i+1]]))
@@ -461,7 +461,7 @@ parser.add_option("--data-size", dest="size", type="int", default=0,  metavar="S
                   help="Maximum size in characters of data items - keep this number small unless you are on 64 bits and have lots of memory with a small scale - you can easily consume multiple gigabytes [Default same as original TCL speedtest]")
 
 
-tests_detail="""\
+tests_detail="""\\
 bigstmt:
 
   Supplies the SQL as a single string consisting of multiple

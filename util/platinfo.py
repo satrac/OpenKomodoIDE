@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2004-2010 ActiveState Software Inc.
 # Written by: Trent Mick <trentm@gmail.com>
 # License: MIT License (http://www.opensource.org/licenses/mit-license.php)
@@ -207,14 +207,14 @@ class PlatInfo(object):
         return self.name()
 
     def __repr__(self):
-        args = ['%s=%r' % item for item in self.__dict__.items()]
+        args = ['%s=%r' % item for item in list(self.__dict__.items())]
         class_parts = [self.__class__.__name__]
         if self.__class__.__module__ != "__main__":
             class_parts.insert(0, self.__class__.__module__)
         return "%s(%s)" % ('.'.join(class_parts), ', '.join(args))
 
     def match(self, **kwargs):
-        for name, value in kwargs.items():
+        for name, value in list(kwargs.items()):
             if getattr(self, name) != value:
                 return False
         else:
@@ -315,7 +315,7 @@ class PlatInfo(object):
         from xml.sax.saxutils import escape
         indent = ' '*2
         s = '<platinfo version="%s">\n' % __version__
-        for key, value in self.as_dict().items():
+        for key, value in list(self.as_dict().items()):
             s += indent + '<%s>%s</%s>\n' % (key, escape(value), key)
         s += '</platinfo>'
         return s
@@ -323,7 +323,7 @@ class PlatInfo(object):
     def as_yaml(self):
         # prefix with '---\n' YAML doc-separator?
         s = '--- platinfo version="%s"\n' % __version__
-        parts = ["%s: %s" % i for i in self.as_dict().items()]
+        parts = ["%s: %s" % i for i in list(self.as_dict().items())]
         s += '\n'.join(parts)
         return s
 
@@ -403,12 +403,11 @@ class PlatInfo(object):
 
         # Determine hardware type from 'uname -m' -- os.uname() is not
         # reliable: reports "i686" on iron (a Linux/IA64 box).
-        o = os.popen('uname -m 2> /dev/null')
-        arch = o.read().strip()
-        o.close()
+        o = subprocess.Popen('uname -m 2> /dev/null', shell=True, text=True, stdout=subprocess.PIPE)
+        arch = o.communicate()[0].strip()
         if arch == "ia64":
             self.arch = "ia64"
-        elif re.match("i\d86", arch):
+        elif re.match(r"i\d86", arch):
             self.arch = "x86"
         elif arch == "x86_64":
             self.arch = "x86_64"
@@ -460,7 +459,7 @@ class PlatInfo(object):
 
         try:
             self.os_ver = uname[2].split('.', 1)[1]   # e.g. "B.11.00"
-        except IndexError, ex:
+        except IndexError as ex:
             raise InternalError("unknown HP-UX version: could not "
                                 "parse '%s' from uname" % uname[2])
 
@@ -471,17 +470,17 @@ class PlatInfo(object):
 
         # Determine processor type from 'uname -p' -- os.uname() does not
         # have this.
-        o = os.popen('uname -p 2> /dev/null')
-        self.arch = o.read().strip()
-        o.close()
+        o = subprocess.Popen('uname -p 2> /dev/null', shell=True, text=True, stdout=subprocess.PIPE)
+        self.arch, _ = o.communicate()
+        self.arch = self.arch.strip()
 
     def _init_mac(self):
         # Determine processor type from 'uname -p' -- os.uname() does not
         # have this.
-        o = os.popen('uname -p 2> /dev/null')
+        o = subprocess.Popen('uname -p 2> /dev/null', shell=True, text=True, stdout=subprocess.PIPE)
+        arch, _ = o.communicate()
         self.arch = {"powerpc": "powerpc",
-                     "i386":    "x86"}[o.read().strip()]
-        o.close()
+                     "i386":    "x86"}[arch.strip()]
 
         # Historically Python code (e.g. platform.py) has used the
         # Gestalt Manager to retrieve Mac OS system info. However, this
@@ -503,7 +502,7 @@ class PlatInfo(object):
             ver_info = getter()
             if ver_info:
                 assert "os_ver" in ver_info
-                for n,v in ver_info.items():
+                for n,v in list(ver_info.items()):
                     setattr(self, n, v)
                 if self.os_ver.startswith("10."):
                     self.os = "macosx"
@@ -523,7 +522,7 @@ class PlatInfo(object):
         import MacOS
         try:
             sysv = gestalt.gestalt("sysv")
-        except MacOS.Error, ex:
+        except MacOS.Error as ex:
             # On Mac OS X/Intel (at least on the early release dev
             # boxes) the Gestalt Manager does not seem to be intialized
             # with the standard selectors -- or the equivalent.
@@ -566,20 +565,10 @@ class PlatInfo(object):
         data about the distro.
         """
         try:
-            try:
-                import subprocess
-            except ImportError:
-                i,o,e = os.popen3("lsb_release --all")
-                i.close()
-                stdout = o.read()
-                stderr = e.read()
-                o.close()
-                retval = e.close()
-            else:
-                p = subprocess.Popen(["lsb_release", "--all"],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = p.communicate()
-                retval = p.wait()
+            p = subprocess.Popen(["lsb_release", "--all"],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = p.communicate()
+            retval = p.wait()
         except OSError:
             # Can happen if "lsb_release" did not exist, bug 82403.
             retval = 1   # an error
@@ -588,14 +577,14 @@ class PlatInfo(object):
         if retval:
             return {} # Running lsb_release failed
         patterns = {
-            "distro": re.compile("^Distributor ID:\s+(.*?)\s*$"),
-            "distro_desc": re.compile("^Description:\s+(.*?)\s*$"),
-            "distro_ver": re.compile("^Release:\s+(.*?)\s*$"),
-            "distro_codename": re.compile("^Codename:\s+(.*?)\s*$"),
-            "lsb_version": re.compile("^LSB Version:\s+(.*?)\s*$"),
+            "distro": re.compile(r"^Distributor ID:\s+(.*?)\s*$"),
+            "distro_desc": re.compile(r"^Description:\s+(.*?)\s*$"),
+            "distro_ver": re.compile(r"^Release:\s+(.*?)\s*$"),
+            "distro_codename": re.compile(r"^Codename:\s+(.*?)\s*$"),
+            "lsb_version": re.compile(r"^LSB Version:\s+(.*?)\s*$"),
         }
         for line in stdout.splitlines(0):
-            for name, pattern in patterns.items():
+            for name, pattern in list(patterns.items()):
                 match = pattern.search(line)
                 if match:
                     value = match.group(1)
@@ -622,19 +611,19 @@ class PlatInfo(object):
             return {}
 
         patterns = {
-            "redhat": re.compile("^Red Hat Linux release ([\d\.]+)"),
+            "redhat": re.compile(r"^Red Hat Linux release ([\d\.]+)"),
             # As of release 7, "Fedora Core" is not called "Fedora".
-            "fedora": re.compile("^Fedora release ([\d\.]+)"),
-            "fedoracore": re.compile("^Fedora Core release ([\d\.]+)"),
-            "mandrake": re.compile("^Mandrake Linux release ([\d\.]+)"),
+            "fedora": re.compile(r"^Fedora release ([\d\.]+)"),
+            "fedoracore": re.compile(r"^Fedora Core release ([\d\.]+)"),
+            "mandrake": re.compile(r"^Mandrake Linux release ([\d\.]+)"),
             # Ignoring the different RHEL flavours (AS, ES, WS) for now.
-            "rhel": re.compile("^Red Hat Enterprise Linux \w{2} release ([\d\.]+)"),
-            "centos": re.compile("^CentOS release ([\d\.]+)"),
-            "suse": re.compile("^SuSE Linux ([\d\.]+)"),
-            "opensuse": re.compile("^openSUSE ([\d\.]+)"),
-            "debian": re.compile("^([\d\.]+)"),
-            "slackware": re.compile("^Slackware ([\d\.]+)"),
-            "gentoo": re.compile("^Gentoo Base System release ([\d\.]+)"),
+            "rhel": re.compile(r"^Red Hat Enterprise Linux \w{2} release ([\d\.]+)"),
+            "centos": re.compile(r"^CentOS release ([\d\.]+)"),
+            "suse": re.compile(r"^SuSE Linux ([\d\.]+)"),
+            "opensuse": re.compile(r"^openSUSE ([\d\.]+)"),
+            "debian": re.compile(r"^([\d\.]+)"),
+            "slackware": re.compile(r"^Slackware ([\d\.]+)"),
+            "gentoo": re.compile(r"^Gentoo Base System release ([\d\.]+)"),
         }
 
         errmsgs = []
@@ -642,7 +631,7 @@ class PlatInfo(object):
             f = open(etc_path, 'r')
             first_line = f.readline().rstrip()
             f.close()
-            for distro, pattern in patterns.items():
+            for distro, pattern in list(patterns.items()):
                 m = pattern.search(first_line)
                 if m:
                     d["distro_family"] = distro_family
@@ -688,7 +677,7 @@ class PlatInfo(object):
         #   info over `lsb_release` for any Linux distro?
         d = self._get_linux_lsb_release_info()
         if "distro" in d and "distro_ver" in d:
-            for k, v in d.items():
+            for k, v in list(d.items()):
                 setattr(self, k, v)
             return
 
@@ -696,7 +685,7 @@ class PlatInfo(object):
         # - Algorithm borrows from platform.py.
         d = self._get_linux_release_file_info()
         if "distro" in d:
-            for k, v in d.items():
+            for k, v in list(d.items()):
                 setattr(self, k, v)
             return
 
@@ -770,8 +759,8 @@ def _run(args, ignore_stderr=False):
     try:
         p = subprocess.Popen(args=args, 
                 shell=False, # prevent obtrusive shell warnings
-                stdout=subprocess.PIPE, stderr=stderr_pipe)
-    except OSError, e:
+                stdout=subprocess.PIPE, stderr=stderr_pipe, text=True)
+    except OSError as e:
         if e.errno == errno.ENOENT:
             # `exe` not found
             raise ExecutableNotFoundError('The command "%s" cannot be run: %s'
@@ -794,7 +783,7 @@ def _split_ver(ver_str):
         >>> _split_ver("1.3a2")
         ('1', '3', 'a', '2')
     """
-    bits = [b for b in re.split("(\.|[a-z])", ver_str) if b != '.']
+    bits = [b for b in re.split(r"(\.|[a-z])", ver_str) if b != '.']
     return tuple(bits)
 
 def _join_ver(ver_tuple):
@@ -858,7 +847,7 @@ int main(int argc, char **argv) { exit(0); }
         if returncode != 0:
             raise RunError("Failed C++ test file compilation using g++, return "
                            "code: %r" % returncode)
-        p = subprocess.Popen("ldd a.out", cwd=tmpdir, shell=True, stdout=subprocess.PIPE)
+        p = subprocess.Popen("ldd a.out", cwd=tmpdir, shell=True, stdout=subprocess.PIPE, text=True)
         ldd, _ = p.communicate()
 
         # Parse the lib versions from the object dump.
@@ -868,7 +857,7 @@ int main(int argc, char **argv) { exit(0); }
             "libc": re.compile(r'libc\.so\.(?P<ver>\d+)'),
         }
         lib_info = {}
-        for name, pattern in patterns.items():
+        for name, pattern in list(patterns.items()):
             match = pattern.search(ldd)
             if not match:
                 raise InternalError("could not find 'NEEDED %s...' in "
@@ -886,11 +875,10 @@ int main(int argc, char **argv) { exit(0); }
                 if line.startswith("\tlibc.so.%s => " % (lib_info["libc"],)):
                     libc_so = line.split(" ")[2]
                     break
-        o = os.popen(libc_so)
-        try:
-            libc_so_ver_line = o.readline().strip()
-        finally:
-            retval = o.close()
+        o = subprocess.Popen([libc_so], stdout=subprocess.PIPE, text=True)
+        libc_so_ver_line, _ = o.communicate()
+        libc_so_ver_line = libc_so_ver_line.strip()
+        retval = o.returncode
         if retval:
             raise InternalError("error running '%s'" % libc_so)
         # e.g.:
@@ -908,9 +896,10 @@ int main(int argc, char **argv) { exit(0); }
 def _get_sparc_arch_ver():
     # http://developers.sun.com/solaris/developer/support/driver/64bit-faqs.html#QA12.12
     # http://docs.sun.com/app/docs/doc/816-5175/isalist-5
-    o = os.popen("isalist")
-    instruct_sets = o.read().split()
-    retval = o.close()
+    o = subprocess.Popen("isalist", shell=True, text=True, stdout=subprocess.PIPE)
+    instruct_sets, _ = o.communicate()
+    instruct_sets = instruct_sets.split()
+    retval = o.returncode
     if retval:
         raise InternalError("error determining SPARC architecture version")
     first = instruct_sets[0]
@@ -933,9 +922,10 @@ def _get_hpux_parisc_arch_ver():
     # Get the model name from `model` and parse out the model name, e.g:
     #   9000/800/L2000-44  ->  L2000-44
     #   9000/800/A180c     ->  A180c
-    o = os.popen("model")
-    model = o.read().strip()
-    retval = o.close()
+    o = subprocess.Popen("model", shell=True, text=True, stdout=subprocess.PIPE)
+    model, _ = o.communicate()
+    model = model.strip()
+    retval = o.returncode
     if retval:
         raise InternalError("error determining HP-UX PA-RISC model name")
     model = model.split('/')[-1]
@@ -974,7 +964,7 @@ def _create_temp_dir():
 def _rmtree_on_error(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, 0o777)
         rmFunction(filePath)
 
 def _rmtree(dirname):
@@ -1068,7 +1058,7 @@ def main(argv=None):
     _setup_logging()
     usage = "usage: %prog [NAME-RULES...]"
     version = "%prog "+__version__
-    desc = """\
+    desc = r"""\
 Determine and display platform information. 'platinfo' is really
 designed to be used as a Python module. See the module docstring for
 more information."""
@@ -1107,13 +1097,13 @@ more information."""
     WIDTH=75
     if opts.format is None:
         if rules:
-            print pi.name(*rules)
+            print(pi.name(*rules))
         else:
-            print "%s (%s)" % (pi.name(), pi.fullname())
+            print("%s (%s)" % (pi.name(), pi.fullname()))
     if opts.format == "name":
-        print pi.name(*rules)
+        print(pi.name(*rules))
     if opts.format == "fullname":
-        print pi.fullname()
+        print(pi.fullname())
     elif opts.format == "dict":
         if sys.version_info[:2] >= (2,4):
             pprint(pi.as_dict(), width=WIDTH)
@@ -1122,24 +1112,24 @@ more information."""
             pp = PrettyPrinter(width=WIDTH)
             pp.pprint(pi.as_dict())
     elif opts.format == "xml":
-        print pi.as_xml()
+        print(pi.as_xml())
     elif opts.format == "yaml":
-        print pi.as_yaml()
+        print(pi.as_yaml())
     elif opts.format == "all":
-        print _banner("platform info", length=WIDTH)
-        print pi.name(*rules)
-        print _banner("as_dict", '-', length=WIDTH)
+        print(_banner("platform info", length=WIDTH))
+        print(pi.name(*rules))
+        print(_banner("as_dict", '-', length=WIDTH))
         if sys.version_info[:2] >= (2,4):
             pprint(pi.as_dict(), width=WIDTH)
         else:
             from pprint import PrettyPrinter
             pp = PrettyPrinter(width=WIDTH)
             pp.pprint(pi.as_dict())
-        print _banner("as_xml", '-', length=WIDTH)
-        print pi.as_xml()
-        print _banner("as_yaml", '-', length=WIDTH)
-        print pi.as_yaml()
-        print _banner(None, length=WIDTH)
+        print(_banner("as_xml", '-', length=WIDTH))
+        print(pi.as_xml())
+        print(_banner("as_yaml", '-', length=WIDTH))
+        print(pi.as_yaml())
+        print(_banner(None, length=WIDTH))
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ class Node(dict):
         self.files = []
 
     def isContainer(self):
-        return len(self.keys()) > 0
+        return len(list(self.keys())) > 0
 
     _ambiguous_language_names = ('JavaScript', 'Python', 'HTML')
     _filenames_by_path = {}
@@ -74,14 +74,14 @@ class Node(dict):
         Sorting is based on the file *base* name.
         """
         self.files.sort(key=operator.itemgetter('sort-key'))
-        for name, child_node in self.items():
+        for name, child_node in list(self.items()):
             child_node.sort()
 
     def dump(self, level=0):
         basenames = [os.path.basename(f['path']) for f in self.files]
-        print "files=%s" % basenames
-        for name, node in self.items():
-            print "%sNode '%s':" % ("  "*level, name),
+        print("files=%s" % basenames)
+        for name, node in list(self.items()):
+            print("%sNode '%s':" % ("  "*level, name), end=' ')
             node.dump(level+1)
 
 
@@ -157,7 +157,7 @@ See "Custom Templates" in Komodo's on-line help for more details.
 
     def dumpTemplates(self):
         """Dump the currently loaded template tree."""
-        print "Template Tree:",
+        print("Template Tree:", end=' ')
         self.rootTemplateNode.dump(1)
 
     def getDefaultTemplatesDir(self):
@@ -334,7 +334,7 @@ class KoTemplatesView(TreeView):
         except KeyError:
             log.error("unknown template column id: '%s'" % column.id)
             return ""
-        if type(datum) not in (types.StringType, types.UnicodeType):
+        if type(datum) not in (bytes, str):
             datum = str(datum)
         return datum
 
@@ -431,12 +431,12 @@ class KoTemplateCategoriesView(TreeView):
         stbcStr = self._prefSvc.getStringPref("%s_selected_template_by_category" % self.templateSvc.basename)
         try:
             self.selectedTemplateByCategory = eval(stbcStr)
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.selectedTemplateByCategory = {}
         ocStr = self._prefSvc.getStringPref("%s_open_categories" % self.templateSvc.basename)
         try:
             self.categoryIsOpen = eval(ocStr)
-        except SyntaxError, ex:
+        except SyntaxError as ex:
             self.categoryIsOpen = {}
 
         self._updateRowData()
@@ -507,7 +507,7 @@ class KoTemplateCategoriesView(TreeView):
         return index
 
     def _getCategoryRows(self, rows, node, level=0, parentIndex=-1, path=[]):
-        subnames = node.keys()
+        subnames = list(node.keys())
         subnames.sort()
         for subname in subnames:
             subnode = node[subname]
@@ -555,7 +555,7 @@ class KoTemplateCategoriesView(TreeView):
         except KeyError:
             log.error("unknown category column id: '%s'" % column.id)
             return ""
-        if type(datum) not in (types.StringType, types.UnicodeType):
+        if type(datum) not in (bytes, str):
             datum = str(datum)
         return datum
 

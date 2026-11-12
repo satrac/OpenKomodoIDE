@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009-2010 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -20,7 +20,7 @@ try:
     import cx_Oracle
     loaded = True
     disabled_reason = None
-except ImportError, ex:
+except ImportError as ex:
     sys.stderr.write("**************** Couldn't load cx_Oracle: %s\n" % (ex,))
     import missingAdaptor
     cx_Oracle = missingAdaptor.MissingAdaptor()
@@ -199,9 +199,9 @@ class Database(dbxlib.CommonDatabase):
                 items = cu.fetchall()
                 names = [row[0] for row in items]
                 return names
-        except NotImplementedError, ex:
+        except NotImplementedError as ex:
             raise OperationalError(ex.message)
-        except Exception, ex:
+        except Exception as ex:
             log.exception("listAllTablePartsByType(typeName:%s)", typeName)
             raise OperationalError(ex.message)
         
@@ -265,7 +265,7 @@ class Database(dbxlib.CommonDatabase):
         for value in row_data:
             col_info = col_info_block[idx]
             type = col_info.type
-            if type == u'NUMBER':
+            if type == 'NUMBER':
                 if value is None:
                     new_row_data.append("")
                 else:
@@ -274,7 +274,7 @@ class Database(dbxlib.CommonDatabase):
                     except TypeError:
                         log.error("Can't append value as int: %r", value)
                         new_row_data.append("%r" % value)
-            elif type == u'float':
+            elif type == 'float':
                 new_row_data.append("%g" % value)
             elif (type in ('CHAR')
                   or 'VARCHAR' in type
@@ -462,10 +462,10 @@ class Database(dbxlib.CommonDatabase):
                 log.debug("insertRowByNamesAndValues: %r", cmd)
                 self.do_query(cu, cmd)
                 res = True
-            except DatabaseError, ex:
+            except DatabaseError as ex:
                 log.exception("dbx_oracledb::insertRowByNamesAndValues: DatabaseError: failed")
                 raise
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("dbx_oracledb::insertRowByNamesAndValues failed")
                 raise
         return res
@@ -487,7 +487,7 @@ class Database(dbxlib.CommonDatabase):
             try:
                 self.do_query(cu, cmd)
                 res = True
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("dbx_oracledb::updateRow failed")
                 res = False
         return res
@@ -503,7 +503,7 @@ class Database(dbxlib.CommonDatabase):
             try:
                 self.do_query(cu, action)
                 res = True
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("dbx_oracledb::executeCustomAction failed")
                 res = False
         return res

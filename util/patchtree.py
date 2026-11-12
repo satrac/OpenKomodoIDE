@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     patchtree.py -- applying sets of patches to source trees
@@ -125,7 +125,9 @@ import re
 import tempfile
 import logging
 import getopt
-import imp
+import importlib
+import importlib.machinery
+import importlib.util
 import pprint
 import glob
 import types
@@ -173,7 +175,8 @@ _SCC_control_dirs = ("CVS", ".svn", ".hg", ".git")
 def _run(argv, cwd=None, stdin=None):
     if subprocess.__name__ == "subprocess":
         p = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+                             stderr=subprocess.PIPE, stdin=subprocess.PIPE,
+                             text=True)
         if stdin is not None:
             p.stdin.write(stdin)
         p.stdin.close()
@@ -203,14 +206,15 @@ def _getPatchInfo(dirname):
             os.remove(p)
         except EnvironmentError:
             pass
-    try:
-        file, path, desc = imp.find_module("__patchinfo__", [dirname])
-    except ImportError, ex:
+    patchinfo_path = os.path.join(dirname, "__patchinfo__.py")
+    if not os.path.isfile(patchinfo_path):
         return None
     try:
-        patchinfo = imp.load_module("__patchinfo__", file, path, desc)
+        spec = importlib.util.spec_from_file_location("__patchinfo__", patchinfo_path)
+        patchinfo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(patchinfo)
         return patchinfo
-    except SyntaxError, ex:
+    except SyntaxError as ex:
         errinfo = ex.args[1]
         raise Error("syntax error in patchinfo file: %s:%d: %r"
                     % (errinfo[0], errinfo[1], errinfo[3]))
@@ -245,7 +249,7 @@ def _determinePatchesFromDirectory(base, actions, config):
         if hasattr(patchinfo, "remove"):
             retval = patchinfo.remove(config)
             try:
-                if isinstance(retval, basestring):
+                if isinstance(retval, str):
                     raise TypeError
                 retval = iter(retval)
             except TypeError:
@@ -260,7 +264,7 @@ def _determinePatchesFromDirectory(base, actions, config):
         if hasattr(patchinfo, "add"):
             retval = patchinfo.add(config)
             try:
-                if isinstance(retval, basestring):
+                if isinstance(retval, str):
                     raise TypeError
                 retval = iter(retval)
             except TypeError:
@@ -309,7 +313,7 @@ def _determinePatchesFromDirectory(base, actions, config):
         elif exists(join(dirpath, "series")):
             expected_patch_names = set(patch_names)
             with open(join(dirpath, "series")) as series_file:
-                patch_names = filter(None, map(lambda n: n.strip(), series_file))
+                patch_names = [_f for _f in [n.strip() for n in series_file] if _f]
             actual_patch_names = set(patch_names)
             if expected_patch_names ^ actual_patch_names:
                 missing = sorted(actual_patch_names - expected_patch_names)
@@ -342,16 +346,16 @@ def _determinePatchesFromDirectory(base, actions, config):
 def _getPreprocessorDefines(config):
     defines = {}
     if isinstance(config, types.ModuleType):
-        for key, value in config.__dict__.items():
-            if type(key) in (types.StringType, types.UnicodeType) and not key.startswith("_"):
+        for key, value in list(config.__dict__.items()):
+            if type(key) in (bytes, str) and not key.startswith("_"):
                 defines["PT_CONFIG_"+key] = value
     elif isinstance(config, dict):
-        for key, value in config.items():
-            if type(key) in (types.StringType, types.UnicodeType) and not key.startswith("_"):
+        for key, value in list(config.items()):
+            if type(key) in (bytes, str) and not key.startswith("_"):
                 defines["PT_CONFIG_"+key] = value
     else:
         for name in dir(config):
-            if type(name) in (types.StringType, types.UnicodeType) and not name.startswith("_"):
+            if type(name) in (bytes, str) and not name.startswith("_"):
                 defines["PT_CONFIG_"+name] = getattr(config, name)
     return defines
 
@@ -414,7 +418,7 @@ def _assertCanApplyPatch(patchExe, patchFile, sourceDir, reverse=0,
               argv, sourceDir)
     stdout, stderr, retval = _run(argv, cwd=sourceDir, stdin=patchContent)
     if retval:
-        raise Error("""\
+        raise Error(r"""\
 patch '%s' will not apply cleanly%s:
    patch source: %s
    argv:         %s
@@ -443,7 +447,7 @@ def _getPathsInPatch(patch, argv):
     @returns a tuple of length 2; the first item is the set of files that were
         removed, the second is the set that were added.
     """
-    if isinstance(patch, basestring):
+    if isinstance(patch, str):
         patch = patch.splitlines()
     removed = set()
     added = set()
@@ -452,8 +456,8 @@ def _getPathsInPatch(patch, argv):
     filter_expressions = (
         re.compile(r"\s+\(revision \d+\)$"),
         re.compile(r"\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+"
-                     "(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+"
-                     "\d+\s+(?:\d+:?)+\s+\d+$")
+                     r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+"
+                     r"\d+\s+(?:\d+:?)+\s+\d+$")
     )
     depth = 0
     for argi, arg in enumerate(argv or []):
@@ -558,7 +562,7 @@ def _applyPatch(patchExe, baseDir, patchRelPath, sourceDir, reverse=0,
             resultPath = join(sourceDir, resultRelPath)
             if exists(resultPath):
                 with open(resultPath, "rU") as destFile:
-                    filter(lambda n: False, destFile)
+                    [n for n in destFile if False]
                     lineEndingFixes[resultRelPath] = destFile.newlines
             else:
                 log.debug("Failed to find file %s", resultPath)
@@ -585,7 +589,7 @@ def _applyPatch(patchExe, baseDir, patchRelPath, sourceDir, reverse=0,
 
     # Fix up line endings
     if not dryRun and sys.platform.startswith("win"):
-        for resultRelPath, lineEnds in lineEndingFixes.items():
+        for resultRelPath, lineEnds in list(lineEndingFixes.items()):
             log.debug("File %s: %r", resultRelPath, lineEnds)
             if lineEnds == "\n":
                 path = join(sourceDir, resultRelPath)
@@ -620,9 +624,10 @@ def _loadPatchLog(logDir, logFilename=None):
         # gets imported instead, causing problems.
         os.remove(patchLogPyc)
     try:
-        file, path, desc = imp.find_module(patchLogName, [logDir])
-        patchLog = imp.load_module(patchLogName, file, path, desc)
-    except ImportError, ex:
+        spec = importlib.util.spec_from_file_location(patchLogName, patchLogFile)
+        patchLog = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(patchLog)
+    except ImportError as ex:
         raise Error("could not find a patch log in the given log "
                     "directory, '%s': %s" % (logDir, ex))
     return patchLog
@@ -974,7 +979,7 @@ def patch(patchesDir, sourceDir, config=None, logDir=None, dryRun=0,
             invalidActions = patchLog.actions[firstInvalidActionIndex:]
 
             if firstInvalidActionIndex > 0:
-                expected_md5 = md5(repr(patchLog.actions)).hexdigest()
+                expected_md5 = md5(repr(patchLog.actions).encode('utf-8')).hexdigest()
                 logFileFullName = join(logDir, logFilename)
                 log.debug("full name: %s", logFileFullName)
                 with open(join(sourceDir, ".patchtree-state"), "a+") as state_file:
@@ -1092,7 +1097,7 @@ def patch(patchesDir, sourceDir, config=None, logDir=None, dryRun=0,
             # Log actions.
             patchLogFile = join(tmpLogDir, logFilename)
             with open(patchLogFile, "w") as patchLog:
-                patchLog.write("""\
+                patchLog.write(r"""\
 # Patch log (%s)
 #
 # WARNING: This file is automatically generated by patchtree.py. Any
@@ -1113,9 +1118,9 @@ actions = %s
                     if len(parts) != 2:
                         continue # invalid state?
                     state[parts[0]] = parts[1]
-            state[logFileFullName] = md5(repr(actions)).hexdigest()
+            state[logFileFullName] = md5(repr(actions).encode('utf-8')).hexdigest()
             with open(join(sourceDir, ".patchtree-state"), "w") as state_file:
-                for k, v in state.items():
+                for k, v in list(state.items()):
                     state_file.write("%s %s\n" % (k, v))
 
         # 8. Remove files to be deleted for real
@@ -1145,7 +1150,7 @@ actions = %s
         log.debug("removing temporary working dir '%s'", tempDir)
         try:
             sh.rm(tempDir)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             log.warn("could not remove temp working dir '%s': %s",
                      tempDir, ex)
         if sys.platform.startswith("win") and oldTmpDir is not None:
@@ -1162,7 +1167,7 @@ def main(argv):
         optlist, args = getopt.getopt(argv[1:], "hvVc:L:R",
             ["help", "verbose", "version", "config=", "log-dir=",
              "dry-run"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         raise Error("patchtree: %s" % str(msg))
     config = None
     logDir = None
@@ -1173,7 +1178,7 @@ def main(argv):
             sys.stdout.write(__doc__)
             return 0
         elif opt in ("-V", "--version"):
-            print "patchtree %s" % __version__
+            print("patchtree %s" % __version__)
             return 0
         elif opt in ("-v", "--verbose"):
             log.setLevel(logging.DEBUG)
@@ -1183,11 +1188,13 @@ def main(argv):
             ext = os.path.splitext(optarg)[1]
             if sys.platform == "win32":
                 ext = ext.lower()
-            for desc in imp.get_suffixes():
-                if desc[0] == ext:
-                    fin = open(optarg, 'r')
-                    config = imp.load_module("config", fin, optarg, desc)
-                    break
+            supported = (importlib.machinery.SOURCE_SUFFIXES
+                         + importlib.machinery.BYTECODE_SUFFIXES
+                         + importlib.machinery.EXTENSION_SUFFIXES)
+            if ext in supported:
+                spec = importlib.util.spec_from_file_location("config", optarg)
+                config = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(config)
             else:
                 raise Error("given config file does not look like an "
                             "importable Python module: %s" % optarg)
@@ -1220,7 +1227,7 @@ if __name__ == "__main__":
     except:
         exc_info = sys.exc_info()
         if log.isEnabledFor(logging.DEBUG):
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             log.error("%s: %s", exc_info[0].__name__, exc_info[1])

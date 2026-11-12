@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2004-2006 ActiveState Software Inc.
 #
 
@@ -58,7 +58,7 @@ def _printBanner(title, style="=", width=65):
     lineLen = width - len(title) - 2  # -2 for spaces on either side
     leftLen = max(4, lineLen / 2)
     rightLen = lineLen - leftLen
-    print "%s %s %s" % (style*leftLen, title, style*rightLen)
+    print("%s %s %s" % (style*leftLen, title, style*rightLen))
 
 def _printBufferContext(offset, styledText, position):
     index = position - offset # 'index' is into styledText, 'position' into whole buffer
@@ -73,9 +73,9 @@ def _printBufferContext(offset, styledText, position):
             line = line[:column] + "<|>" + line[column:]
         line = line.replace('\n', "<LF>").replace('\r', "<CR>")
         span = "%d-%d" % (start+offset, end+offset)
-        print "  %7s: %s" % (span, line.decode("utf-8"))
+        print("  %7s: %s" % (span, line.decode("utf-8")))
         start = end
-    print "-"*65
+    print("-"*65)
 
 def _getPositionContext(scimoz, position, context=5):
     # This function isn't used anywhere in the Komodo source code,
@@ -309,7 +309,7 @@ def genLinesBwd(offset, styledText, position):
     """
     DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genLinesBwd(offset=%d, styledText, position=%d)"\
                      % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -326,7 +326,7 @@ def genLinesBwd(offset, styledText, position):
         i -= 2
     start = i + 2
     line = styledText[start:end]
-    if DEBUG: print "yield:%d-%d:%s" % (start/2+offset, end/2+offset, _data2text(line))
+    if DEBUG: print("yield:%d-%d:%s" % (start/2+offset, end/2+offset, _data2text(line)))
     yield (start/2+offset, line)
 
     while i >= 0:
@@ -341,7 +341,7 @@ def genLinesBwd(offset, styledText, position):
             i -= 2
         start = i + 2
         line = styledText[start:end] 
-        if DEBUG: print "yield:%d-%d:%s" % (start/2+offset, end/2+offset, _data2text(line))
+        if DEBUG: print("yield:%d-%d:%s" % (start/2+offset, end/2+offset, _data2text(line)))
         yield (start/2+offset, line)
 
     if DEBUG: _printBanner("done")
@@ -363,7 +363,7 @@ def genLinesFwd(offset, styledText, position):
     """
     DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genLinesFwd(offset=%d, styledText, position=%d)"\
                      % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -387,7 +387,7 @@ def genLinesFwd(offset, styledText, position):
             else:
                 i += 2
         line = styledText[start:i] 
-        if DEBUG: print "yield:%d-%d:%s" % (start/2+offset, i/2+offset, _data2text(line))
+        if DEBUG: print("yield:%d-%d:%s" % (start/2+offset, i/2+offset, _data2text(line)))
         yield (i/2+offset, line)
 
     if DEBUG: _printBanner("done")
@@ -419,7 +419,7 @@ def genContinuedLinesBwd(offset, styledText, position, stylesToIgnore,
     """
     DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genContinuedLinesBwd(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -429,16 +429,16 @@ def genContinuedLinesBwd(offset, styledText, position, stylesToIgnore,
     currPos = currData = None
     for precPos, precData in genLinesBwd(offset, styledText, position):
         if DEBUG:
-            print "preceding line:%d-%d:%s"\
-                  % (precPos, precPos+len(precData)/2, _data2text(precData))
+            print("preceding line:%d-%d:%s"\
+                  % (precPos, precPos+len(precData)/2, _data2text(precData)))
 
         if currData is None: # first time through, load curr{Data|Pos}
             currData = precData
             currPos = precPos
             continue
         if DEBUG:
-            print "current line:%d-%d:%s"\
-                  % (currPos, currPos+len(currData)/2, _data2text(currData))
+            print("current line:%d-%d:%s"\
+                  % (currPos, currPos+len(currData)/2, _data2text(currData)))
         
         # If there is a continuation char on the preceding line then
         # prepend that line to the current one.
@@ -454,7 +454,7 @@ def genContinuedLinesBwd(offset, styledText, position, stylesToIgnore,
         contCharStyle = ord(precData[contCharIndex+1]) & styleMask
         if numBackslashes % 2 and contCharStyle not in stylesToIgnore:
             if DEBUG:
-                print "preceding line has continuation char"
+                print("preceding line has continuation char")
             precData = precData[:contCharIndex] + ' \x00' + precData[contCharIndex+2:]
             currData = precData + currData
             currPos = precPos
@@ -462,8 +462,8 @@ def genContinuedLinesBwd(offset, styledText, position, stylesToIgnore,
         
         # Otherwise, just yield the current line.
         if DEBUG:
-            print "yield:%d-%d:%s"\
-                  % (currPos, currPos+len(currData)/2, _data2text(currData))
+            print("yield:%d-%d:%s"\
+                  % (currPos, currPos+len(currData)/2, _data2text(currData)))
         yield (currPos, currData)
         currData = precData
         currPos = precPos
@@ -471,8 +471,8 @@ def genContinuedLinesBwd(offset, styledText, position, stylesToIgnore,
     # Yield the last line.
     if currData:
         if DEBUG:
-            print "yield:%d-%d:%s"\
-                  % (currPos, currPos+len(currData)/2, _data2text(currData))
+            print("yield:%d-%d:%s"\
+                  % (currPos, currPos+len(currData)/2, _data2text(currData)))
         yield (currPos, currData)
 
     if DEBUG: _printBanner("done")
@@ -504,7 +504,7 @@ def genContinuedLinesFwd(offset, styledText, position, stylesToIgnore,
     """
     DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genContinuedLinesFwd(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -518,10 +518,10 @@ def genContinuedLinesFwd(offset, styledText, position, stylesToIgnore,
             currPos = nextPos
             continue
         if DEBUG:
-            print "current line:%d-%d:%s"\
-                  % (currPos-len(currData)/2, currPos, _data2text(currData))
-            print "next line:%d-%d:%s"\
-                  % (nextPos-len(nextData)/2, nextPos, _data2text(nextData))
+            print("current line:%d-%d:%s"\
+                  % (currPos-len(currData)/2, currPos, _data2text(currData)))
+            print("next line:%d-%d:%s"\
+                  % (nextPos-len(nextData)/2, nextPos, _data2text(nextData)))
         
         # If there is a continuation char on the current line then append
         # the next line to the current one.
@@ -537,7 +537,7 @@ def genContinuedLinesFwd(offset, styledText, position, stylesToIgnore,
         contCharStyle = ord(currData[contCharIndex+1]) & styleMask
         if numBackslashes % 2 and contCharStyle not in stylesToIgnore:
             if DEBUG:
-                print "current line has continuation char"
+                print("current line has continuation char")
             currData = currData[:contCharIndex] + ' \x00' + currData[contCharIndex+2:]
             currData += nextData
             currPos = nextPos
@@ -545,8 +545,8 @@ def genContinuedLinesFwd(offset, styledText, position, stylesToIgnore,
         
         # Otherwise, just yield the current line.
         if DEBUG:
-            print "yield:%d-%d:%s"\
-                  % (currPos-len(currData)/2, currPos, _data2text(currData))
+            print("yield:%d-%d:%s"\
+                  % (currPos-len(currData)/2, currPos, _data2text(currData)))
         yield (currPos, currData)
         currData = nextData
         currPos = nextPos
@@ -554,8 +554,8 @@ def genContinuedLinesFwd(offset, styledText, position, stylesToIgnore,
     # Yield the last line.
     if currData:
         if DEBUG:
-            print "yield:%d-%d:%s"\
-                  % (currPos, currPos+len(currData)/2, _data2text(currData))
+            print("yield:%d-%d:%s"\
+                  % (currPos, currPos+len(currData)/2, _data2text(currData)))
         yield (currPos, currData)
 
     if DEBUG: _printBanner("done")
@@ -587,7 +587,7 @@ def genPythonLogicalLinesBwd(offset, styledText, position, stylesToIgnore,
     """
     if DEBUG is None: DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genPythonLogicalLinesBwd(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -597,15 +597,15 @@ def genPythonLogicalLinesBwd(offset, styledText, position, stylesToIgnore,
         ']': '[',
         '}': '{',
     }
-    STATE_INBLOCK, STATE_OUTOFBLOCK = range(2)
+    STATE_INBLOCK, STATE_OUTOFBLOCK = list(range(2))
     state = STATE_OUTOFBLOCK
     stack = [] # stack of blocks: (<block close char>, <style>)
     ldata = None  # styled text data for the grouped "logical" line
     for pos, data in genContinuedLinesBwd(offset, styledText, position,
                                            stylesToIgnore, styleMask):
         if DEBUG:
-            print "continued line:%d-%d:%s"\
-                  % (pos, pos+len(data)/2, _data2text(data))
+            print("continued line:%d-%d:%s"\
+                  % (pos, pos+len(data)/2, _data2text(data)))
             
         if ldata is None:
             ldata = data
@@ -631,14 +631,14 @@ def genPythonLogicalLinesBwd(offset, styledText, position, stylesToIgnore,
         
         if state == STATE_OUTOFBLOCK:
             if DEBUG:
-                print "yield:%d-%d:%s"\
-                      % (pos, pos+len(ldata)/2, _data2text(ldata))
+                print("yield:%d-%d:%s"\
+                      % (pos, pos+len(ldata)/2, _data2text(ldata)))
             yield (pos, ldata)
             ldata = None
 
     if ldata: # if a block char was not closed then just dump out what remains
         if DEBUG:
-            print "yield:%d-%d:%s" % (pos, pos+len(ldata)/2, _data2text(ldata))
+            print("yield:%d-%d:%s" % (pos, pos+len(ldata)/2, _data2text(ldata)))
         yield (pos, ldata)
         ldata = None
 
@@ -671,7 +671,7 @@ def genPythonLogicalLinesFwd(offset, styledText, position, stylesToIgnore,
     """
     if DEBUG is None: DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("genPythonLogicalLinesFwd(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -681,15 +681,15 @@ def genPythonLogicalLinesFwd(offset, styledText, position, stylesToIgnore,
         '[': ']',
         '{': '}',
     }
-    STATE_INBLOCK, STATE_OUTOFBLOCK = range(2)
+    STATE_INBLOCK, STATE_OUTOFBLOCK = list(range(2))
     state = STATE_OUTOFBLOCK
     stack = [] # stack of blocks: (<block close char>, <style>)
     lpos = ldata = None  # styled text data for the grouped "logical" line
     for pos, data in genContinuedLinesFwd(offset, styledText, position,
                                            stylesToIgnore, styleMask):
         if DEBUG:
-            print "continued line:%d-%d:%s"\
-                  % (pos, pos+len(data)/2, _data2text(data))
+            print("continued line:%d-%d:%s"\
+                  % (pos, pos+len(data)/2, _data2text(data)))
             
         if ldata is None:
             ldata = data
@@ -717,15 +717,15 @@ def genPythonLogicalLinesFwd(offset, styledText, position, stylesToIgnore,
         
         if state == STATE_OUTOFBLOCK:
             if DEBUG:
-                print "yield:%d-%d:%s"\
-                      % (lpos-len(ldata)/2, lpos, _data2text(ldata))
+                print("yield:%d-%d:%s"\
+                      % (lpos-len(ldata)/2, lpos, _data2text(ldata)))
             yield (lpos, ldata)
             ldata = None
 
     if ldata: # if a block char was not closed then just dump out what remains
         if DEBUG:
-            print "yield:%d-%d:%s"\
-                  % (lpos-len(ldata)/2, lpos, _data2text(ldata))
+            print("yield:%d-%d:%s"\
+                  % (lpos-len(ldata)/2, lpos, _data2text(ldata)))
         yield (lpos, ldata)
         ldata = None
 
@@ -774,7 +774,7 @@ def getStyledPythonLogicalLine(offset, styledText, position, stylesToIgnore,
     """
     DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("getStyledPythonLogicalLine(offset=%d, styledText, "
                      "position=%d, context=%r)" % (offset, position, context))
         _printBufferContext(offset, styledText, position)
@@ -797,7 +797,7 @@ def getStyledPythonLogicalLine(offset, styledText, position, stylesToIgnore,
         break
     if endPosPreEOL != endPos:
         retData += styledText[(endPosPreEOL-offset)*2:(endPos-offset)*2] # re-add the EOL
-    if DEBUG: print "without context:%d:%s" % (retPos, _data2text(retData))
+    if DEBUG: print("without context:%d:%s" % (retPos, _data2text(retData)))
     
     if context:
         # Look back 'context' lines.
@@ -814,12 +814,12 @@ def getStyledPythonLogicalLine(offset, styledText, position, stylesToIgnore,
                                        stylesToIgnore, styleMask):
                 break
             if DEBUG:
-                print "potential from context pos %s: %d-%d: %s"\
-                      % (startPos, endPos-len(data)/2, endPos, _data2text(data))
+                print("potential from context pos %s: %d-%d: %s"\
+                      % (startPos, endPos-len(data)/2, endPos, _data2text(data)))
             if endPos > retPos: # logical line has been expanded (or is the same)
                 retPos = endPos - (len(data)/2)
                 retData = data
-                if DEBUG: print "expand:%d:%s" % (retPos, _data2text(retData))
+                if DEBUG: print("expand:%d:%s" % (retPos, _data2text(retData)))
                 break
     
         # Look forward 'context' lines.
@@ -833,7 +833,7 @@ def getStyledPythonLogicalLine(offset, styledText, position, stylesToIgnore,
                 break
         for endPos in endPoss:
             if endPos <= retPos+len(retData)/2:
-                if DEBUG: print "already expanded to or past pos %s" % endPos
+                if DEBUG: print("already expanded to or past pos %s" % endPos)
                 break
             endPosPreEOL = _getPosBeforeEOL(offset, styledText, endPos)
             for startPos, data in genBwd(offset, styledText, endPosPreEOL,
@@ -842,17 +842,17 @@ def getStyledPythonLogicalLine(offset, styledText, position, stylesToIgnore,
             if endPosPreEOL != endPos:
                 data += styledText[(endPosPreEOL-offset)*2:(endPos-offset)*2] # re-add the EOL
             if DEBUG:
-                print "potential from context pos %s: %d-%d: %s"\
-                      % (endPos, startPos, startPos+len(data)/2, _data2text(data))
+                print("potential from context pos %s: %d-%d: %s"\
+                      % (endPos, startPos, startPos+len(data)/2, _data2text(data)))
             if startPos <= retPos: # logical line has been expanded (or is the same)
                 retPos = startPos
                 retData = data
                 #if endPos != scimoz.textLength:
                 #    retData += scimoz.getStyledText(endPos-1, endPos) # grab last char
-                if DEBUG: print "expand:%d:%s" % (retPos, _data2text(retData))
+                if DEBUG: print("expand:%d:%s" % (retPos, _data2text(retData)))
                 break
     
-    if DEBUG: print "return:%d:%s" % (retPos, _data2text(retData))
+    if DEBUG: print("return:%d:%s" % (retPos, _data2text(retData)))
     if DEBUG: _printBanner("done")
     return (retPos, retData)
 
@@ -913,7 +913,7 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
     """
     if DEBUG is None: DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("getSimplifiedLeadingPythonExpr(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -924,9 +924,9 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
                                                    position, stylesToIgnore,
                                                    styleMask):
         break
-    if DEBUG: print "extract from: %s" % _data2text(data)
+    if DEBUG: print("extract from: %s" % _data2text(data))
 
-    WHITESPACE = tuple(" \t\n\r\v\f")
+    WHITESPACE = tuple(" \t\n\r\\v\f")
     BLOCKCLOSES = tuple(")}]")
     STOPOPS = tuple("({[,&+=^|%/<>;:")
     expr = ""
@@ -938,7 +938,7 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
         if ch in WHITESPACE:
             # drop all whitespace
             while i >= 0 and data[i] in WHITESPACE:
-                if DEBUG: print "drop whitespace: %r" % data[i]
+                if DEBUG: print("drop whitespace: %r" % data[i])
                 i -= 2
             # If there are two whitespace-separated words then this is
             # (likely or always?) a language keyword or declaration construct
@@ -949,14 +949,14 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
             #   int myvar = ...
             if i >= 0 and expr and _isident(expr[-1]) and (
                _isident(data[i]) or _isdigit(data[i])):
-                if DEBUG: print "stop at (likely?) start of keyword or declaration: %r" % data[i]
+                if DEBUG: print("stop at (likely?) start of keyword or declaration: %r" % data[i])
                 break
         elif style in stylesToIgnore: # drop styles to ignore
             while i >= 0 and (ord(data[i+1]) & styleMask) in stylesToIgnore:
-                if DEBUG: print "drop char of style to ignore: %r" % data[i]
+                if DEBUG: print("drop char of style to ignore: %r" % data[i])
                 i -= 2
         elif ch in BLOCKCLOSES:
-            if DEBUG: print "found block at %d: %r" % (i/2+startPos, ch)
+            if DEBUG: print("found block at %d: %r" % (i/2+startPos, ch))
             expr += ch
 
             BLOCKS = { # map block close char to block open char
@@ -978,7 +978,7 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
                         break
                 i -= 2
 
-            if DEBUG: print "jump to matching brace at %d: %r" % (i/2+startPos, ch)
+            if DEBUG: print("jump to matching brace at %d: %r" % (i/2+startPos, ch))
             expr += ch
             i -= 2
         elif ch in STOPOPS:
@@ -986,12 +986,12 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
         else:
             if DEBUG:
                 styleName = _sciUtilsSvc.styleNameFromNum("Python", style)
-                print "add char: %r (%s)" % (ch, styleName)
+                print("add char: %r (%s)" % (ch, styleName))
             expr += ch
             i -= 2
     expr = list(expr.strip()); expr.reverse(); expr = ''.join(expr)
     if DEBUG:
-        print "return: %r" % expr
+        print("return: %r" % expr)
         _printBanner("done")
     return expr
 
@@ -999,7 +999,7 @@ def getSimplifiedLeadingPythonExpr(offset, styledText, position,
 _gPerlVarPat = re.compile(r"((?P<prefix>[$@%\\*&]+)\s*)?(?P<scope>(::)?\b((?!\d)\w*?(::|'))*)(?P<name>(?!\d)\w+)$")
 def getLeadingPerlCITDLExpr(offset, styledText, position,
                             stylesToIgnore, styleMask, DEBUG=None):
-    """Parse out the leading Perl expression and return a CITDL expression
+    r"""Parse out the leading Perl expression and return a CITDL expression
     for it.
     
         "offset" is the position offset from the start of the source SciMoz
@@ -1071,7 +1071,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
     """
     if DEBUG is None: DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("getLeadingPerlCITDLExpr(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -1084,7 +1084,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
     while i >= 0:
         # Parse off a perl variable/identifier.
         if DEBUG:
-            print "look for Perl var at end of %r" % text[:i+1]
+            print("look for Perl var at end of %r" % text[:i+1])
         match = _gPerlVarPat.search(text[:i+1])
         if not match:
             if DEBUG:
@@ -1092,7 +1092,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
                     segment = '...'+text[i-20:i+1]
                 else:
                     segment = text[:i+1]
-                print "could not match a Perl var off %r" % segment
+                print("could not match a Perl var off %r" % segment)
             citdl = None
             break
         prefix = match.group("prefix") or ""
@@ -1100,7 +1100,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
         name = match.group("name")
         try:
             triggerChar = text[i+1]
-        except IndexError, ex:
+        except IndexError as ex:
             log.warn("text does not include trailing trigger "
                      "char to resolve possible ambiguities in '%s'",
                      match.group(0))
@@ -1129,11 +1129,11 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
                     citdl.insert(0, scope)
         i -= len(match.group(0))
         if DEBUG:
-            print "parse out Perl var: %r (prefix=%r, scope=%r, name=%r): %r"\
-                  % (match.group(0), prefix, scope, name, citdl)
+            print("parse out Perl var: %r (prefix=%r, scope=%r, name=%r): %r"\
+                  % (match.group(0), prefix, scope, name, citdl))
 
         # Preceding characters will determine if we stop or continue.
-        WHITESPACE = tuple(" \t\n\r\v\f")
+        WHITESPACE = tuple(" \t\n\r\\v\f")
         while i >= 0 and text[i] in WHITESPACE:
             #if DEBUG: print "drop whitespace: %r" % text[i]
             i -= 1
@@ -1141,10 +1141,10 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
             if DEBUG:
                 style = ord(styledText[i*2+1]) & styleMask
                 styleName = _sciUtilsSvc.styleNameFromNum("Perl", style)
-                print "stop at style to ignore: %r (%s)" % (text[i], styleName)
+                print("stop at style to ignore: %r (%s)" % (text[i], styleName))
             break
         elif i >= 1 and text[i-1:i+1] == '->':
-            if DEBUG: print "parse out '->'"
+            if DEBUG: print("parse out '->'")
             i -= 2
             while i >= 0 and text[i] in WHITESPACE:
                 #if DEBUG: print "drop whitespace: %r" % text[i]
@@ -1158,7 +1158,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
     else:
         retval = (filter, None)
     if DEBUG:
-        print "return: %r" % (retval,)
+        print("return: %r" % (retval,))
         _printBanner("done")
     return retval
 
@@ -1184,7 +1184,7 @@ _gRubyLeadingExprPat = re.compile(r"""
         )
         [?!]?   # methods can end with '?' or '!' (XXX what about '='?)
     )\s*$          # anchored at the end of the string
-    """ % {"ident": "((?!\d)\w+)"}, re.X)
+    """ % {"ident": r"((?!\d)\w+)"}, re.X)
 def getLeadingRubyCITDLExpr(offset, styledText, position,
                             stylesToIgnore, styleMask, DEBUG=None):
     """Parse out the leading Ruby expression and return a CITDL expression
@@ -1246,7 +1246,7 @@ def getLeadingRubyCITDLExpr(offset, styledText, position,
     """
     if DEBUG is None: DEBUG = 0
     if DEBUG:
-        print
+        print()
         _printBanner("getLeadingRubyCITDLExpr(offset=%d, styledText, "
                      "position=%d)" % (offset, position))
         _printBufferContext(offset, styledText, position)
@@ -1257,7 +1257,7 @@ def getLeadingRubyCITDLExpr(offset, styledText, position,
     text = ''.join([styledText[i] for i in range(0, len(styledText), 2)])
     i = position-offset-1
     if DEBUG:
-        print "look for Ruby var at end of %r" % text[:i+1]
+        print("look for Ruby var at end of %r" % text[:i+1])
     match = _gRubyLeadingExprPat.search(text[:i+1])
     if not match:
         expr = None
@@ -1266,11 +1266,11 @@ def getLeadingRubyCITDLExpr(offset, styledText, position,
                 segment = '...'+text[i-20:i+1]
             else:
                 segment = text[:i+1]
-            print "could not match a Ruby var off %r" % segment
+            print("could not match a Ruby var off %r" % segment)
     else:
         expr = match.group(0)
         if DEBUG:
-            print "parsed out leading Ruby expr: %r" % expr
+            print("parsed out leading Ruby expr: %r" % expr)
 
     # Convert to a CITDL expression (CodeIntel uses "." for attribute
     # lookup).
@@ -1278,7 +1278,7 @@ def getLeadingRubyCITDLExpr(offset, styledText, position,
         expr = expr.replace("::", ".")
 
     if DEBUG:
-        print "return: %r" % (expr,)
+        print("return: %r" % (expr,))
         _printBanner("done")
     return expr
 
@@ -1430,7 +1430,7 @@ class SciUtilsTestCase(SciMozTestCase):
                                   styleMask, context=context)
         actualText = ''.join([data[i] for i in range(0, len(data), 2)])
         
-        self.assertEqual(actualText, expectedText, """\
+        self.assertEqual(actualText, expectedText, r"""\
 line text is not as expected:
 ---------- expected this ----------
 %s
@@ -1510,7 +1510,7 @@ line text is not as expected:
             else:
                 actual.append(text)
             
-        self.assertEqual(actual, expected, """\
+        self.assertEqual(actual, expected, r"""\
 generated lines are not as expected:
 ---------- expected this ----------
 %s
@@ -1618,7 +1618,7 @@ generated lines are not as expected:
         #self.assertGeneratedTextIs(genFunc, "Python", 0, "'''spam \nand eggs'''.split()<|>",
         #                            ["'''spam \nand eggs'''.split()"])
 
-        self.assertGeneratedTextIs(genFunc, "Python", 0, """\
+        self.assertGeneratedTextIs(genFunc, "Python", 0, """\\
 # a complex call
 foo(bar, (1,2),
     # another tricky ( comment
@@ -1664,7 +1664,7 @@ bar
         self.assertGeneratedTextIs(genFunc, "Python", 0, "<|>foo\n(blam, bar)", ["foo\n", "(blam, bar)"])
         self.assertGeneratedTextIs(genFunc, "Python", 0, "<|>foo\\\n(blam, bar)", ["foo \n(blam, bar)"])
 
-        self.assertGeneratedTextIs(genFunc, "Python", 0, """\
+        self.assertGeneratedTextIs(genFunc, "Python", 0, """\\
 <|># a complex call
 foo(bar, (1,2),
     # another tricky ( comment

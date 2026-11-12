@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2008 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
@@ -34,7 +34,7 @@ class HG:
         """Prepare and run the given arg vector, 'argv', and return the
         results.  Returns (<stdout>, <stderr>).
         """
-        if type(argv) not in (types.ListType, types.TupleType):
+        if type(argv) not in (list, tuple):
             raise HGLibError("_runCommand:: argv is not a list: %r" % (argv, ))
         # Remove any empty options from the cmd list.
         argv = [ x for x in argv if x ]
@@ -208,7 +208,7 @@ class HG:
 
     def clone(self, urls, path=None, command_options="",
               terminalHandler=None, env=None):
-        if type(urls) in types.StringTypes:
+        if type(urls) in (str,):
             urls = [urls]
         argv = [self.executable, 'clone'] + urls
         cwd = None
@@ -292,13 +292,13 @@ class HG:
         log_items = []
         matchIterator = self.log_splitter_re.finditer(output)
         try:
-            match = matchIterator.next()
+            match = next(matchIterator)
         except StopIteration:
             match = None
         while match:
             text_start = match.end()
             try:
-                matchNext = matchIterator.next()
+                matchNext = next(matchIterator)
             except StopIteration:
                 matchNext = None
             if matchNext:

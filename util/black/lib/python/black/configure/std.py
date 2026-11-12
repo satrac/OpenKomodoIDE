@@ -4,8 +4,9 @@
 #
 
 import os, sys, re
+import subprocess
 if sys.platform.startswith("win"):
-    import _winreg
+    import winreg
 import tmShUtil
 import black.configure
 from black.configure import Datum, ConfigureError, RunEnvScript, BooleanDatum
@@ -50,7 +51,7 @@ class Path(Datum):
     def _Determine_Do(self):
         # If there is a PATH configuration item, then return its value.
         # Otherwise return the value of the PATH environment variable.
-        if black.configure.items.has_key("PATH"):
+        if "PATH" in black.configure.items:
             pathItem = black.configure.items["PATH"]
             self.applicable = pathItem.Determine()
             if self.applicable:
@@ -86,22 +87,22 @@ class MsvcInstallDir(Datum):
             #   /Microsoft Visual C++/ProductDir
             try:
                 if self._compilerVersion.startswith("vc6"):
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                        "SOFTWARE\\Microsoft\\DevStudio\\6.0\\Products"\
-                        "\\Microsoft Visual C++")
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\\\Microsoft\\\\DevStudio\\6.0\\\\Products"\
+                        "\\\\Microsoft Visual C++")
                 elif self._compilerVersion.startswith("vc7") or \
                      self._compilerVersion.startswith("vc8"):
-                    key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                        "SOFTWARE\\Microsoft\\VisualStudio\\SxS\\VC7")
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                        "SOFTWARE\\\\Microsoft\\\\VisualStudio\\\\SxS\\\\VC7")
                 else:
                     # Unknown compiler version
                     raise WindowsError("Unknown windows compiler version")
             except WindowsError:
                 self.value = None
             else:
-                numSubkeys, numValues, lastModified = _winreg.QueryInfoKey(key)
+                numSubkeys, numValues, lastModified = winreg.QueryInfoKey(key)
                 for i in range(numValues):
-                    valueName, valueData, dataType = _winreg.EnumValue(key, i)
+                    valueName, valueData, dataType = winreg.EnumValue(key, i)
                     if self._compilerVersion.startswith("vc7") and \
                         (valueName == '7.1'):
                         self.value = str(valueData)  # convert from Unicode
@@ -118,13 +119,13 @@ class MsvcInstallDir(Datum):
                     # otherwise just try the default hardcoded path
                     if self._compilerVersion.startswith("vc6"):
                         installDir =\
-                        "C:\\Program Files\\Microsoft Visual Studio\\VC98";
+                        "C:\\\\Program Files\\\\Microsoft Visual Studio\\\\VC98";
                     elif self._compilerVersion.startswith("vc7"):
                         installDir =\
-                            "C:\\Program Files\\Microsoft Visual Studio .NET 2003\\Vc7";
+                            "C:\\\\Program Files\\\\Microsoft Visual Studio .NET 2003\\\\Vc7";
                     elif self._compilerVersion.startswith("vc8"):
                         installDir =\
-                            "C:\\Program Files\\Microsoft Visual Studio 8\\VC";
+                            "C:\\\\Program Files\\\\Microsoft Visual Studio 8\\\\VC";
                     if os.path.isdir(installDir):
                         self.value = installDir
                     else:
@@ -173,12 +174,12 @@ class MsvcrtDebugDllsInstalled(BooleanDatum):
         # optionally use the "buildType" configuration item, if defined,
         # to determine if this item is applicable
         if sys.platform.startswith("win"):
-            if black.configure.items.has_key("buildType") and\
+            if "buildType" in black.configure.items and\
               black.configure.items["buildType"].Get() != "debug":
                 self.applicable = 0
             else:
                 self.applicable = 1
-                if not black.configure.items.has_key("systemDirs"):
+                if "systemDirs" not in black.configure.items:
                     black.configure.items["systemDirs"] =\
                         black.configure.std.SystemDirs()
                 systemDirs = black.configure.items["systemDirs"].Get()
@@ -203,7 +204,7 @@ class PythonExeName(Datum):
     def _Determine_Do(self):
         self.applicable = 1
         if sys.platform.startswith("win"):
-            if black.configure.items.has_key("buildType") and\
+            if "buildType" in black.configure.items and\
               black.configure.items["buildType"].Get() == "debug":
                 self.value = "python_d.exe"
             else:
@@ -220,11 +221,10 @@ class PythonVersion(Datum):
     def _Determine_Do(self):
         self.applicable = 1
 
-        if not black.configure.items.has_key("pythonExeName"):
+        if "pythonExeName" not in black.configure.items:
             black.configure.items["pythonExeName"] = PythonExeName()
         pythonExeName = black.configure.items["pythonExeName"].Get()
-        o = os.popen('%s -c "import sys; sys.stdout.write(\'.\'.join(map(str, sys.version_info[:3])))"' % pythonExeName)
-        self.value = o.read()
+        self.value = subprocess.getoutput('%s -c "import sys; sys.stdout.write(\'.\'.join(map(str, sys.version_info[:3])))"' % pythonExeName)
         self.determined = 1
 
 
@@ -275,7 +275,7 @@ class PythonBinDir(Datum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if not black.configure.items.has_key("pythonExeName"):
+        if "pythonExeName" not in black.configure.items:
             black.configure.items["pythonExeName"] = PythonExeName()
         pythonExeName = black.configure.items["pythonExeName"].Get()
         pythonExe = tmShUtil.WhichFollowSymLinks(pythonExeName)
@@ -297,7 +297,7 @@ class PythonInstallDir(Datum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if not black.configure.items.has_key("pythonBinDir"):
+        if "pythonBinDir" not in black.configure.items:
             black.configure.items["pythonBinDir"] = PythonBinDir()
         pythonBinDir = black.configure.items["pythonBinDir"].Get()
         if pythonBinDir:
@@ -332,7 +332,7 @@ class PerlInstallDir(Datum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if not black.configure.items.has_key("perlBinDir"):
+        if "perlBinDir" not in black.configure.items:
             black.configure.items["perlBinDir"] = PerlBinDir()
         perlBinDir = black.configure.items["perlBinDir"].Get()
         if perlBinDir:
@@ -355,15 +355,14 @@ class PerlVersion(Datum):
         Datum.__init__(self, name, desc)
 
     def _Determine_Do(self):
-        if not black.configure.items.has_key(self.perlBinDirItemName):
+        if self.perlBinDirItemName not in black.configure.items:
             black.configure.items[self.perlBinDirItemName] = PerlBinDir()
         self.applicable = black.configure.items[self.perlBinDirItemName].Determine()
         if self.applicable:
             perlBinDir = black.configure.items[self.perlBinDirItemName].Get()
             if perlBinDir:
                 perlExe = os.path.join(perlBinDir, "perl")
-                o = os.popen("%s -v" % perlExe)
-                perlVersionDump = o.read()
+                perlVersionDump = subprocess.getoutput("%s -v" % perlExe)
                 perlVersionMatch = re.compile("This is perl, v([0-9.]+)").\
                     search(perlVersionDump)
                 if perlVersionMatch:
@@ -388,17 +387,16 @@ class ActivePerlBuild(Datum):
         Datum.__init__(self, name, desc)
 
     def _Determine_Do(self):
-        if not black.configure.items.has_key(self.perlBinDirItemName):
+        if self.perlBinDirItemName not in black.configure.items:
             black.configure.items[self.perlBinDirItemName] = PerlBinDir()
         self.applicable = black.configure.items[self.perlBinDirItemName].Determine()
         if self.applicable:
             perlBinDir = black.configure.items[self.perlBinDirItemName].Get()
             if perlBinDir:
                 perlExe = os.path.join(perlBinDir, "perl")
-                o = os.popen("%s -v" % perlExe)
-                perlVersionDump = o.read()
+                perlVersionDump = subprocess.getoutput("%s -v" % perlExe)
                 buildMatch = re.compile(
-                    "Binary build (\d+) provided by ActiveState").\
+                    r"Binary build (\d+) provided by ActiveState").\
                     search(perlVersionDump)
                 if buildMatch:
                     self.value = buildMatch.group(1) 
@@ -435,16 +433,14 @@ class PerlModulesInstalled(BooleanDatum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        if not black.configure.items.has_key(self.perlBinDirItemName):
+        if self.perlBinDirItemName not in black.configure.items:
             black.configure.items[self.perlBinDirItemName] = PerlBinDir()
         perlBinDir = black.configure.items[self.perlBinDirItemName].Get()
         perlExe = os.path.join(perlBinDir, "perl")
         self.value = []
         self.notInstalled = []
         for module in self.modules:
-            o = os.popen('%s -m%s -e "print \'madeit\';"' % (perlExe, module))
-            output = o.read()
-            o.close()
+            output = subprocess.getoutput('%s -m%s -e "print \'madeit\';"' % (perlExe, module))
             if output != "madeit":
                 self.notInstalled.append(module)
             else:

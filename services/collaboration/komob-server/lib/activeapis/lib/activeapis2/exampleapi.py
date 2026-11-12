@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """A demostration of building on `common.py` to build an API client class.
 
@@ -78,11 +78,11 @@ def main(argv):
             args.append(s)
     try:
         response = method(*args)
-    except api.APIError, ex:
+    except api.APIError as ex:
         logging.error(ex)
     else:
         #pprint(response)
-        print jsonlib.dumps(response, indent=2)
+        print(jsonlib.dumps(response, indent=2))
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

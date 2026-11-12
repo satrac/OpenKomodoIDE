@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
 """Implements a pure Python version of strptime.
 
@@ -234,35 +234,35 @@ self.daylight)
         if self.month!=None:
             if not (1<=self.month<=12):
                 success=0
-                raise DataError,'Month'
+                raise DataError('Month')
         if self.day!=None:
             if not 1<=self.day<=31:
                 success=0
-                raise DataError,'Day'
+                raise DataError('Day')
         if self.hour!=None:
             if not 0<=self.hour<=23:
                 success=0
-                raise DataError,'Hour'
+                raise DataError('Hour')
         if self.minute!=None:
             if not 0<=self.minute<=59:
                 success=0
-                raise DataError,'Minute'
+                raise DataError('Minute')
         if self.second!=None:
             if not 0<=self.second<=61: #61 covers leap seconds.
                 success=0
-                raise DataError,'Second'
+                raise DataError('Second')
         if self.day_week!=None:
             if not 0<=self.day_week<=6:
                 success=0
-                raise DataError,'Day of the Week'
+                raise DataError('Day of the Week')
         if self.julian_date!=None:
             if not 0<=self.julian_date<=366:
                 success=0
-                raise DataError,'Julian Date'
+                raise DataError('Julian Date')
         if self.daylight!=None:
             if not -1<=self.daylight<=1:
                 success=0
-                raise DataError,'Daylight Savings'
+                raise DataError('Daylight Savings')
         return success
             
 
@@ -271,7 +271,7 @@ self.daylight)
         Returns a tuple in the format used by time.gmtime().  All instances of
         None in the information are replaced with 0."""
         temp_time=[self.year, self.month, self.day, self.hour, self.minute, self.second, self.day_week, self.julian_date, self.daylight]
-        for current in xrange(9):
+        for current in range(9):
             if temp_time[current]==None:
                 temp_time[current]=0
         return tuple(temp_time)
@@ -406,23 +406,23 @@ class StrpObj(TimeObj):
                        'Nov':11,
                        'Dec':12}
 
-            DAYDict={'Måndag':0,
+            DAYDict={'Mï¿½ndag':0,
                      'Tisdag':1,
                      'Onsdag':2,
                      'Torsdag':3,
                      'Fredag':4,
-                     'Lördag':5,
-                     'Söndag':6,
-                     'Mån':0,
+                     'Lï¿½rdag':5,
+                     'Sï¿½ndag':6,
+                     'Mï¿½n':0,
                      'Tis':1,
                      'Ons':2,
                      'Tor':3,
                      'Fre':4,
-                     'Lör':5,
-                     'Sön':6}
+                     'Lï¿½r':5,
+                     'Sï¿½n':6}
 
         else:
-            raise TimeObjError, 'Unsupported locale setting'
+            raise TimeObjError('Unsupported locale setting')
             
 
         return DIRECTIVEDict, AM_PM, MONTHDict, DAYDict
@@ -437,7 +437,7 @@ class StrpObj(TimeObj):
             if char=='%' and not Directive:
                 Directive=1
             elif Directive:
-                if not DIRECTIVEDict.has_key('%'+char):
+                if '%'+char not in DIRECTIVEDict:
                     raise GenericError
                 else:
                     REString+=DIRECTIVEDict['%'+char]
@@ -452,7 +452,7 @@ class StrpObj(TimeObj):
         DIRECTIVEDict,AM_PM,MONTHDict,DAYDict=self.DictAssembly(locale_setting)
         REComp=self.RECreation(format, DIRECTIVEDict)
         reobj=REComp.match(string)
-        for found in reobj.groupdict().keys():
+        for found in list(reobj.groupdict().keys()):
             if found in ('y','Y'): #Year
                 if found=='y': #Without century
                     self.year=CENTURY+int(reobj.group('y'))
@@ -476,7 +476,7 @@ class StrpObj(TimeObj):
                         else:
                             AP=1
                     except KeyError:
-                        print 'Lacking needed AM/PM information'
+                        print('Lacking needed AM/PM information')
                     if AP:
                         if hour==12:
                             self.hour=12

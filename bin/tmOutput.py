@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Useful replacement outputters for sys.stdout.
@@ -82,8 +82,8 @@ class FormattedOutput:
     def _GetIndentation(self):
         return "".join(self.__indentation)
 
-    TT_WS, TT_NEWLINE, TT_WORD = range(3) # token types
-    WHITESPACE = ' \t\r\f\v'  # excluding '\n' on purpose
+    TT_WS, TT_NEWLINE, TT_WORD = list(range(3)) # token types
+    WHITESPACE = ' \t\r\f\\v'  # excluding '\n' on purpose
     def _Parse(self, text):
         """return a list of tuples (TOKEN_TYPE, <token>)"""
         tokens = []
@@ -234,7 +234,7 @@ class MarkedUpOutput(FormattedOutput):
     # understood types of markup
     MT_START_GROUP, MT_END_GROUP,\
         MT_START_ITEM, MT_END_ITEM,\
-        MT_START_ERROR_ITEM, MT_END_ERROR_ITEM = range(6)
+        MT_START_ERROR_ITEM, MT_END_ERROR_ITEM = list(range(6))
     def startGroup(self): self._Markup(self.MT_START_GROUP)
     def endGroup(self): self._Markup(self.MT_END_GROUP)
     def startItem(self): self._Markup(self.MT_START_ITEM)

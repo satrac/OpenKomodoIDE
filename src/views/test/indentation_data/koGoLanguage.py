@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Go-specific Language Services implementations."""
 
@@ -32,9 +32,9 @@ class koGoLanguage(KoLanguageBase, KoLanguageBaseDedentMixin):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _dedenting_statements = [u'goto', u'return', u'break', u'continue']
+    _dedenting_statements = ['goto', 'return', 'break', 'continue']
     
-    namedBlockRE = "^[ \t]*?(func\s+(?:\(.*?\)\s*)?\w|package\s+\w)"
+    namedBlockRE = "^[ \t]*?(func\\s+(?:\\(.*?\\)\\s*)?\\w|package\\s+\\w)"
     namedBlockDescription = 'Go functions, methods and packages'
     supportsSmartIndent = "brace"
     # The following sample contains embedded tabs because that's the Go way.

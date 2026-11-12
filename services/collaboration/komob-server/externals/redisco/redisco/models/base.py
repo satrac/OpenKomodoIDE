@@ -19,7 +19,7 @@ ZINDEXABLE = (IntegerField, DateTimeField, DateField, FloatField)
 def _initialize_attributes(model_class, name, bases, attrs):
     """Initialize the attributes of the model."""
     model_class._attributes = {}
-    for k, v in attrs.iteritems():
+    for k, v in attrs.items():
         if isinstance(v, Attribute):
             model_class._attributes[k] = v
             v.name = v.name or k
@@ -34,7 +34,7 @@ def _initialize_referenced(model_class, attribute):
                 .filter(**{attribute.attname: self.id}))
 
     klass = attribute._target_type
-    if isinstance(klass, basestring):
+    if isinstance(klass, str):
         return (klass, model_class, attribute)
     else:
         related_name = (attribute.related_name or
@@ -45,7 +45,7 @@ def _initialize_referenced(model_class, attribute):
 def _initialize_lists(model_class, name, bases, attrs):
     """Stores the list fields descriptors of a model."""
     model_class._lists = {}
-    for k, v in attrs.iteritems():
+    for k, v in attrs.items():
         if isinstance(v, ListField):
             model_class._lists[k] = v
             v.name = v.name or k
@@ -55,7 +55,7 @@ def _initialize_references(model_class, name, bases, attrs):
     model_class._references = {}
     h = {}
     deferred = []
-    for k, v in attrs.iteritems():
+    for k, v in attrs.items():
         if isinstance(v, ReferenceField):
             model_class._references[k] = v
             v.name = v.name or k
@@ -71,7 +71,7 @@ def _initialize_references(model_class, name, bases, attrs):
 def _initialize_indices(model_class, name, bases, attrs):
     """Stores the list of indexed attributes."""
     model_class._indices = []
-    for k, v in attrs.iteritems():
+    for k, v in attrs.items():
         if isinstance(v, (Attribute, ListField)) and v.indexed:
             model_class._indices.append(k)
     if model_class._meta['indices']:
@@ -80,7 +80,7 @@ def _initialize_indices(model_class, name, bases, attrs):
 def _initialize_counters(model_class, name, bases, attrs):
     """Stores the list of counter fields."""
     model_class._counters = []
-    for k, v in attrs.iteritems():
+    for k, v in attrs.items():
         if isinstance(v, Counter):
             model_class._counters.append(k)
 
@@ -145,9 +145,7 @@ class ModelBase(type):
                 _initialize_referenced(model_class, att)
 
 
-class Model(object):
-    __metaclass__ = ModelBase
-
+class Model(object, metaclass=ModelBase):
     def __init__(self, **kwargs):
         self.update_attributes(**kwargs)
 
@@ -161,7 +159,7 @@ class Model(object):
         for field in self.fields:
             try:
                 field.validate(self)
-            except FieldValidationError, e:
+            except FieldValidationError as e:
                 self._errors.extend(e.errors)
         self.validate()
         return not bool(self._errors)
@@ -185,8 +183,8 @@ class Model(object):
 
     def update_attributes(self, **kwargs):
         """Updates the attributes of the model."""
-        attrs = self.attributes.values() + self.lists.values() \
-                + self.references.values()
+        attrs = list(self.attributes.values()) + list(self.lists.values()) \
+                + list(self.references.values())
         for att in attrs:
             if att.name in kwargs:
                 att.__set__(self, kwargs[att.name])
@@ -241,11 +239,11 @@ class Model(object):
         values.
         """
         h = {}
-        for k in self.attributes.keys():
+        for k in list(self.attributes.keys()):
             h[k] = getattr(self, k)
-        for k in self.lists.keys():
+        for k in list(self.lists.keys()):
             h[k] = getattr(self, k)
-        for k in self.references.keys():
+        for k in list(self.references.keys()):
             h[k] = getattr(self, k)
         return h
 
@@ -308,8 +306,8 @@ class Model(object):
     @property
     def fields(self):
         """Returns the list of field names of the model."""
-        return (self.attributes.values() + self.lists.values()
-                + self.references.values())
+        return (list(self.attributes.values()) + list(self.lists.values())
+                + list(self.references.values()))
 
     @property
     def counters(cls):
@@ -345,7 +343,7 @@ class Model(object):
         self._update_indices(pipeline)
         h = {}
         # attributes
-        for k, v in self.attributes.iteritems():
+        for k, v in self.attributes.items():
             if isinstance(v, DateTimeField):
                 if v.auto_now:
                     setattr(self, k, datetime.now())
@@ -367,15 +365,15 @@ class Model(object):
                     v = v()
                 if v:
                     try:
-                        h[index] = unicode(v)
+                        h[index] = str(v)
                     except UnicodeError:
-                        h[index] = unicode(v.decode('utf-8'))
+                        h[index] = str(v.decode('utf-8'))
         pipeline.delete(self.key())
         if h:
             pipeline.hmset(self.key(), h)
 
         # lists
-        for k, v in self.lists.iteritems():
+        for k, v in self.lists.items():
             l = List(self.key()[k], pipeline=pipeline)
             l.clear()
             values = getattr(self, k)
@@ -541,7 +539,7 @@ def from_key(key):
     try:
         _, id = key.split(':', 2)
         id = int(id)
-    except ValueError, TypeError:
+    except ValueError as TypeError:
         raise BadKeyError
     return model.objects.get_by_id(id)
 

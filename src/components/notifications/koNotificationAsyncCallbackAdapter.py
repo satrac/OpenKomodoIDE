@@ -76,7 +76,7 @@ class KoNotificationAsyncCallbackAdapter(object):
 
     # koIAsyncCallback
     def callback(self, result, data):
-        log.debug("callback: %r, %r (%r)", result, data, self.next)
+        log.debug("callback: %r, %r (%r)", result, data, self.__next__)
         # the progress is completed
         if self.notification.maxProgress == Ci.koINotificationProgress.PROGRESS_INDETERMINATE:
             # we don't want indeterminate on complete
@@ -91,13 +91,13 @@ class KoNotificationAsyncCallbackAdapter(object):
             self.notification.details = ""
         elif len(self.notification.details) > 0 and not self.notification.details.endswith("\n"):
             self.notification.details += "\n"
-        if isinstance(data, (str, unicode)) and len(data) > 0:
+        if isinstance(data, str) and len(data) > 0:
             self.notification.details += data
         elif isinstance(data, Component):
             try:
                 data.QueryInterface(components.interfaces.nsIException)
                 self.notification.details += data.toString()
-            except COMException, e:
+            except COMException as e:
                 if e.number != nsError.NS_ERROR_NO_INTERFACE:
                     raise
 
@@ -107,34 +107,34 @@ class KoNotificationAsyncCallbackAdapter(object):
             for action in self.notification.getActions():
                 action.visible = False
                 self.notification.updateAction(action)
-        except COMException, e:
+        except COMException as e:
             if e.number != nsError.NS_ERROR_NO_INTERFACE:
                 raise
 
         self._nm.addNotification(self.notification)
         # chain to the other callback
-        if self.next is not None:
+        if self.__next__ is not None:
             try:
                 self.next.QueryInterface(components.interfaces.koIAsyncCallback)
                 self.next.callback(result, data)
-            except COMException, e:
+            except COMException as e:
                 if getattr(e, "number", None) != nsError.NS_ERROR_NO_INTERFACE:
                     raise
 
     # koIAsyncCallbackWithProgress
     def onProgress(self, label, value):
-        log.debug("onProgress: %r, %r (%r)", label, value, self.next)
+        log.debug("onProgress: %r, %r (%r)", label, value, self.__next__)
         # update the progress notification
         self.notification.maxProgress = 100
         self.notification.progress = value
         self.notification.description = label
         self._nm.addNotification(self.notification)
         # chain to the other callback
-        if self.next is not None:
+        if self.__next__ is not None:
             try:
                 self.next.QueryInterface(components.interfaces.koIAsyncCallbackWithProgress)
                 self.next.onProgress(label, value)
-            except COMException, e:
+            except COMException as e:
                 if e.number != nsError.NS_ERROR_NO_INTERFACE:
                     raise
 

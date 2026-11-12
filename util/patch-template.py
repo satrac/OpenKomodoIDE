@@ -42,14 +42,14 @@ while theRest:
         fin.close()
     templateMap[key] = value
 
-print "Creating '%s' from template file '%s'.\n" % (outFileName, inFileName)
+print("Creating '%s' from template file '%s'.\n" % (outFileName, inFileName))
 
 # process file
 fin = open(inFileName, "r")
 fout = open(outFileName, "w")
 
 for line in fin.readlines():
-    for pattern in templateMap.keys():
+    for pattern in list(templateMap.keys()):
         line = line.replace(pattern, templateMap[pattern])
     fout.write(line)
 

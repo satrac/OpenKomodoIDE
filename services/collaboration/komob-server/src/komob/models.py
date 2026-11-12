@@ -2,9 +2,9 @@ import datetime
 import logging
 import json
 import re
-import thread
+import _thread
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from uuid import uuid4
 
 from flask import abort, current_app, g
@@ -379,7 +379,7 @@ class Session(BaseModel):
 
         if not isinstance(privileges, dict):
             raise TypeError()
-        for user, level in privileges.iteritems():
+        for user, level in privileges.items():
             if not isinstance(user, User):
                 user = User.objects.filter(account_id=user).first()
             if user is None:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __author__ = "Gawen Arab"
 __copyright__ = "Copyright 2012, Gawen Arab"
@@ -10,10 +10,10 @@ __email__ = "g@wenarab.com"
 __status__ = "Production"
 
 # Snippet from http://code.activestate.com/recipes/146306/
-import httplib, mimetypes
-import urlparse
-import urllib
-import urllib2
+import http.client, mimetypes
+import urllib.parse
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import hashlib
 import json
 import time
@@ -35,7 +35,7 @@ class postfile:
         Return the server's response page.
         """
         content_type, body = postfile.encode_multipart_formdata(fields, files)
-        h = httplib.HTTPS(host)
+        h = http.client.HTTPS(host)
         h.putrequest('POST', selector)
         h.putheader('content-type', content_type)
         h.putheader('content-length', str(len(body)))
@@ -121,7 +121,7 @@ class VirusTotal(object):
         # - A filepath or URL
         # - A file object
 
-        if isinstance(anything, basestring):
+        if isinstance(anything, str):
             # Is MD5, SHA1, SHA256?
             if all(i in "1234567890abcdef" for i in anything.lower()) and len(anything) in [32, 40, 64]:
                 return ["resource", anything, filename]
@@ -130,12 +130,12 @@ class VirusTotal(object):
                 return ["resource", anything, filename]
 
             # Is URL ?
-            if urlparse.urlparse(anything).netloc:
-                fh = urllib2.urlopen(anything)
+            if urllib.parse.urlparse(anything).netloc:
+                fh = urllib.request.urlopen(anything)
 
             else:
                 # it's file
-                fh = file(anything, "rb")
+                fh = open(anything, "rb")
 
             with fh as f:
                 return cls._fileobj_to_fcontent(f)
@@ -144,7 +144,7 @@ class VirusTotal(object):
 
         content = anything.read()
 
-        if hasattr(anything, "name") and isinstance(anything.name, basestring):
+        if hasattr(anything, "name") and isinstance(anything.name, str):
             filename = anything.name
 
         return ["file", filename, content]
@@ -160,13 +160,13 @@ class VirusTotal(object):
                 o[2],
             )
 
-        data = urllib.urlencode({
+        data = urllib.parse.urlencode({
             "apikey": self.api_key,
             "resource": o[1],
         })
 
         self._limit_call_handler()
-        req = urllib2.urlopen(urllib2.Request(
+        req = urllib.request.urlopen(urllib.request.Request(
            "http://www.virustotal.com/vtapi/v2/file/report",
             data,
         )).read()
@@ -200,9 +200,9 @@ class VirusTotal(object):
         ret_json = postfile.post_multipart(
             host = "www.virustotal.com",
             selector = "https://www.virustotal.com/vtapi/v2/file/scan",
-            fields = {
+            fields = list({
                 "apikey": self.api_key,
-            }.items(),
+            }.items()),
             files = [
                 o,
             ],
@@ -217,7 +217,7 @@ class VirusTotal(object):
 
 class Report(object):
     def __new__(cls, r, parent):
-        if isinstance(r, basestring):
+        if isinstance(r, str):
             try:
                 r = json.loads(r)
 
@@ -272,7 +272,7 @@ class Report(object):
         return self.state == "ok"
 
     def __iter__(self):
-        for antivirus, report in self.scans.iteritems():
+        for antivirus, report in self.scans.items():
             yield (
                 (antivirus, report["version"], report["update"]),
                 report["result"],
@@ -292,7 +292,7 @@ def main():
     import sys
     import optparse
     import threading
-    import Queue
+    import queue
     import glob
 
     parser = optparse.OptionParser(usage = """%prog [-k API_KEY] (scan|get) RESOURCE ...
@@ -327,7 +327,7 @@ A resource can be:
     action = arguments.pop(0)
 
     if action.lower() not in ("scan", "get", ):
-        print "ERROR: unknown action"
+        print("ERROR: unknown action")
         return -1
 
     resources = []
@@ -337,22 +337,22 @@ A resource can be:
 
     v = VirusTotal(API_KEY, limit_per_min = int(options.limit_per_min))
 
-    q = Queue.Queue()
+    q = queue.Queue()
     def analyze(resource):
         try:
             if action.lower() == "scan":
                 report = v.scan(resource, reanalyze = True)
-                print "%s: Scan started: %s" % (resource, report, )
+                print("%s: Scan started: %s" % (resource, report, ))
                 report.join()
                 q.put((resource, report))
-                print "%s: Scan finished: %s" % (resource, report, )
+                print("%s: Scan finished: %s" % (resource, report, ))
 
             elif action.lower() == "get":
                 report = v.get(resource)
                 q.put((resource, report))
         
         except VirusTotal.ApiError:
-            print "VirusTotal returned a non correct response. It may be because the script does too many requests at the minute. See the parameter -l"
+            print("VirusTotal returned a non correct response. It may be because the script does too many requests at the minute. See the parameter -l")
 
     threads = []
     for resource in resources:
@@ -373,17 +373,17 @@ A resource can be:
     while not q.empty():
         resource, report = q.get()
         
-        print "=== %s ===" % (resource, )
+        print("=== %s ===" % (resource, ))
 
         if report is None:
-            print "No report is available."
+            print("No report is available.")
             return 0
 
-        print "Report:"
+        print("Report:")
         for antivirus, virus in report:
-            print "- %s (%s, %s):\t%s" % (antivirus[0], antivirus[1], antivirus[2], virus, )
+            print("- %s (%s, %s):\t%s" % (antivirus[0], antivirus[1], antivirus[2], virus, ))
 
-        print
+        print()
 
 if __name__ == "__main__":
     main()

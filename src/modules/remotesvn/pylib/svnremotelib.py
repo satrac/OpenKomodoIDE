@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     An OO interface to 'svn' (the Subversion client command line app).  Based on
@@ -106,7 +106,7 @@ def _getValidOpts(valid, **options):
     #print "getValidOpts: %r" % (valid, )
     #print options
     newopts = {}
-    for key, val in options.items():
+    for key, val in list(options.items()):
         if key in valid:
             newopts[key] = val
     return newopts
@@ -120,7 +120,7 @@ def _run(argv, cwd=None, env=None, input=None, remote=0):
     Note: 'argv' may also just be the command string.
     """
     try:
-        if type(argv) in (types.ListType, types.TupleType):
+        if type(argv) in (list, tuple):
             cmd = _joinArgv(argv)
         else:
             cmd = argv
@@ -136,11 +136,11 @@ def _run(argv, cwd=None, env=None, input=None, remote=0):
         env['LANGUAGE'] = 'en_US'
     
         if not remote:
-            print "\nNo remote information provided: %r\n" % (cmd, )
+            print("\nNo remote information provided: %r\n" % (cmd, ))
             return [''], [''], -1
     
         cmd = "cd %s && %s" % (cwd, cmd, )
-        if type(remote) == types.InstanceType:
+        if not isinstance(remote, str):
             # remote should be an instance of koISSHConnection
             log.debug("koISSH.runCommand: %r", cmd)
             retval, output, error = remote.runCommand(cmd, False)
@@ -172,7 +172,7 @@ def _run(argv, cwd=None, env=None, input=None, remote=0):
         #    raise SVNLibError("Error %s running '%s' in '%s': \n%s"\
         #                     % (retval,cmd, cwd,''.join(error), ))
         return output, error, retval
-    except Exception, e:
+    except Exception as e:
         log.exception(e)
         raise
 

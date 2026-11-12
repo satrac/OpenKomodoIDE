@@ -64,7 +64,6 @@ import types
 import tempfile
 import unittest
 from pprint import pprint
-import imp
 import optparse
 import logging
 import textwrap
@@ -238,13 +237,19 @@ def testmods_from_testdir(testdir):
         testmod_name = splitext(basename(testmod_path))[0]
         log.debug("import test module '%s'", testmod_path)
         try:
-            iinfo = imp.find_module(testmod_name, [dirname(testmod_path)])
             testabsdir = abspath(testdir)
             sys.path.insert(0, testabsdir)
             old_dir = os.getcwd()
             os.chdir(testdir)
             try:
-                testmod = imp.load_module(testmod_name, *iinfo)
+                import importlib.machinery, importlib.util
+                spec = importlib.machinery.PathFinder.find_spec(
+                    testmod_name, [dirname(testmod_path)])
+                if spec is None or spec.loader is None:
+                    raise ImportError("No module named %r in %r"
+                                      % (testmod_name, dirname(testmod_path)))
+                testmod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(testmod)
             finally:
                 os.chdir(old_dir)
                 sys.path.remove(testabsdir)
@@ -329,7 +334,7 @@ def tests_from_manifest(testdir_from_ns):
     be used to group all test cases from that module into an instance of that
     TestSuite subclass. This allows for overriding of test running behaviour.
     """
-    for ns, testdir in testdir_from_ns.items():
+    for ns, testdir in list(testdir_from_ns.items()):
         for testmod in testmods_from_testdir(testdir):
             if hasattr(testmod, "test_suite_class"):
                 testsuite_class = testmod.test_suite_class
@@ -449,13 +454,13 @@ def list_tests(testdir_from_ns, tags):
             testfile = t.testmod.__file__
             if testfile.endswith(".pyc"):
                 testfile = testfile[:-1]
-            print("%s:" % t.shortname())
-            print("  from: %s#%s.%s" % (testfile,
-                t.testcase.__class__.__name__, t.testfn_name))
+            print(("%s:" % t.shortname()))
+            print(("  from: %s#%s.%s" % (testfile,
+                t.testcase.__class__.__name__, t.testfn_name)))
             wrapped = textwrap.fill(' '.join(t.tags()), WIDTH-10)
-            print("  tags: %s" % _indent(wrapped, 8, True))
+            print(("  tags: %s" % _indent(wrapped, 8, True)))
             if t.doc():
-                print(_indent(t.doc(), width=2))
+                print((_indent(t.doc(), width=2)))
     else:
         for t in tests:
             line = t.shortname() + ' '

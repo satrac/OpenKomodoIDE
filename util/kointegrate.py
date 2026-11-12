@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2014 ActiveState Software Inc.
 
 """
@@ -18,7 +18,7 @@ __usage__ = """
 
 import applib
 import argparse
-import cStringIO
+import io
 import fnmatch
 import itertools
 import logging
@@ -28,10 +28,10 @@ import re
 import subprocess
 import sys
 import textwrap
-import urlparse
+import urllib.parse
 import xml.etree.cElementTree
 
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser
 from os.path import dirname, exists, expanduser, isdir, join, normpath
 
 #---- globals
@@ -81,8 +81,14 @@ class Branch(object):
     def __str__(self):
         return "%r branch at '%s' (%s)" % (self.name, self.base_dir, self.scc_type)
 
-    def __cmp__(self, other):
-        return cmp(self.name, other.name) or cmp(self.base_dir, other.base_dir)
+    def __eq__(self, other):
+        return (self.name, self.base_dir) == (other.name, other.base_dir)
+
+    def __lt__(self, other):
+        return (self.name, self.base_dir) < (other.name, other.base_dir)
+
+    def __hash__(self):
+        return hash((self.name, self.base_dir))
 
     def get_revision(self, revision):
         """Get a Revision from a revision identifier
@@ -195,7 +201,7 @@ class GitBranch(Branch):
     def get_missing_paths(self, paths):
         paths = set(paths)
         found_paths = self._capture_output("ls-files", "-z", "--",
-                                           *map(str, paths))
+                                           *list(map(str, paths)))
         for path in list(paths):
             if path.src in found_paths:
                 paths.discard(path)
@@ -250,10 +256,10 @@ class GitBranch(Branch):
             msg_file.write(message)
 
         # Apply the patch
-        paths = filter(self.filter_path, paths)
+        paths = list(filter(self.filter_path, paths))
         all_changed_paths = set(path.src for path in paths)
         all_changed_paths |= set(path.dest for path in paths)
-        all_changed_paths = filter(bool, all_changed_paths)
+        all_changed_paths = list(filter(bool, all_changed_paths))
         cmd = ["apply", "--binary", "--reject", "-"]
         proc = self._open(*cmd, stdin=subprocess.PIPE)
         proc.communicate(patch)
@@ -318,10 +324,10 @@ class GitBranch(Branch):
             message = ""
         if not message.strip():
             message = revision.integration_message
-        paths = filter(self.filter_path, paths)
+        paths = list(filter(self.filter_path, paths))
         all_changed_paths = set(path.src for path in paths)
         all_changed_paths |= set(path.dest for path in paths)
-        all_changed_paths = filter(bool, all_changed_paths)
+        all_changed_paths = list(filter(bool, all_changed_paths))
         cmd = ["commit", "--only",
                "--author", revision.author,
                "--date", revision.date,
@@ -405,7 +411,7 @@ class SVNBranch(Branch):
     @LazyProperty
     def desc(self):
         url = self._info.find("./entry/url").text.strip()
-        path = urlparse.urlparse(url).path
+        path = urllib.parse.urlparse(url).path
         bits = path.split('/')
         if bits[-1] == "trunk":
             branch_name = "trunk"
@@ -591,7 +597,7 @@ class SVNBranch(Branch):
 
         all_changed_paths = set(path.src for path in paths)
         all_changed_paths.update(path.dest for path in paths)
-        all_changed_paths = filter(bool, all_changed_paths)
+        all_changed_paths = list(filter(bool, all_changed_paths))
 
         out = self._capture_output("commit", "--message", message,
                                    *all_changed_paths,
@@ -608,11 +614,11 @@ class SVNBranch(Branch):
 
 #---- configuration/prefs handling
 
-class Configuration(SafeConfigParser):
+class Configuration(ConfigParser):
     branches = None
 
     def __init__(self):
-        SafeConfigParser.__init__(self)
+        ConfigParser.__init__(self)
         self._load()
 
     @LazyProperty
@@ -641,7 +647,7 @@ class Configuration(SafeConfigParser):
         except KeyError:
             branches = ('    "%s" (%s) at %s' %
                             (branch.name, branch.scc_type, branch.base_dir)
-                        for branch in self.branches.values())
+                        for branch in list(self.branches.values()))
             msg = ('\n    "%s" is an unknown active Komodo branch name\n'
                    'known branches are:\n%s'
                    % (branch_name, '\n'.join(branches)))
@@ -649,7 +655,7 @@ class Configuration(SafeConfigParser):
         return branch
 
     def get_revision(self, revision):
-        for branch in self.branches.values():
+        for branch in list(self.branches.values()):
             cwd = os.path.normcase(os.getcwd() + os.sep)
             branch_base_dir = os.path.normcase(branch.base_dir + os.sep)
             if not cwd.startswith(branch_base_dir):
@@ -673,7 +679,7 @@ class HelpIniAction(argparse.Action):
     def __init__(self, *args, **kwargs):
         super(HelpIniAction, self).__init__(*args, nargs=0, **kwargs)
     def __call__(self, parser, namespace, values, option_string=None):
-        print textwrap.dedent("""
+        print(textwrap.dedent("""
             Configuring %s
             --------------------------
 
@@ -692,7 +698,7 @@ class HelpIniAction(argparse.Action):
                 openkomodo = /home/me/play/openkomodo
                 devel      = /home/me/wrk/Komodo-devel
                 4.3.x      = /home/me/wrk/Komodo-4.3.x
-        """ % (parser.prog, cfg.cfg_path))
+        """ % (parser.prog, cfg.cfg_path)))
         sys.exit(0)
 
 class ChangedPath(object):
@@ -1123,7 +1129,7 @@ class SVNRevision(Revision):
 
     @property
     def paths(self):
-        return self._paths.values()
+        return list(self._paths.values())
 
     @LazyProperty
     def description(self):
@@ -1237,8 +1243,7 @@ def main(argv=None):
 
     paths = set(args.revision.paths)
     for path in list(paths):
-        matching_excludes = filter(lambda e: fnmatch.fnmatch(path.src, e),
-                                   args.excludes)
+        matching_excludes = [e for e in args.excludes if fnmatch.fnmatch(path.src, e)]
         if matching_excludes:
             log.info("skipping `%s' (matches excludes: '%s')",
                      path.src, "', '".join(matching_excludes))
@@ -1252,7 +1257,7 @@ def main(argv=None):
         log.info("      to: %s", args.branches[0])
     else:
         prefixes = itertools.chain(["to:"], itertools.repeat("   "))
-        for i, (prefix, branch) in enumerate(itertools.izip(prefixes, sorted(args.branches)), 1):
+        for i, (prefix, branch) in enumerate(zip(prefixes, sorted(args.branches)), 1):
             log.info("      %s %d. %s", prefix, i, branch)
     path_names = sorted(map(str, paths))
     if len(paths) > 7:
@@ -1362,7 +1367,7 @@ def _escaped_text_from_text(text, escapes="eol"):
     # - Add _escaped_html_from_text() with a similar call sig.
     import re
 
-    if isinstance(escapes, basestring):
+    if isinstance(escapes, str):
         if escapes == "eol":
             escapes = {'\r\n': "\\r\\n\r\n", '\n': "\\n\n", '\r': "\\r\r"}
         elif escapes == "whitespace":
@@ -1377,7 +1382,7 @@ def _escaped_text_from_text(text, escapes="eol"):
 
     # Sort longer replacements first to allow, e.g. '\r\n' to beat '\r' and
     # '\n'.
-    escapes_keys = escapes.keys()
+    escapes_keys = list(escapes.keys())
     escapes_keys.sort(key=lambda a: len(a), reverse=True)
     def repl(match):
         val = escapes[match.group(0)]
@@ -1433,10 +1438,10 @@ def _query_yes_no(question, default="yes"):
 
     while 1:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return default
-        elif choice in valid.keys():
+        elif choice in list(valid.keys()):
             return valid[choice]
         else:
             sys.stdout.write("Please repond with 'yes' or 'no' "\

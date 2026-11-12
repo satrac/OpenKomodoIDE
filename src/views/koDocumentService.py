@@ -111,7 +111,7 @@ class KoDocumentService:
         try:
             docs = []
             # clear out all of the objects w/ no references to them
-            for displayPath, wrappedDocRef in self._documents.items():
+            for displayPath, wrappedDocRef in list(self._documents.items()):
                 try:
                     wrappedDoc = wrappedDocRef()
                 except COMException:
@@ -160,7 +160,7 @@ class KoDocumentService:
                 
                 # XXX projects and other files?
                 
-            except Exception, e:
+            except Exception as e:
                 # never die
                 log.exception(e)
                 pass
@@ -221,7 +221,7 @@ class KoDocumentService:
                                                    'Default Encoding')
             if encoding == 'Default Encoding':
                 encoding = self._globalPrefs.getString('encodingDefault')
-        except Exception, e:
+        except Exception as e:
             log.error("Error getting newEncoding for %s", language, exc_info=1)
             encoding = self._globalPrefs.getString('encodingDefault')
         return encoding
@@ -319,7 +319,7 @@ class KoDocumentService:
         try:
             strong = []
             # clear out all of the objects w/ no references to them
-            for displayPath, wrappedDocRef in self._documents.items():
+            for displayPath, wrappedDocRef in list(self._documents.items()):
                 try:
                     wrappedDoc = wrappedDocRef()
                 except COMException:
@@ -343,7 +343,7 @@ class KoDocumentService:
         uri = p.URI = uri # cleanup uri
         self._cDoc.acquire()
         try:
-            for displayPath, wrappedDocRef in self._documents.items():
+            for displayPath, wrappedDocRef in list(self._documents.items()):
                 try:
                     wrappedDoc = wrappedDocRef()
                 except COMException:
@@ -417,7 +417,7 @@ class KoDocumentService:
             #re.compile('in <b>(?P<fname>.*)</b> on line <b>(?P<lineno>\d+)</b>'),
 
             # SCE_ERR_PYTHON
-            re.compile('^  File "(?P<fname>.*?)", line (?P<lineno>\d+)'),
+            re.compile(r'^  File "(?P<fname>.*?)", line (?P<lineno>\d+)'),
 
             # SCE_ERR_GCC
             # <filename>:<line>:message
@@ -428,18 +428,18 @@ class KoDocumentService:
 
             # SCE_ERR_MS
             # <filename>(line) :message
-            re.compile('^(?P<fname>.*?):\((?P<lineno>\d+)\) :'),
+            re.compile(r'^(?P<fname>.*?):\((?P<lineno>\d+)\) :'),
             # <filename>(line,pos)message
-            re.compile('^(?P<fname>.*?):\((?P<lineno>\d+),\d+\)'),
+            re.compile(r'^(?P<fname>.*?):\((?P<lineno>\d+),\d+\)'),
 
             # SCE_ERR_ELF: Essential Lahey Fortran error message
-            re.compile('^Line (?P<lineno>\d+?), file (?P<fname>.*?)'),
+            re.compile(r'^Line (?P<lineno>\d+?), file (?P<fname>.*?)'),
 
             # SCE_ERR_NET: a .NET traceback
-            re.compile('   at (?P<fname>.*?):line (?P<lineno>\d+)'),
+            re.compile(r'   at (?P<fname>.*?):line (?P<lineno>\d+)'),
 
             # SCE_ERR_LUA
-            re.compile('at line (?P<lineno>\d+) file (?P<fname>.*?)'),
+            re.compile(r'at line (?P<lineno>\d+) file (?P<fname>.*?)'),
 
             # Perl testing error message patterns
             re.compile(r'^#\s+Test\s+\d+\s+got:.*?\((?P<fname>[^\"\'\[\]\(\)\#]+?)\s+at\s+line\s+(?P<lineno>\d+)\)'),

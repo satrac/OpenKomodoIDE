@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Prototype of Komodo startup using Firefox/XRE framework.
 #
@@ -31,7 +31,7 @@ if sys.platform.startswith("win"):
 else:
     import fcntl
 import logging
-from Tkinter import *
+from tkinter import *
 import threading
 import time
 
@@ -95,7 +95,7 @@ def wantToBeTheMan():
         fd = os.open(gRunningName, os.O_WRONLY|os.O_CREAT)
         try:
             fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except IOError, ex:
+        except IOError as ex:
             os.close(fd)
             # Darwin:
             #   IOError: [Errno 35] Resource temporarily unavailable
@@ -183,7 +183,7 @@ class KomodoXul(Frame):
     prototype.
     """
     def say_hi(self):
-        print "hi there, everyone!"
+        print("hi there, everyone!")
     def createWidgets(self):
         self.QUIT = Button(self)
         self.QUIT["text"] = "QUIT"

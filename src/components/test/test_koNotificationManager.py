@@ -62,10 +62,10 @@ class NotificationManagerTestCase(unittest.TestCase):
         """
         called = set() # used as a boolean, but in scope of the listener
         def listener(aNotification, aOldIndex, aNewIndex, aReason):
-            self.assertEquals(aNotification, notification)
-            self.assertEquals(aOldIndex, old_index)
-            self.assertEquals(aNewIndex, new_index)
-            self.assertEquals(aReason, reason)
+            self.assertEqual(aNotification, notification)
+            self.assertEqual(aOldIndex, old_index)
+            self.assertEqual(aNewIndex, new_index)
+            self.assertEqual(aReason, reason)
             called.add(True)
         self.nm.addListener(listener)
         try:
@@ -84,66 +84,66 @@ class NotificationManagerTestCase(unittest.TestCase):
             # manually print out a stack of sorts so it can be debugged
             import inspect
             for frame in inspect.stack():
-                print '  File "%s", line %r, in %s' % (frame[1], frame[2], frame[3])
+                print('  File "%s", line %r, in %s' % (frame[1], frame[2], frame[3]))
             raise
         finally:
             self.nm.removeListener(listener)
 
     def test_01_getService(self):
         """Make sure we can get the notification manager"""
-        self.assertNotEquals(self.nm, None)
+        self.assertNotEqual(self.nm, None)
 
     def test_02_empty(self):
         """Make sure the notification manager is initially empty"""
-        self.assertEquals(self.nm.notificationCount, 0)
-        self.assertEquals(self.nm.getAllNotifications(), [])
+        self.assertEqual(self.nm.notificationCount, 0)
+        self.assertEqual(self.nm.getAllNotifications(), [])
 
     def test_03_add(self):
         """Test adding, removing, and enumerating notifications"""
         # create two notifications, but don't add them
         notif = self.nm.createNotification("test-add-1", ["some", "tag"])
         notif2 = self.nm.createNotification("test-add-2", ["some", "tag"])
-        self.assertNotEquals(notif, None)
+        self.assertNotEqual(notif, None)
         self.assertFalse(self.nm.hasNotification(notif))
-        self.assertNotEquals(notif2, None)
+        self.assertNotEqual(notif2, None)
         self.assertFalse(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.getAllNotifications(), [])
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.getAllNotifications(), [])
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # add the first one
         self.nm.addNotification(notif)
-        self.assertEquals(self.nm.getAllNotifications(), [notif])
+        self.assertEqual(self.nm.getAllNotifications(), [notif])
         self.assertTrue(self.nm.hasNotification(notif))
         self.assertFalse(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # add the first one again (no change)
         self.nm.addNotification(notif)
-        self.assertEquals(self.nm.getAllNotifications(), [notif])
+        self.assertEqual(self.nm.getAllNotifications(), [notif])
         self.assertTrue(self.nm.hasNotification(notif))
         self.assertFalse(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # add the second one
         self.nm.addNotification(notif2)
-        self.assertEquals(self.nm.getAllNotifications(), [notif, notif2])
+        self.assertEqual(self.nm.getAllNotifications(), [notif, notif2])
         self.assertTrue(self.nm.hasNotification(notif))
         self.assertTrue(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # remove the first one
         self.assertTrue(self.nm.removeNotification(notif))
         self.assertFalse(self.nm.hasNotification(notif))
         self.assertTrue(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.getAllNotifications(), [notif2])
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.getAllNotifications(), [notif2])
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # remove the second one, now empty
         self.assertTrue(self.nm.removeNotification(notif2))
         self.assertFalse(self.nm.hasNotification(notif))
         self.assertFalse(self.nm.hasNotification(notif2))
-        self.assertEquals(self.nm.getAllNotifications(), [])
-        self.assertEquals(self.nm.notificationCount, len(self.nm.getAllNotifications()))
+        self.assertEqual(self.nm.getAllNotifications(), [])
+        self.assertEqual(self.nm.notificationCount, len(self.nm.getAllNotifications()))
 
         # remove notifications that aren't there
         self.assertFalse(self.nm.removeNotification(notif))
@@ -152,19 +152,19 @@ class NotificationManagerTestCase(unittest.TestCase):
     def test_04_add_repeat(self):
         """Check that creating a new notification with the same identifier/context
         returns the previous notification"""
-        self.assertEquals(self.nm.getAllNotifications(), [])
+        self.assertEqual(self.nm.getAllNotifications(), [])
         try:
             notif1 = self.nm.createNotification("test-notif-repeat", ["some", "tag"])
             with self.check_called(notif1, reason=Ci.koINotificationListener.REASON_ADDED, new_index=0):
                 self.nm.addNotification(notif1)
             notif2 = self.nm.createNotification("test-notif-repeat", ["some", "tag"])
-            self.assertEquals(notif1, notif2) # same identifier + context
+            self.assertEqual(notif1, notif2) # same identifier + context
             notif3 = self.nm.createNotification("test-notif-repeat", ["some", "tag"],
                                                 str(time.time()))
-            self.assertNotEquals(notif1, notif3) # different context
+            self.assertNotEqual(notif1, notif3) # different context
         finally:
             self.nm.removeNotification(notif1)
-            self.assertEquals(self.nm.getAllNotifications(), [])
+            self.assertEqual(self.nm.getAllNotifications(), [])
  
     def test_05_notification_interfaces(self):
         """Check that creating notifications returns instances with the expected
@@ -179,10 +179,10 @@ class NotificationManagerTestCase(unittest.TestCase):
         }
         for flags in range(8):
             n = self.nm.createNotification("", [], None, flags)
-            self.assertEquals(n.QueryInterface(Ci.koINotification), n)
-            for flag in iface_map.keys():
+            self.assertEqual(n.QueryInterface(Ci.koINotification), n)
+            for flag in list(iface_map.keys()):
                 if flags & flag:
-                    self.assertEquals(n.QueryInterface(iface_map[flag]), n)
+                    self.assertEqual(n.QueryInterface(iface_map[flag]), n)
                 else:
                     self.assertRaises(COMException,
                                       n.QueryInterface, iface_map[flag])
@@ -216,46 +216,46 @@ class NotificationManagerTestCase(unittest.TestCase):
 
     def test_07_notification_basic(self):
         """Check that the basic notification interface (koINotification) works"""
-        self.assertEquals(self.nm.notificationCount, 0)
+        self.assertEqual(self.nm.notificationCount, 0)
         notif = self.nm.createNotification("notif-basic", ["tags"])
-        self.assertEquals(0, notif.time) # not fired
+        self.assertEqual(0, notif.time) # not fired
         self.nm.addNotification(notif)
         try:
-            self.assertAlmostEquals(time.time(), float(notif.time) / 10**6, 0)
-            self.assertEquals(notif.getTags(), ["tags"])
-            self.assertEquals(notif.identifier, "notif-basic")
+            self.assertAlmostEqual(time.time(), float(notif.time) / 10**6, 0)
+            self.assertEqual(notif.getTags(), ["tags"])
+            self.assertEqual(notif.identifier, "notif-basic")
             for attr in ("summary", "iconURL", "description"):
                 with self.check_called(notif, will_call=False):
                     setattr(notif, attr, attr * 2)
                 with self.check_called(notif, will_call=False):
                     setattr(notif, attr, attr * 2)
-                    self.assertEquals(getattr(notif, attr), attr * 2)
+                    self.assertEqual(getattr(notif, attr), attr * 2)
             with self.check_called(notif, will_call=False):
                 notif.severity = 1
-            self.assertEquals(notif.severity, 1)
+            self.assertEqual(notif.severity, 1)
 
             context = str(time.time())
             notif2 = self.nm.createNotification("notif-basic", [], context)
-            self.assertNotEquals(notif, notif2) # different context
-            self.assertEquals(notif2.contxt, context)
+            self.assertNotEqual(notif, notif2) # different context
+            self.assertEqual(notif2.contxt, context)
             with self.check_called(notif2, new_index=1,
                                    reason=Ci.koINotificationListener.REASON_ADDED):
                 self.nm.addNotification(notif2)
 
             notif3 = self.nm.createNotification("notif-basic", [], context)
-            self.assertEquals(notif2, notif3) # same context
+            self.assertEqual(notif2, notif3) # same context
             
-            self.assertEquals(self.nm.getAllNotifications(), [notif, notif2])
+            self.assertEqual(self.nm.getAllNotifications(), [notif, notif2])
         finally:
             for notif in self.nm.getAllNotifications():
                 self.nm.removeNotification(notif)
-            self.assertEquals(self.nm.notificationCount, 0)
+            self.assertEqual(self.nm.notificationCount, 0)
 
     # No longer run, as notifications no longer notify listeners when they have
     # been modified.
     #def test_08_notification_progress(self):
     #    """Check koINotificationProgress"""
-    #    self.assertEquals(self.nm.notificationCount, 0)
+    #    self.assertEqual(self.nm.notificationCount, 0)
     #    notif = self.nm.createNotification("notif-progress", ["tags"], None,
     #                                       koINotificationManager.TYPE_PROGRESS)
     #    notif.QueryInterface(Ci.koINotificationProgress)
@@ -268,27 +268,27 @@ class NotificationManagerTestCase(unittest.TestCase):
     #                                "PROGRESS_INDETERMINATE"))
     #        with self.check_called(notif, True, old_index=0, new_index=0):
     #            notif.maxProgress = 5
-    #        self.assertAlmostEquals(notif.maxProgress, 5)
+    #        self.assertAlmostEqual(notif.maxProgress, 5)
     #        with self.check_called(notif, False):
     #            notif.progress = 0
-    #        self.assertAlmostEquals(notif.progress, 0)
+    #        self.assertAlmostEqual(notif.progress, 0)
     #        with self.check_called(notif, True, old_index=0, new_index=0):
     #            notif.progress = 5
-    #        self.assertAlmostEquals(notif.progress, 5)
+    #        self.assertAlmostEqual(notif.progress, 5)
     #        with self.check_called(notif, False):
     #            notif.progress = 5
     #        self.assertRaises(COMException,
     #                          setattr, notif, "progress", 10) # > maxProgress
-    #        self.assertAlmostEquals(notif.progress, 5)
+    #        self.assertAlmostEqual(notif.progress, 5)
     #        with self.check_called(notif, True, old_index=0, new_index=0):
     #            notif.maxProgress = 10
-    #        self.assertAlmostEquals(notif.maxProgress, 10)
+    #        self.assertAlmostEqual(notif.maxProgress, 10)
     #        with self.check_called(notif, True, old_index=0, new_index=0):
     #            notif.progress = 10
-    #        self.assertAlmostEquals(notif.progress, 10)
+    #        self.assertAlmostEqual(notif.progress, 10)
     #    finally:
     #        self.nm.removeNotification(notif)
-    #        self.assertEquals(self.nm.notificationCount, 0)
+    #        self.assertEqual(self.nm.notificationCount, 0)
 
     def test_09_notification_actionable(self):
         """Check koINotificationActionable"""
@@ -299,14 +299,14 @@ class NotificationManagerTestCase(unittest.TestCase):
                 action.identifier = identifier
             return action
 
-        self.assertEquals(self.nm.notificationCount, 0)
+        self.assertEqual(self.nm.notificationCount, 0)
         notif = self.nm.createNotification("notif-action", ["more", "tags"], None,
                                            koINotificationManager.TYPE_ACTIONABLE)
         notif.QueryInterface(Ci.koINotificationActionable)
         self.nm.addNotification(notif)
 
         try:
-            self.assertEquals(notif.getActions(), [])
+            self.assertEqual(notif.getActions(), [])
             action0 = Action()
 
             # check that we can't insert an uninitialized action
@@ -320,34 +320,34 @@ class NotificationManagerTestCase(unittest.TestCase):
             # add an action normally
             with self.check_called(notif, old_index=0, new_index=0):
                 notif.updateAction(action0)
-            self.assertEquals(notif.getActions(), [action0])
+            self.assertEqual(notif.getActions(), [action0])
             # re-insert (i.e. update) an action
             with self.check_called(notif, old_index=0, new_index=0):
                 notif.updateAction(action0)
-            self.assertEquals(notif.getActions(), [action0])
+            self.assertEqual(notif.getActions(), [action0])
 
             action1 = Action("action 1")
             # append an action
             with self.check_called(notif, old_index=0, new_index=0):
                 notif.updateAction(action1)
-            self.assertEquals(notif.getActions(), [action0, action1])
+            self.assertEqual(notif.getActions(), [action0, action1])
             # update the action
             with self.check_called(notif, old_index=0, new_index=0):
                 notif.updateAction(action1)
-            self.assertEquals(notif.getActions(), [action0, action1])
+            self.assertEqual(notif.getActions(), [action0, action1])
             # make sure updating the first action doesn't change order
             with self.check_called(notif, old_index=0, new_index=0):
                 notif.updateAction(action0)
-            self.assertEquals(notif.getActions(), [action0, action1])
+            self.assertEqual(notif.getActions(), [action0, action1])
 
         finally:
             self.nm.removeNotification(notif)
-            self.assertEquals(self.nm.notificationCount, 0)
+            self.assertEqual(self.nm.notificationCount, 0)
 
     def test_10_get_filtered(self):
         """Test getting notifications by contexts and identifiers"""
-        self.assertEquals(self.nm.notificationCount, 0)
-        all_contexts = [None] + map(str, range(1, 6))
+        self.assertEqual(self.nm.notificationCount, 0)
+        all_contexts = [None] + list(map(str, list(range(1, 6))))
         all_notifications = []
         try:
             for i in range(10 * len(all_contexts)):
@@ -361,10 +361,10 @@ class NotificationManagerTestCase(unittest.TestCase):
                     self.assertTrue(notification.contxt in contexts)
                     context = contexts[contexts.index(notification.contxt)]
                     if context is None:
-                        self.assertEquals(int(notification.identifier) % len(all_contexts), 0)
+                        self.assertEqual(int(notification.identifier) % len(all_contexts), 0)
                     else:
-                        self.assertEquals(int(notification.identifier) % len(all_contexts), int(context))
-                self.assertEquals(len(notifications), 10 * len(contexts))
+                        self.assertEqual(int(notification.identifier) % len(all_contexts), int(context))
+                self.assertEqual(len(notifications), 10 * len(contexts))
 
             for length in range(1, len(all_contexts) + 1):
                 for contexts in itertools.combinations(all_contexts, length):
@@ -374,29 +374,29 @@ class NotificationManagerTestCase(unittest.TestCase):
             notifications = self.nm.getNotifications([])
             for notification in notifications:
                 self.assertTrue(notification in all_notifications)
-            self.assertEquals(len(notifications), len(all_notifications))
+            self.assertEqual(len(notifications), len(all_notifications))
 
             for i in range(len(all_notifications)):
                 # getting by identifier should return the desired notification
-                self.assertEquals([all_notifications[i]],
+                self.assertEqual([all_notifications[i]],
                                   self.nm.getNotifications([], str(i)))
                 # get by identifier, with matching context
                 context = all_contexts[i % len(all_contexts)]
-                self.assertEquals([all_notifications[i]],
+                self.assertEqual([all_notifications[i]],
                                   self.nm.getNotifications([context], str(i)))
                 # get by identifier, with mismatched context
                 context = all_contexts[(i + 1) % len(all_contexts)]
-                self.assertEquals([],
+                self.assertEqual([],
                                   self.nm.getNotifications([context], str(i)))
 
         finally:
             for notification in all_notifications:
                 self.nm.removeNotification(notification)
-            self.assertEquals(self.nm.notificationCount, 0)
+            self.assertEqual(self.nm.notificationCount, 0)
 
     def test_11_python_interface(self):
         """Test the more Python API"""
-        self.assertEquals(self.nm.notificationCount, 0)
+        self.assertEqual(self.nm.notificationCount, 0)
         nm = UnwrapObject(self.nm)
         kwargs = { "iconURL": "icon URL",
                    "severity": Ci.koINotification.SEVERITY_WARNING,
@@ -406,28 +406,28 @@ class NotificationManagerTestCase(unittest.TestCase):
                    "progress": 5 }
         notif = nm.add("summary", ["tags"], "notif-ident", **kwargs)
         try:
-            self.assertEquals(notif, self._wrap(notif)) # should already be wrapped
+            self.assertEqual(notif, self._wrap(notif)) # should already be wrapped
             notif.QueryInterface(Ci.koINotification) # should implement this
             notif.QueryInterface(Ci.koINotificationProgress) # due to maxProgress
             notif.QueryInterface(Ci.koINotificationText) # due to details
-            self.assertEquals(notif.summary, "summary")
-            self.assertEquals(notif.getTags(), ["tags"])
-            self.assertEquals(notif.identifier, "notif-ident")
-            self.assertEquals(self.nm.notificationCount, 1) # added one notification
+            self.assertEqual(notif.summary, "summary")
+            self.assertEqual(notif.getTags(), ["tags"])
+            self.assertEqual(notif.identifier, "notif-ident")
+            self.assertEqual(self.nm.notificationCount, 1) # added one notification
 
             notif2 = nm.add("modified-summary", [], "notif-ident")
-            self.assertEquals(notif, notif2) # no context, same identifier
-            self.assertEquals(notif.summary, "modified-summary") # got the new one
-            self.assertEquals(notif.getTags(), ["tags"]) # kept the old one
+            self.assertEqual(notif, notif2) # no context, same identifier
+            self.assertEqual(notif.summary, "modified-summary") # got the new one
+            self.assertEqual(notif.getTags(), ["tags"]) # kept the old one
 
-            for k, v in kwargs.items():
-                self.assertEquals(getattr(notif, k), v)
+            for k, v in list(kwargs.items()):
+                self.assertEqual(getattr(notif, k), v)
             updates = { "summary": "new summary",
                         "details": "new details",
                         "progress": 2 }
             nm.update(notif, **updates)
-            for k, v in updates.items():
-                self.assertEquals(getattr(notif, k), v)
+            for k, v in list(updates.items()):
+                self.assertEqual(getattr(notif, k), v)
             self.assertRaises(COMException,
                               nm.update, notif, progress=20)
 
@@ -435,10 +435,10 @@ class NotificationManagerTestCase(unittest.TestCase):
             # No longer tested as notification changes do not notify listeners.
             #called = set()
             #def listener(aNotification, aOldIndex, aNewIndex, aReason):
-            #    self.assertEquals(aNotification, notif)
-            #    self.assertEquals(aOldIndex, 0)
-            #    self.assertEquals(aNewIndex, 0)
-            #    self.assertEquals(aReason, Ci.koINotificationListener.REASON_UPDATED)
+            #    self.assertEqual(aNotification, notif)
+            #    self.assertEqual(aOldIndex, 0)
+            #    self.assertEqual(aNewIndex, 0)
+            #    self.assertEqual(aReason, Ci.koINotificationListener.REASON_UPDATED)
             #    called.add(True)
             #nm.addListener(listener)
             #notif.progress = 9
@@ -451,20 +451,20 @@ class NotificationManagerTestCase(unittest.TestCase):
             #self.assertFalse(called, "did not expect listener to be called because it was removed")
 
             # test python iterable
-            self.assertEquals(len(nm), 1)
-            self.assertEquals(nm[0], notif)
-            self.assertEquals([x for x in nm], [notif])
+            self.assertEqual(len(nm), 1)
+            self.assertEqual(nm[0], notif)
+            self.assertEqual([x for x in nm], [notif])
             self.assertTrue(notif in nm)
-            self.assertEquals(nm.count(notif), 1)
-            self.assertEquals(nm.index(notif), 0)
+            self.assertEqual(nm.count(notif), 1)
+            self.assertEqual(nm.index(notif), 0)
 
         finally:
             nm.remove(notif)
-            self.assertEquals(self.nm.notificationCount, 0)
+            self.assertEqual(self.nm.notificationCount, 0)
 
     def test_12_python_actions(self):
         """Test Python API with actions"""
-        self.assertEquals(self.nm.notificationCount, 0)
+        self.assertEqual(self.nm.notificationCount, 0)
         nm = UnwrapObject(self.nm)
         a0_data = { "identifier": "action0",
                     "label": "action0-label",
@@ -473,29 +473,29 @@ class NotificationManagerTestCase(unittest.TestCase):
                     "visible": True,
                     "enabled": True }
         notif = nm.add("summary", ["tags"], "notif-action-py", actions=[a0_data])
-        self.assertEquals(notif, self._wrap(notif)) # should already be wrapped
+        self.assertEqual(notif, self._wrap(notif)) # should already be wrapped
         notif.QueryInterface(Ci.koINotification) # should implement this
         notif.QueryInterface(Ci.koINotificationActionable) # due to actions=
-        self.assertEquals(self.nm.notificationCount, 1) # added one notification
+        self.assertEqual(self.nm.notificationCount, 1) # added one notification
         try:
-            self.assertEquals(len(notif.getActions()), 1)
-            self.assertEquals(len(notif.getActions("bad-id")), 0)
-            self.assertEquals(len(notif.getActions("action0")), 1)
+            self.assertEqual(len(notif.getActions()), 1)
+            self.assertEqual(len(notif.getActions("bad-id")), 0)
+            self.assertEqual(len(notif.getActions("action0")), 1)
             action = notif.getActions()[0]
-            self.assertEquals(action, self._wrap(action))
-            for k, v in a0_data.items():
-                self.assertEquals(getattr(action, k), v)
+            self.assertEqual(action, self._wrap(action))
+            for k, v in list(a0_data.items()):
+                self.assertEqual(getattr(action, k), v)
             for k in ("label", "accessKey", "iconURL"):
                 with self.check_called(notif, will_call=False):
                     # changing the action won't force an update
-                    self.assertNotEquals(getattr(action, k), k)
+                    self.assertNotEqual(getattr(action, k), k)
                     setattr(action, k, k)
-                    self.assertEquals(getattr(action, k), k)
+                    self.assertEqual(getattr(action, k), k)
             with self.check_called(notif, old_index=0, new_index=0):
                 # calling the right update API, however, will fire listeners
                 nm.update(notif, actions=[{ "identifier": "action0",
                                             "label": "new label"}])
-                self.assertEquals(action.label, "new label")
+                self.assertEqual(action.label, "new label")
             self.assertRaises(COMException,
                               nm.update, notif, actions=[{"label": "foo"}])
             self.assertRaises(COMException,
@@ -504,4 +504,4 @@ class NotificationManagerTestCase(unittest.TestCase):
 
         finally:
             nm.remove(notif)
-            self.assertEquals(self.nm.notificationCount, 0)
+            self.assertEqual(self.nm.notificationCount, 0)

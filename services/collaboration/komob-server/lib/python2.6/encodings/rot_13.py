@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Python Character Mapping Codec for ROT13.
 
     See http://ucsub.colorado.edu/~kominek/rot13/ for details.
@@ -48,7 +48,7 @@ def getregentry():
 
 ### Decoding Map
 
-decoding_map = codecs.make_identity_dict(range(256))
+decoding_map = codecs.make_identity_dict(list(range(256)))
 decoding_map.update({
    0x0041: 0x004e,
    0x0042: 0x004f,

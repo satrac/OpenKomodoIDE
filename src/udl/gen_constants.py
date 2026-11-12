@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 
 """Update ludditelib/constants.py from the current LexUDL.cxx and
@@ -45,7 +45,7 @@ def get_constants():
             if mo1:
                 resConstants[mo1.group(1)] = int(mo1.group(2))
     fh.close()
-    if len(resConstants.keys()) == 0:
+    if len(list(resConstants.keys())) == 0:
         sys.stderr.write("Couldn't find any defines in file "
                          + LEXUDL_CXX_PATH + "\n")
         sys.exit(1)
@@ -59,7 +59,7 @@ def get_constants():
         if mo1:
             resConstants[mo1.group(1)] = int(mo1.group(2))
     fh.close()
-    if len(resConstants.keys()) == 0:
+    if len(list(resConstants.keys())) == 0:
         sys.stderr.write("Couldn't find any defines in file "
                          + SCINTILLA_IFACE_PATH + "\n")
         sys.exit(1)
@@ -68,11 +68,11 @@ def get_constants():
 
 def gen_constants():
     resConstants = get_constants()
-    print "# Generated on ", datetime.datetime.now().ctime()
-    print "#"
-    print "# List of constants used by luddite"
-    print
-    print "vals = ",
+    print("# Generated on ", datetime.datetime.now().ctime())
+    print("#")
+    print("# List of constants used by luddite")
+    print()
+    print("vals = ", end=' ')
     pprint.PrettyPrinter(indent=4).pprint(resConstants)
 
 if __name__ == "__main__":

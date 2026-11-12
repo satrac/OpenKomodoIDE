@@ -30,8 +30,8 @@ class koSwiftLanguage(KoLanguageBase, KoLanguageBaseDedentMixin):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _indenting_statements = [u'case']
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue', u'fallthrough']
+    _indenting_statements = ['case']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue', 'fallthrough']
     
     namedBlockDescription = 'Swift functions, classes, and structs'
     namedBlockRE = r'(func|class|struct|override)\s*([\w|\_]*?)'

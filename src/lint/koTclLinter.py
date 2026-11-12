@@ -195,7 +195,7 @@ class KoTclCompileLinter:
                 # Unable to determine the version - that's okay
                 pass
             else:
-                print('version: %r' % (version, ))
+                print(('version: %r' % (version, )))
                 major_dot_minor = ".".join(version.split(".")[:2])
                 linterArgv.extend(['-use', 'Tcl'+major_dot_minor])
 
@@ -239,7 +239,7 @@ class KoTclCompileLinter:
             # This variable is only used when initializing the
             # auto_path variable.  Also escape spaces in paths.
             tclExtraPaths = tclExtraPaths.replace('\\', '/')
-            tclExtraPaths = tclExtraPaths.replace(' ', '\ ')
+            tclExtraPaths = tclExtraPaths.replace(' ', r'\ ')
             TCLLIBPATH = ' '.join(tclExtraPaths.split(os.pathsep))
             env["TCLLIBPATH"] = TCLLIBPATH
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -571,7 +571,7 @@ class _HierarchyNode(object):
 #---- PyXPCOM implementations
 
 import threading
-from Queue import Queue
+from queue import Queue
 
 class koDatabaseExplorerTreeView(koTreeView.TreeView):
     _com_interfaces_ = [components.interfaces.koIDatabaseExplorerTreeView,
@@ -675,7 +675,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             getService(components.interfaces.koIPrefService).prefs.getPref(KO_DBEXPLORER_PREF_NAME)
         try:
             prefObj = prefs.getPref('currentDatabaseConnections').getPref(connectionURI)
-        except Exception, ex:
+        except Exception as ex:
             log.exception("addConnection: no pref found")
             return
         #XXX See _updateDBConnList for handling duplicates
@@ -691,7 +691,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             try:
                 dbxLoginInfo = self._dbxLoginInfo_from_infoObject(infoObject)
                 infoObject.updatePassword(dbxLoginManager.getPasswordField(dbxLoginInfo))
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("addConnection: no pref found")
         nodeName = self.nodeNameFromURI(connectionURI)
         thisNode = _HierarchyNode(0,  # level
@@ -723,7 +723,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             getService(components.interfaces.koIPrefService).prefs.getPref(KO_DBEXPLORER_PREF_NAME)
         try:
             prefObj = prefs.getPref('currentDatabaseConnections').getPref(connectionURI)
-        except Exception, ex:
+        except Exception as ex:
             log.exception("addConnection: no pref found")
             return False
         #XXX See _updateDBConnList for handling duplicates
@@ -739,7 +739,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             try:
                 dbxLoginInfo = self._dbxLoginInfo_from_infoObject(infoObject)
                 infoObject.updatePassword(dbxLoginManager.getPasswordField(dbxLoginInfo))
-            except Exception, ex:
+            except Exception as ex:
                 log.exception("addConnection: no pref found")
         res = infoObject.getChildren()
         # If there are no children, assume that the database is still
@@ -854,7 +854,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
                 dbxLoginInfo = self._dbxLoginInfo_from_infoObject(connectorObject)
                 try:
                     dbxLoginManager.removeLoginConnectionInfo(dbxLoginInfo)
-                except Exception, ex:
+                except Exception as ex:
                     log.exception("Couldn't remove login")
             
         # Now remove this from the tree, and rebuild the tree
@@ -930,7 +930,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
         prefs = components.classes["@activestate.com/koPrefService;1"].\
             getService(components.interfaces.koIPrefService).prefs.getPref(KO_DBEXPLORER_PREF_NAME)
         self._nodes = []
-        knownNames = dict([(x, 1) for x in self._nodesByTypeAndName.keys()])
+        knownNames = dict([(x, 1) for x in list(self._nodesByTypeAndName.keys())])
         nodesToRefresh = []
         if prefs.hasPref('currentDatabaseConnections'):
             prefList = prefs.getPref('currentDatabaseConnections')
@@ -938,7 +938,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             for prefId in prefIds:
                 prefObj = prefList.getPref(prefId)
                 #log.debug("add conn %s", prefId)
-                if self._nodesByTypeAndName.has_key(prefId):
+                if prefId in self._nodesByTypeAndName:
                     thisNode = self._nodesByTypeAndName[prefId]
                     #log.debug("reuse node %s", thisNode)
                     del knownNames[prefId]
@@ -946,7 +946,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
                     #log.debug("create new one ...")
                     try:
                         infoObject = createDBConnector(prefObj)
-                    except COMException, ex:
+                    except COMException as ex:
                         if (re.compile(r'No such component.*koDBXConnection\?database=%s;\d' % (prefObj.getString('db_type', '<unknown>'),))
                             .search(str(ex.message))):
                             log.error("The database %s currently isn't installed",
@@ -978,7 +978,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
                         nodesToRefresh.append(thisNode)
                 self._nodes.append(thisNode)
             # Cull the names that are no longer used.
-            for oldName in knownNames.keys():
+            for oldName in list(knownNames.keys()):
                 del self._nodesByTypeAndName[oldName]
         else:
             log.debug("No currentDatabaseConnections in prefs!")
@@ -1098,7 +1098,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
         #log.debug(">> isContainerEmpty[%d] => %r", index, len(self._rows[index].childNodes) == 0)
         try:
             return self.isContainer(index) and len(self._rows[index].childNodes) == 0
-        except AttributeError, ex:
+        except AttributeError as ex:
             node = self._rows[index]
             log.exception("level: %d, infoObject:%r, connectorObject:%r, isContainer:%r",
                            node.level,
@@ -1114,7 +1114,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
             level = self._rows[index].level
             while i > 0 and self._rows[i].level >= level:
                 i -= 1
-        except IndexError, e:
+        except IndexError as e:
             i = -1
         return i
 
@@ -1128,7 +1128,7 @@ class koDatabaseExplorerTreeView(koTreeView.TreeView):
                     return 0
                 elif next_row_level == current_level:
                     return 1
-        except IndexError, e:
+        except IndexError as e:
             pass
         return 0
     
@@ -1289,7 +1289,7 @@ class _WorkerThread(threading.Thread, Queue):
         try:
             node.refreshChildrenInfoOffNode()
             rval = ""
-        except NameError, ex:
+        except NameError as ex:
             log.exception("getChildrenReturnOldChildNodeCount: failed")
             rval = ex.message
         return "", index, oldChildNodeCount

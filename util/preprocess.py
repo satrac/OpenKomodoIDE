@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2002-2006 ActiveState Software Inc.
 # License: MIT License (http://www.opensource.org/licenses/mit-license.php)
 # Contributors:
@@ -191,14 +191,14 @@ _commentGroups = {
 #---- internal logging facility
 
 class _Logger:
-    DEBUG, INFO, WARN, ERROR, CRITICAL = range(5)
+    DEBUG, INFO, WARN, ERROR, CRITICAL = list(range(5))
     def __init__(self, name, level=None, streamOrFileName=sys.stderr):
         self._name = name
         if level is None:
             self.level = self.WARN
         else:
             self.level = level
-        if type(streamOrFileName) == types.StringType:
+        if type(streamOrFileName) == bytes:
             self.stream = open(streamOrFileName, 'w')
             self._opennedStream = 1
         else:
@@ -259,7 +259,7 @@ def _evaluate(expr, defines):
     #interpolated = _interpolate(s, defines)
     try:
         rv = eval(expr, {'defined':lambda v: v in defines}, defines)
-    except Exception, ex:
+    except Exception as ex:
         msg = str(ex)
         if msg.startswith("name '") and msg.endswith("' is not defined"):
             # A common error (at least this is presumed:) is to have
@@ -345,7 +345,7 @@ def getContentType(filename):
     basename = os.path.basename(filename)
     contentType = None
     # Try to determine from the filename.
-    if not contentType and filenameMap.has_key(basename):
+    if not contentType and basename in filenameMap:
         contentType = filenameMap[basename]
         log.debug("Content type of '%s' is '%s' (determined from full "\
                   "filename).", filename, contentType)
@@ -355,13 +355,13 @@ def getContentType(filename):
         if sys.platform.startswith("win"):
             # Suffix patterns are case-insensitive on Windows.
             suffix = suffix.lower()
-        if suffixMap.has_key(suffix):
+        if suffix in suffixMap:
             contentType = suffixMap[suffix]
             log.debug("Content type of '%s' is '%s' (determined from "\
                       "suffix '%s').", filename, contentType, suffix)
     # Try to determine from the registered set of regex patterns.
     if not contentType:
-        for regex, ctype in regexMap.items():
+        for regex, ctype in list(regexMap.items()):
             if regex.search(basename):
                 contentType = ctype
                 log.debug("Content type of '%s' is '%s' (matches regex '%s')",
@@ -369,7 +369,7 @@ def getContentType(filename):
                 break
     # Try to determine from the file contents.
     content = open(filename, 'rb').read()
-    if content.startswith("<?xml"):  # cheap XML sniffing
+    if content.startswith(b"<?xml"):  # cheap XML sniffing
         contentType = "XML"
     # XXX reading shebang line/magic number
     # XXX reading Emacs-style mode line???
@@ -445,12 +445,12 @@ def preprocess(infile, outfile=sys.stdout, defines={}, force=0, keepLines=0,
     #       # #else
     #       ...
     #       # #endif
-    stmts = ['#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
-             '#\s*(?P<op>else|endif)',
-             '#\s*(?P<op>error)\s+(?P<error>.*?)',
-             '#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
-             '#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)',
-             '#\s*(?P<op>include)\s+"(?P<fname>.*?)"',
+    stmts = [r'#\s*(?P<op>if|elif|ifdef|ifndef)\s+(?P<expr>.*?)',
+             r'#\s*(?P<op>else|endif)',
+             r'#\s*(?P<op>error)\s+(?P<error>.*?)',
+             r'#\s*(?P<op>define)\s+(?P<var>[^\s]*?)(\s+(?P<val>.+?))?',
+             r'#\s*(?P<op>undef)\s+(?P<var>[^\s]*?)',
+             r'#\s*(?P<op>include)\s+"(?P<fname>.*?)"',
              r'#\s*(?P<op>include)\s+(?P<var>[^\s]+?)',
             ]
     patterns = []
@@ -476,16 +476,16 @@ def preprocess(infile, outfile=sys.stdout, defines={}, force=0, keepLines=0,
     fin = open(infile, 'r')
     lines = fin.readlines()
     fin.close()
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if force and os.path.exists(outfile):
-            os.chmod(outfile, 0777)
+            os.chmod(outfile, 0o777)
             os.remove(outfile)
         fout = open(outfile, 'w')
     else:
         fout = outfile
 
     defines['__FILE__'] = infile
-    SKIP, EMIT = range(2) # states
+    SKIP, EMIT = list(range(2)) # states
     states = [(EMIT,   # a state is (<emit-or-skip-lines-in-this-section>,
                0,      #             <have-emitted-in-this-if-block>,
                0)]     #             <have-seen-'else'-in-this-if-block>)
@@ -660,7 +660,7 @@ def main(argv):
         optlist, args = getopt.getopt(argv[1:], 'hVvo:D:fkI:s',
             ['help', 'version', 'verbose', 'force', 'keep-lines',
              'substitute'])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         sys.stderr.write("preprocess: error: %s. Your invocation was: %s\n"\
                          % (msg, argv))
         sys.stderr.write("See 'preprocess --help'.\n")
@@ -711,7 +711,7 @@ def main(argv):
     try:
         preprocess(infile, outfile, defines, force, keepLines, includePath,
                    substitute)
-    except PreprocessError, ex:
+    except PreprocessError as ex:
         if log.isDebugEnabled():
             import traceback
             traceback.print_exc(file=sys.stderr)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009-2010 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -82,7 +82,7 @@ def expand_toolbox(toolboxFile, outdir, toolboxDirName=None, force=0):
 # From koProject.p.py, for upgrading version 3 snippets and macros.
 
 def unescapeWhitespace(text, eol="\n"):
-    newtext = u'' # THE u IS IMPORTANT!
+    newtext = '' # THE u IS IMPORTANT!
     i = 0
     while i < len(text):
         if text[i] == '\\':
@@ -238,7 +238,7 @@ class TreeWalker():
         if not nowrite:
             newDict = {'type': elt.tag}
             newDict.update(elt.attrib)
-            if newDict.has_key('url'):
+            if 'url' in newDict:
                 payload = newDict['url']
                 del newDict['url']
             else:

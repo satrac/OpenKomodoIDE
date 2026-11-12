@@ -3,7 +3,8 @@
 
 #import htmlentitydefs
 import re, string, sys
-import mimetools, StringIO
+import io
+from email.message import Message
 from elementtree import ElementTree
 
 # Lazily load the collecter on demand, rather than at import time.
@@ -139,15 +140,14 @@ class HTMLTreeBuilder(ElementTree.TreeBuilder):
             http_equiv = content = None
             for k, v in attrs:
                 if k == "http-equiv":
-                    http_equiv = string.lower(v)
+                    http_equiv = v.lower()
                 elif k == "content":
                     content = v
             if http_equiv == "content-type" and content:
                 # use mimetools to parse the http header
-                header = mimetools.Message(
-                    StringIO.StringIO("%s: %s\n\n" % (http_equiv, content))
-                    )
-                encoding = header.getparam("charset")
+                header = Message()
+                header["content-type"] = content
+                encoding = header.get_param("charset")
                 if encoding:
                     self.encoding = encoding
         l_tag = tag.lower()
@@ -232,7 +232,7 @@ class HTMLTreeBuilder(ElementTree.TreeBuilder):
     def data(self, data):
         if isinstance(data, type('')) and is_not_ascii(data):
             # convert to unicode, but only if necessary
-            data = unicode(data, self.encoding, "ignore")
+            data = str(data, self.encoding, "ignore")
         ElementTree.TreeBuilder.data(self, data)
 
     def close(self):
@@ -344,7 +344,7 @@ try:
 
         def feed(self, data, markuponly=0):
             self.data = data
-            if isinstance(data, unicode):
+            if isinstance(data, str):
                 # XXX marky: convert the data to UTF8; this won't be needed
                 # once we transition the codeintel process to always be UTF-8.
                 # This should go away once bug 100136 is fixed.
@@ -379,11 +379,11 @@ if __name__=="__main__":
         t1 = time.time()
         tree = HTML(data, ReParser)
         t2 = time.time()
-        print "RE parsing took %s" % (t2-t1)
+        print("RE parsing took %s" % (t2-t1))
         t1 = time.time()
         tree = HTML(data, SgmlopParser)
         t2 = time.time()
-        print "sgmlop parsing took %s" % (t2-t1)
+        print("sgmlop parsing took %s" % (t2-t1))
         sys.exit(0)
     
     data = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -398,7 +398,7 @@ if __name__=="__main__":
 </body>
 </html>"""
     tree = HTML(data)
-    print ElementTree.tostring(tree)
+    print(ElementTree.tostring(tree))
     sys.exit(0)
     
 
@@ -408,7 +408,7 @@ if __name__=="__main__":
 <head>
 """
     tree = HTML(data)
-    print ElementTree.tostring(tree)
+    print(ElementTree.tostring(tree))
     sys.exit(0)
 
     data = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -435,7 +435,7 @@ if __name__=="__main__":
     #</BODY>
     #</HTML>
     #"""
-    data = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+    data = r"""<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
             "http://www.w3.org/TR/html4/strict.dtd">
 <!-- Copyright (c) 2000-2006 ActiveState Software Inc. -->
 <!-- See the file LICENSE.txt for licensing information. -->
@@ -617,7 +617,7 @@ function fadeTableRow(rowid, opts) {
 
 """
     tree = HTML(data)
-    print ElementTree.tostring(tree)
+    print(ElementTree.tostring(tree))
     p = Parser(HTMLTreeBuilder())
     p.feed(data)
     p.close()

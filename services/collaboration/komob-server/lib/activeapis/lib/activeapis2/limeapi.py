@@ -13,7 +13,7 @@ A quick example:
 """
 
 import os
-from urllib import urlencode
+from urllib.parse import urlencode
 from pprint import pprint, pformat
 import datetime
 import warnings
@@ -836,7 +836,7 @@ class LimeAPI(apibase.HttpAPIBase):
         }
         
         # only include the optional params if they're given
-        for field, value in params.items():
+        for field, value in list(params.items()):
             if value is None: continue
             if field in ("is_student", "is_fgl"):
                 # send bools as ints
@@ -907,7 +907,7 @@ class LimeAPI(apibase.HttpAPIBase):
         }
         
         # only include the optional params if they're given
-        for field, value in params.items():
+        for field, value in list(params.items()):
             if value is None: continue
             if field in ("is_recurring",):
                 # send bools as ints
@@ -1397,7 +1397,7 @@ class License(object):
             roles_from_id.setdefault(self.latest_purchaser_id, []).append("purchaser")
         
         retval = []
-        for sso_id, roles in roles_from_id.items():
+        for sso_id, roles in list(roles_from_id.items()):
             account = self._account_from_sso_id(sso_id)
             if account is not None: # `account == None` can happen for db mismatches
                 retval.append((account, roles))

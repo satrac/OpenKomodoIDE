@@ -25,8 +25,8 @@ class koHLSLLanguage(KoLanguageBase):
         "block": [ ("/*", "*/") ],
         "markup": "*",
     }
-    _dedenting_statements = [u'throw', u'return', u'break', u'continue']
-    _indenting_statements = [u'case']
+    _dedenting_statements = ['throw', 'return', 'break', 'continue']
+    _indenting_statements = ['case']
     searchURL = "http://www.google.com/search?q=hlsl+site%3Amicrosoft.com%2F+%W"
     # matches:
     # function name

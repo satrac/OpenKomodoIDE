@@ -73,9 +73,9 @@ class KoJSONLinter:
         cwd = request.cwd or None
         fn = tempfile.mktemp()
         try:
-            file(fn, 'wb').write(text)
+            open(fn, 'wb').write(text)
             return self.parse(fn, cwd=cwd)
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
         finally:
             os.unlink(fn)

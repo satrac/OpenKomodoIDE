@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # See LICENSE.txt for license details.
 
@@ -8,7 +8,7 @@ import os
 from os.path import (isfile, isdir, exists, dirname, abspath, splitext,
                      join, basename)
 import sys
-from cStringIO import StringIO
+from io import StringIO
 import logging
 import re
 import traceback

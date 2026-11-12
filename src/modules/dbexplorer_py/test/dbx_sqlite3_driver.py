@@ -128,22 +128,22 @@ class Shell(cmdln.Cmdln):
         db = dbx_sqlite3.Database(path)
         table_names = db.listAllTableNames()
         for name in table_names:
-            print "Get info on table %s" % (name,)
+            print("Get info on table %s" % (name,))
             count = db.getNumRows(name)
-            print "# rows: %d" % (count,)
+            print("# rows: %d" % (count,))
             offset = 0
             limit = min(count, 5)
             rows = db.getRows(name, offset, limit)
-            print rows
-            print "\n"
-        print "Args: %r" % (argv,)
+            print(rows)
+            print("\n")
+        print("Args: %r" % (argv,))
         
     # display_rows_by_num C:\Users\ericp\places.sqlite moz_favicons describe 0
     def do_display_rows_by_num(self, argv):
         dbpath, t = argv[1:3]
         rows = argv[3:]
         if len(rows) == 0:
-            print "No rows requested"
+            print("No rows requested")
             return
         if rows[0] == "describe":
             describe_rows = True
@@ -153,10 +153,10 @@ class Shell(cmdln.Cmdln):
         db = dbx_sqlite3.Database(dbpath)
         if describe_rows:
             col_info = db.getColumnInfo(t)
-            print [ci.name for ci in col_info]
+            print([ci.name for ci in col_info])
         for r in rows:
             rowData = db.getRows(t, r, 1)[0]
-            print rowData            
+            print(rowData)            
         
     # python dbx_sqlite3_driver delete_row_by_key
     # ... C:\Users\ericp\places.sqlite moz_favicons 5
@@ -164,11 +164,11 @@ class Shell(cmdln.Cmdln):
         dbpath, t, rowNum = argv[1:4]
         db = dbx_sqlite3.Database(dbpath)
         count = db.getNumRows(t)
-        print "Before: table %s has %d rows" % (t, count)
+        print("Before: table %s has %d rows" % (t, count))
         row = db.getRows(t, rowNum, 1)[0]
-        print "Here's the row we got:\n%s" % ("\n".join(row),)
+        print("Here's the row we got:\n%s" % ("\n".join(row),))
         col_info = db.getColumnInfo(t)
-        print "And here's the col info:\n%s" % ("\n".join([repr(c) for c in col_info]))
+        print("And here's the col info:\n%s" % ("\n".join([repr(c) for c in col_info])))
         key_names = []
         key_values = []
         idx = 0
@@ -177,13 +177,13 @@ class Shell(cmdln.Cmdln):
                 key_names.append(ci.name)
                 key_values.append(row[idx])
             idx += 1
-        print "Keys: %s, values: %s" % (key_names, key_values)
+        print("Keys: %s, values: %s" % (key_names, key_values))
         if key_names:
             res = db.deleteRowByKey(t, key_names, key_values)
             try:
-                print "Delete by key: %r" % (res,)
+                print("Delete by key: %r" % (res,))
             except:
-                print sys.exc_info()[1]
+                print(sys.exc_info()[1])
             
     #Obsolete
     def do_delete_row_by_posn(self, argv):
@@ -191,17 +191,17 @@ class Shell(cmdln.Cmdln):
         db = dbx_sqlite3.Database(dbpath)
         count = db.getNumRows(t)
         row = db.getRows(t, rowNum, 1)[0]
-        print "Here's the row we got:\n%s" % ("\n".join(row),)
+        print("Here's the row we got:\n%s" % ("\n".join(row),))
         try:
             res = db.deleteRowByRowNumber(t, rowNum)
             if res:
                 # refresh
                 row = db.getRows(t, rowNum, 1)[0]
-                print "Here's the new row at row %r :\n%s" % (rowNum, "\n".join(row),)
+                print("Here's the new row at row %r :\n%s" % (rowNum, "\n".join(row),))
             else:
-                print "Deleting failed"
+                print("Deleting failed")
         except:
-            print sys.exc_info()[1]
+            print(sys.exc_info()[1])
             
     # update_cell_by_name C:\Users\ericp\places.sqlite moz_favicons  0 expiration 6
     def do_update_cell_by_name(self, argv):
@@ -210,9 +210,9 @@ class Shell(cmdln.Cmdln):
         row = db.getRows(t, rowNum, 1)[0]
         try:
             res = db.updateCellInRowByColumnName(t, row, columnName, newValue)
-            print "Update result: " + ['failed', 'passed'][res and 1 or 0]
+            print("Update result: " + ['failed', 'passed'][res and 1 or 0])
         except:
-            print sys.exc_info()[1]
+            print(sys.exc_info()[1])
         
     # update_cell_by_column_no C:\Users\ericp\places.sqlite moz_favicons  0 4 14
     def do_update_cell_by_column_no(self, argv):
@@ -222,9 +222,9 @@ class Shell(cmdln.Cmdln):
         row = db.getRows(t, rowNum, 1)[0]
         try:
             res = db.updateCellInRowByCellNo(t, row, columnNo, newValue)
-            print "Update result: " + ['failed', 'passed'][res and 1 or 0]
+            print("Update result: " + ['failed', 'passed'][res and 1 or 0])
         except:
-            print sys.exc_info()[1]
+            print(sys.exc_info()[1])
         
     # python dbx_sqlite3_driver insert_row C:\Users\ericp\places.sqlite moz_favicons 5 'http://nowhere' '' 'text/plain' 55
 
@@ -235,9 +235,9 @@ class Shell(cmdln.Cmdln):
         db = dbx_sqlite3.Database(dbpath)
         try:
             res = db.insertRow(t, values)
-            print "Insert result: " + ['failed', 'passed'][res and 1 or 0]
+            print("Insert result: " + ['failed', 'passed'][res and 1 or 0])
         except:
-            print sys.exc_info()[1]
+            print(sys.exc_info()[1])
         
 
 def _do_main(argv):
@@ -268,7 +268,7 @@ def main(argv=sys.argv):
             log.error(exc_info[0])
         if not skip_it:
             if True or log.isEnabledFor(logging.DEBUG):
-                print
+                print()
                 traceback.print_exception(*exc_info)
             sys.exit(1)
     else:

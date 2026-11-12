@@ -276,7 +276,7 @@ class KoSVN(KoSCCBase):
         return scc_handler.workingDirectory(filepath)
 
     # Regex used to update the "Index: xyz..." to have a full path reference
-    diffUpdatePathRegex = re.compile("^Index:\s+(.*)$", re.MULTILINE)
+    diffUpdatePathRegex = re.compile(r"^Index:\s+(.*)$", re.MULTILINE)
 
 #    diff -- Display diff of client file with depot file
     def _do_diff(self, files, raw_options, external, scc_handler=None):
@@ -400,7 +400,7 @@ class KoSVN(KoSCCBase):
         _files = groupFilesByDirectory(files, splitDirectories=True)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.add(files=_files[basedir],
                                   _raw=1, cwd=basedir,
                                   env=self._env)
@@ -474,7 +474,7 @@ class KoSVN(KoSCCBase):
         _files = groupFilesByDirectory(files, splitDirectories=True)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.delete(_files[basedir],
                                      _raw=1,
                                      cwd=basedir,
@@ -494,7 +494,7 @@ class KoSVN(KoSCCBase):
         _files = groupFilesByDirectory(files)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.update(_files[basedir],
                                      _raw=1,
                                      cwd=basedir,
@@ -524,7 +524,7 @@ class KoSVN(KoSCCBase):
         _files = groupFilesByDirectory(files)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result, raw = scc_handler.revert(_files[basedir], _raw=1,
                                      cwd=basedir,
                                      env=self._env)
@@ -787,7 +787,7 @@ class KoSVNFileChecker(KoSCCChecker, PathHelperMixin):
         self.svn._svn = self.executable
         try:
             result, out = self.getSvnStatus(path, reason)
-        except svnlib.SVNLibError, e:
+        except svnlib.SVNLibError as e:
             # we get an exception here if the svn library call errors out
             error_message = e.args[0] or ""
             if "Could not display info for all targets" in error_message:
@@ -816,7 +816,7 @@ class KoSVNFileChecker(KoSCCChecker, PathHelperMixin):
         if result:
             # Cache all the file scc information
             lenPrePath = len(dir_nsUri.prePath)
-            for fname, fileinfo in result.items():
+            for fname, fileinfo in list(result.items()):
                 try:
                     # Path is given as the relative local file path from
                     # the directory where the command was executed.
@@ -826,7 +826,7 @@ class KoSVNFileChecker(KoSCCChecker, PathHelperMixin):
                     cache_key = self._norm_uri_cache_key(cache_key)
                     fpath = cache_key[lenPrePath:]
                     self._cacheSCCInfo(cache, cache_key, fpath, fileinfo)
-                except KeyError, e:
+                except KeyError as e:
                     self.log.info("Can't find fileinfo['Path'] in file %r", fname)
                     pass
         elif _errors:

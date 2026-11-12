@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2009 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -125,7 +125,7 @@ class KoHistoryService(History):
         #   I mean) b/c *most* of this "history_changed" are useless.
         try:
             self.notifyObservers(None, 'history_changed', "")
-        except COMException, ex:
+        except COMException as ex:
             log.warn("exception notifying 'history_changed': %s", ex)
             pass
         return res

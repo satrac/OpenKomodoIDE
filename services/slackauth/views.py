@@ -23,7 +23,7 @@ def auth(request):
         # this means later) then I know it's 11.1 and I need https.
         # Add an `if, elif` implementation if you care about the version at a
         # later date.
-        re.search("-k(\d{2}\.\d{1})", request.GET["state"]).group(1)
+        re.search(r"-k(\d{2}\.\d{1})", request.GET["state"]).group(1)
         redirect_uri = "https://komodo.activestate.com/slack/auth"
     except AttributeError as e:
         # There is no version tagged onto the state.
@@ -62,7 +62,7 @@ def authenticate(request, redirect_uri):
 
 def handle_500(req, *args, **argv):
     t = get_template('500.html')
-    print(sys.exc_info())
+    print((sys.exc_info()))
     type, value, tb =sys.exc_info()
     return HttpResponseServerError(t.render({
         'exception_value': value,

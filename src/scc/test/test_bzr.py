@@ -9,7 +9,12 @@ import sys
 import tempfile
 import time
 import unittest
-from distutils.version import LooseVersion
+try:
+    from version_compat import LooseVersion
+except ImportError:
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "util")))
+    from version_compat import LooseVersion
+    sys.path.pop(0)
 from xpcom import COMException
 from xpcom.components import classes as Cc, interfaces as Ci
 from xpcom.server import UnwrapObject
@@ -58,7 +63,7 @@ class BzrTestCaseBase(unittest.TestCase):
             message = r_stderr.strip() or r_stdout.strip()
             if not message:
                 message = "<no output from bzr>"
-            self.assertEquals(proc.returncode, 0,
+            self.assertEqual(proc.returncode, 0,
                               "Calling %r failed with %r:\n%s" % (
                                     args, proc.returncode, message))
         if stderr is not None:
@@ -96,7 +101,7 @@ class BzrTestCaseBase(unittest.TestCase):
                             os.rmdir(d)
                     os.rmdir(repo)
                     break
-                except Exception, ex:
+                except Exception as ex:
                     if try_num < total_tries - 1:
                         log.warn("Failed deleting, retrying: %s", ex)
                         # bzr seems to do something out-of-process on Windows
@@ -108,7 +113,7 @@ class BzrTestCaseBase(unittest.TestCase):
 class BzrTestCase(BzrTestCaseBase):
     """ Test cases that do not want a default repo """
     def test_basics(self):
-        self.assertEquals(self._svc.name, "bzr")
+        self.assertEqual(self._svc.name, "bzr")
         self.assertTrue(self._svc.isEnabled, "bzr SCC disabled")
         self.assertFalse(self._svc.executable is None, "No executable")
         self.assertTrue(self._svc.isFunctional, "bzr not functional")
@@ -117,19 +122,19 @@ class BzrTestCase(BzrTestCaseBase):
         self._svc.redetermineIfFunctional() # shouldn't throw
         for cmd in ("add", "checkout", "commit", "diff", "history", "remove",
                     "revert", "status", "update"):
-            self.assertEquals(self._svc.getValue("supports_command", cmd), "Yes",
+            self.assertEqual(self._svc.getValue("supports_command", cmd), "Yes",
                               "bzr should support command '%s'" % (cmd,))
         for cmd in ("pants",):
-            self.assertNotEquals(self._svc.getValue("supports_command", cmd),
+            self.assertNotEqual(self._svc.getValue("supports_command", cmd),
                                  "Yes",
                                  "bzr should not support command '%s'" % (cmd,))
         for protocol in ("bzr", "https"):
-            self.assertEquals(self._svc.getValue("supports_checkout_url",
+            self.assertEqual(self._svc.getValue("supports_checkout_url",
                                                  "%s://localhost/hello.bzr" % (protocol,)),
                               "Yes",
                               "bzr should support protocol '%s'" % (protocol,))
         for protocol in ("pserver", "svn"):
-            self.assertNotEquals(self._svc.getValue("supports_checkout_url",
+            self.assertNotEqual(self._svc.getValue("supports_checkout_url",
                                                     "%s://localhost/hello" % (protocol,)),
                                  "Yes",
                                  "bzr should not support protocol '%s'" % (protocol,))
@@ -167,7 +172,7 @@ class BzrTestCase(BzrTestCaseBase):
                 self.assertEqual(f.read(), "update",
                                  "File was not correctly updated")
         finally:
-            print "source=%s dest=%s" % (source, dest)
+            print("source=%s dest=%s" % (source, dest))
             self.wipeRepo(source)
             self.wipeRepo(dest)
 
@@ -250,7 +255,7 @@ class BzrRepoTestCase(BzrTestCaseBase):
                     "missing":  " D"}
         actual = dict([(line[4:], line[0:2]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
-        filenames = expected.keys() + ["clean"]
+        filenames = list(expected.keys()) + ["clean"]
         files = [os.path.join(self._repo, filename) for filename in filenames]
         with spinner:
             self._svc.status(files, False, "", spinner)
@@ -265,7 +270,7 @@ class BzrRepoTestCase(BzrTestCaseBase):
             self.assertEqual(expected.get(item.relativePath, -1), item.status,
                              "item '%s' has unexpected status %r" % (item.relativePath, item.status))
             expected[item.relativePath] = None
-        bad = [k for k, v in expected.items() if v is not None]
+        bad = [k for k, v in list(expected.items()) if v is not None]
         self.assertEqual(len(bad), 0, "Missing status for %s" % (bad,))
 
     def test_add(self):
@@ -313,24 +318,24 @@ class BzrRepoTestCase(BzrTestCaseBase):
                     "missing":  " D"}
         actual = dict([(line[4:], line[0:2]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
-        files = [os.path.join(self._repo, filename) for filename in expected.keys() + ["clean"]]
+        files = [os.path.join(self._repo, filename) for filename in list(expected.keys()) + ["clean"]]
         with spinner:
             self._svc.revert(files, "", spinner)
         self.assertEqual(spinner.result, Ci.koIAsyncCallback.RESULT_SUCCESSFUL,
                          "Error occurred while doing scc revert: %s" % (spinner.data,))
 
-        stdout = self._run(["status", "--short"] + expected.keys())
+        stdout = self._run(["status", "--short"] + list(expected.keys()))
         expected = {"added": "? ",
                     "new":   "? "}
         actual = dict([(line[4:], line[0:2]) for line in stdout.splitlines() if line])
         self.assertEqual(expected, actual, "Unexpected status:\n%r" % (actual,))
         for filename in ["modified", "removed", "missing", "clean"]:
             with open(os.path.join(self._repo, filename), "r") as f:
-                self.assertEquals(f.read(), "!",
+                self.assertEqual(f.read(), "!",
                                   "Unexpected contents in %s" % (filename,))
         for filename in ["added", "new"]:
             with open(os.path.join(self._repo, filename), "r") as f:
-                self.assertEquals(f.read(), "@@",
+                self.assertEqual(f.read(), "@@",
                                   "Unexpected contents in %s" % (filename,))
 
     @tag("bug94425")
@@ -350,7 +355,7 @@ class BzrRepoTestCase(BzrTestCaseBase):
         expected = {"modified1/file.txt": " M",
                     "modified2/file.txt": " M"}
         actual = dict([(line[4:], line[0:2]) for line in stdout.splitlines() if line])
-        for entry in set(actual.keys() + expected.keys()):
+        for entry in set(list(actual.keys()) + list(expected.keys())):
             if actual.get(entry) != expected.get(entry):
                 self.assertEqual(expected, actual,
                                  "Unexpected initial status:\n%r" % (actual,))
@@ -364,16 +369,16 @@ class BzrRepoTestCase(BzrTestCaseBase):
         stdout = self._run(["status", "--short"])
         expected = {"modified2/file.txt": " M"}
         actual = dict([(line[4:], line[0:2]) for line in stdout.splitlines() if line])
-        for entry in set(actual.keys() + expected.keys()):
+        for entry in set(list(actual.keys()) + list(expected.keys())):
             if actual.get(entry) != expected.get(entry):
                 self.assertEqual(expected, actual,
                                  "Unexpected status after revert:\n%r" % (actual,))
 
         with open(os.path.join(self._repo, "modified1", "file.txt"), "r") as f:
-            self.assertEquals(f.read(), "!",
+            self.assertEqual(f.read(), "!",
                               "Unexpected contents in modified1/file.txt")
         with open(os.path.join(self._repo, "modified2", "file.txt"), "r") as f:
-            self.assertEquals(f.read(), "@@",
+            self.assertEqual(f.read(), "@@",
                               "Unexpected contents in modified2/file.txt")
 
     def test_revert_directories(self):
@@ -418,11 +423,11 @@ class BzrRepoTestCase(BzrTestCaseBase):
 
         for filename in ["modified", "removed", "missing", "clean"]:
             with open(os.path.join(self._repo, filename, "file.txt"), "r") as f:
-                self.assertEquals(f.read(), "!",
+                self.assertEqual(f.read(), "!",
                                   "Unexpected contents in %s" % (filename,))
         for filename in ["added", "new"]:
             with open(os.path.join(self._repo, filename, "file.txt"), "r") as f:
-                self.assertEquals(f.read(), "@@",
+                self.assertEqual(f.read(), "@@",
                                   "Unexpected contents in %s" % (filename,))
 
     def test_revert_all(self):
@@ -522,7 +527,7 @@ class BzrRepoTestCase(BzrTestCaseBase):
             r"+1111",
             r"\ No newline at end of file",
             r""]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))
 
     def test_diffRelative(self):
@@ -555,7 +560,7 @@ class BzrRepoTestCase(BzrTestCaseBase):
             r"+1111",
             r"\ No newline at end of file",
             r""]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))
 
     def test_history(self):
@@ -575,13 +580,13 @@ class BzrRepoTestCase(BzrTestCaseBase):
                          (len(spinner.data), spinner.data))
         items = list(reversed(spinner.data))
         for index, item in enumerate(items):
-            self.assertEquals(item.version, str(index + 1),
+            self.assertEqual(item.version, str(index + 1),
                               "Unexpected version %s" % (item.version,))
-            self.assertEquals("", item.change,
+            self.assertEqual("", item.change,
                               "Unexpected change %s" % (item.change,))
-            self.assertEquals("", item.action,
+            self.assertEqual("", item.action,
                               "Unexpected action %s" % (item.action,))
-            self.assertEquals("commit %s\n" % (index,), item.message,
+            self.assertEqual("commit %s\n" % (index,), item.message,
                               "Unexpected message %s" % (item.message,))
 
         with spinner:
@@ -607,5 +612,5 @@ class BzrRepoTestCase(BzrTestCaseBase):
             r"+6666666666",
             r"\ No newline at end of file",
             r""]
-        self.assertEquals(expected, lines,
+        self.assertEqual(expected, lines,
                           "Unexpected lines:\n%s" % ("\n".join(lines),))

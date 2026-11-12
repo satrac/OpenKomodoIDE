@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -199,7 +199,7 @@ def mknightly(project, branch="trunk", ver=None, upload_base_dir=None,
     # Unless a build number has been passed in.  Then just do what you're told.
     if build_num is None:
         latest_dir = join(upload_base_dir, "latest-" + norm_branch)
-        komodo_pkg_re = re.compile("([\w-]+)-(\d+\.\d+\.\d+(-\w+\d)?-\d+).*")
+        komodo_pkg_re = re.compile(r"([\w-]+)-(\d+\.\d+\.\d+(-\w+\d)?-\d+).*")
         for p in buildutils.remote_glob(join(latest_dir, "Komodo-*.*")):
             m = komodo_pkg_re.match(basename(p))
             if p and m:
@@ -504,7 +504,7 @@ def _split_full_ver(ver_str):
     def _isdigit(ch):
         return '0' <= ch <= '9'
     def split_quality(s):
-        for i in reversed(range(1, len(s)+1)):
+        for i in reversed(list(range(1, len(s)+1))):
             if not _isdigit(s[i-1]):
                 break
         if i == len(s):
@@ -533,7 +533,7 @@ def _split_full_ver(ver_str):
                 bits.append(0)
     return tuple(bits)
 
-_short_ver_re = re.compile("(\d+)(\.\d+)*([a-z](\d+)?)?")
+_short_ver_re = re.compile(r"(\d+)(\.\d+)*([a-z](\d+)?)?")
 def _split_short_ver(ver_str, intify=False, pad_zeros=None,
                      sortable=False):
     """Parse the given version into a tuple of "significant" parts.
@@ -584,7 +584,7 @@ def _split_short_ver(ver_str, intify=False, pad_zeros=None,
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if bit == '.':
             continue
         if intify:
@@ -749,7 +749,7 @@ def main(argv):
         projects = ['komodoedit', 'komodoide']
         log.info("Defaulting projects to %r", projects)
     for project in projects:
-        if project is "komodoedit":
+        if project == "komodoedit":
             build_num = opts.edit_build
         else:
             build_num = opts.ide_build
@@ -778,7 +778,7 @@ if __name__ == "__main__":
         exc_info = sys.exc_info()
         if log.level <= logging.DEBUG:
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         else:
             if hasattr(exc_info[0], "__name__"):

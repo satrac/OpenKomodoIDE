@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -7,7 +7,7 @@ import sys
 import re
 import types
 import threading
-import Queue
+import queue
 import logging
 import which
 from xpcom import components, nsError, ServerException, COMException
@@ -61,7 +61,7 @@ class KoFeatureStatusService:
     def __init__(self):
         self._fsLock = threading.Lock()
         # A queue of feature names for which the status has been requested.
-        self._fsQueue = Queue.Queue()
+        self._fsQueue = queue.Queue()
         # A thread to gather the status of the features named in the Queue.
         self._fsThread = None
         self._fsThreadExiting = threading.Event()
@@ -191,7 +191,7 @@ class KoFeatureStatusService:
             try:
                 try:
                     featureName = self._fsQueue.get_nowait()
-                except Queue.Empty:
+                except queue.Empty:
                     log.info("status acquirer thread exiting")
                     self._fsThreadExiting.set()
                     break
@@ -424,7 +424,7 @@ class KoFeatureStatusService:
                 st = KoFeatureStatus(featureName, status, reason)
                 try:
                     self.notifyObservers(st, "feature_status_ready", featureName)
-                except COMException, ex:
+                except COMException as ex:
                     # do nothing: Notify sometimes raises an exception if
                     # receivers are not registered?
                     log.warn("exception notifying 'feature_status_ready': %s", ex)
@@ -480,7 +480,7 @@ class KoFeatureStatusService:
         if isActivePerl is not None or minActivePerlBuild is not None:
             try:
                 buildNumber = perlInfoEx.buildNumber
-            except COMException, ex:
+            except COMException as ex:
                 log.info("%s: not ActivePerl", installDir)
                 self._lastErrorSvc.setLastError(0,
                     "Perl installation is not ActivePerl: %s" % installDir)
@@ -711,7 +711,7 @@ class KoFeatureStatusService:
 # #if WITH_DEBUGGING
             try:
                 phpInfoEx.autoConfigureDebugger()
-            except Exception, e:
+            except Exception as e:
                 log.exception(e)
             if not phpInfoEx.isDebuggerExtensionLoadable or not phpInfoEx.valid_version:
                 log.info("%s: debugger extension is NOT loadable", installDir)
@@ -844,9 +844,9 @@ class KoFeatureStatusService:
             try:
                 # At some point Ruby started using a "p" to separate subversion
                 # from patch value, instead of a "."
-                versionToCompare = map(int,
-                                       re.sub("p.*$", "", version).split('.'))
-                minVersionToCompare = map(int, minVersion.split('.'))
+                versionToCompare = list(map(int,
+                                       re.sub("p.*$", "", version).split('.')))
+                minVersionToCompare = list(map(int, minVersion.split('.')))
             except ValueError:
                 log.warn("couldn't process Ruby version as expected for "
                          "comparison: version check may be inaccurate: "

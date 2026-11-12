@@ -78,7 +78,7 @@ def _makeVariableMap(inVars, outVars):
 
 def _applyVariableMap(codeBlock, variableMap):
     # There are no collisions, so we can apply the changes serially
-    for oldName, newName in variableMap.items():
+    for oldName, newName in list(variableMap.items()):
         codeBlock = codeBlock.replace(oldName, newName)
     return codeBlock
 
@@ -320,7 +320,7 @@ class KoPerlRefactoringLanguageService(KoRefactoringLanguageServiceBase):
                     choppedTargetLines.append(innerWhiteSpaceTarget + lineText[postLWSPosn:])
             
         methodCall = "%s%s(%s)" % (recipient, targetName,
-                ", ".join([re.sub(r'^[%@]', lambda(m): '\\' + m.group(0), inVar)
+                ", ".join([re.sub(r'^[%@]', lambda m: '\\' + m.group(0), inVar)
                            for inVar in inVars]))
         
         self._checkFirstUseOutVars(outVars, firstUseOutVars, blockToMove)
@@ -404,7 +404,7 @@ class KoPerlRefactoringLanguageService(KoRefactoringLanguageServiceBase):
         word_usage = {}
         
         ptn = ( r'(?:'
-               + '|'.join(self.wordPtns.values())
+               + '|'.join(list(self.wordPtns.values()))
                + ')')
         for m in re.finditer(ptn, section_bytes):
             startPos, endPos = m.span()
@@ -458,7 +458,7 @@ class KoPerlRefactoringLanguageService(KoRefactoringLanguageServiceBase):
             del word_usage["this"]
         except KeyError:
             pass
-        for name, val in word_usage.items():
+        for name, val in list(word_usage.items()):
             flag = val & 0xff
             pos = val >> 8
         return [makeRefactoringVariable(word, flags)
@@ -510,7 +510,7 @@ class KoPerlRefactoringLanguageService(KoRefactoringLanguageServiceBase):
             adjustedSearchText = "(?:\b|(?<=\\&))" + searchText1
         else:
             # It's more like a function name, so don't bother with sigils.
-            adjustedSearchText = '(?:^|(?<=[^\\$\\*@%\\w]))' + searchText1
+            adjustedSearchText = '(?:^|(?<=[^\\$\\*@%\\\\w]))' + searchText1
             compareText = searchText
         return borderEnd(adjustedSearchText), compareText
 

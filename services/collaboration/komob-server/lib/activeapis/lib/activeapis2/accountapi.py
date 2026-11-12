@@ -5,7 +5,7 @@ Note: This is a *replacement* for "activesso/activessolib/activessoapi.py".
 """
 
 from pprint import pprint, pformat
-from urllib import urlencode
+from urllib.parse import urlencode
 from activeapis2 import utils, apibase, dateutils
 jsonlib = utils.jsonlib
 
@@ -56,7 +56,7 @@ class AccountAPI(apibase.HttpAPIBase):
         
         @param user_id {str|int} The email, username or SSO id of a user.
         """
-        if not isinstance(user_id, (int, long)) and '/' in user_id:
+        if not isinstance(user_id, int) and '/' in user_id:
             raise self.APIError("invalid account id: %r" % user_id)
         url = self._api_url + "user/%s/json/" % user_id
         response = self._request_json(url)
@@ -151,7 +151,7 @@ class AccountAPI(apibase.HttpAPIBase):
             return []  # no search criteria
         # urlencode(...) uses `str()`, so need to encode unicode values.
         utf8_fields = {}
-        for k,v in fields.items():
+        for k,v in list(fields.items()):
             utf8_fields[k] = v.encode('utf-8')
         url = self._api_url + "search/?" + urlencode(utf8_fields)
         response = self._request_json(url)
@@ -264,7 +264,7 @@ class Account(object):
     is_active = None        # Always set to a boolean in `__init__`
 
     def __init__(self, d):
-        for k,v in d.items():
+        for k,v in list(d.items()):
             setattr(self, k, v)
     
     def __repr__(self):

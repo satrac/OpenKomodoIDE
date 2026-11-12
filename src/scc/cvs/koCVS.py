@@ -253,8 +253,8 @@ class KoCVS(KoSCCBase):
     #)
     re_log_revisions    = re.compile(
         r'''----------------------------\s*[\r\n]*'''\
-        '''revision\s+(?P<revision>.*?)[\r\n]*'''\
-        '''date: \s*(?P<date>.*?);\s*author:\s*(?P<author>.*?);\s*state:\s*(?P<state>.*?).*[\r\n]*'''
+        '''revision\\s+(?P<revision>.*?)[\r\n]*'''\
+        '''date: \\s*(?P<date>.*?);\\s*author:\\s*(?P<author>.*?);\\s*state:\\s*(?P<state>.*?).*[\r\n]*'''
     )
 
     def _do_history(self, fileuri, options, limit, scc_handler=None):
@@ -289,7 +289,7 @@ class KoCVS(KoSCCBase):
             revisionsText = output
             matchIterator = self.re_log_revisions.finditer(revisionsText)
             try:
-                match = matchIterator.next()
+                match = next(matchIterator)
             except StopIteration:
                 match = None
             count = 0
@@ -303,7 +303,7 @@ class KoCVS(KoSCCBase):
                 koHistory.uri     = fileuri
                 text_start = match.end()
                 try:
-                    match = matchIterator.next()
+                    match = next(matchIterator)
                 except StopIteration:
                     match = None
                 message = ''
@@ -322,7 +322,7 @@ class KoCVS(KoSCCBase):
                     try:
                         buffer, encoding, bom = encodingSvc.getUnicodeEncodedString(message)
                         koHistory.message = buffer
-                    except Exception, e:
+                    except Exception as e:
                         # No go, show that there is something wrong then
                         koHistory.message = "Komodo: Encoding error: Could not interpret the history message"
                 koHistoryList.append(koHistory)
@@ -343,7 +343,7 @@ class KoCVS(KoSCCBase):
         _files = groupFilesByDirectory(files, splitDirectories=True)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result = scc_handler.add(files=_files[basedir],
                              mode=mode,
                              msg=message,
@@ -380,7 +380,7 @@ class KoCVS(KoSCCBase):
         _files = groupFilesByDirectory(files)
 
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             #print "commit files [%s] :%s" % (basedir,repr(_files[basedir]))
             result = scc_handler.commit(_files[basedir],msgFile=msgpath,cwd=basedir)
             #print repr(result)
@@ -404,7 +404,7 @@ class KoCVS(KoSCCBase):
         _files = groupFilesByDirectory(files)
         output = ''
 
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result = scc_handler.remove(_files[basedir], force, recursive,cwd=basedir)
             raw_stderr = result.get('stderr')
             if raw_stderr:
@@ -435,7 +435,7 @@ class KoCVS(KoSCCBase):
         _files = groupFilesByDirectory(files)
         output = ''
 
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result = scc_handler.update(_files[basedir],cwd=basedir)
             raw_stderr = result.get('stderr')
             if raw_stderr:
@@ -484,7 +484,7 @@ class KoCVS(KoSCCBase):
         # item properties
         _files = groupFilesByDirectory(files)
         output = ''
-        for basedir in _files.keys():
+        for basedir in list(_files.keys()):
             result = scc_handler.edit(_files[basedir], cwd=basedir)
             if 'stderr' in result:
                 output += result['stderr']
@@ -499,7 +499,7 @@ class KoCVS(KoSCCBase):
         sccStatusItems = []
 
         _files = groupFilesByDirectory(files)
-        for basedir, files in _files.items():
+        for basedir, files in list(_files.items()):
             if not files:
                 files = ["."]  # use the current directory then
             cvsStatus = scc_handler.status(files, recursive=recursive, cwd=basedir)
@@ -699,7 +699,7 @@ class KoCVSFileChecker(KoSCCChecker):
             # execute cvs on the path
             cvsStatus = self.cvs.status(cwd=dir_path,
                                         recursive=self.recursive)
-        except cvslib.CVSLibError, e:
+        except cvslib.CVSLibError as e:
             # We get an exception here if the cvs library call errors out.
             self.notifyError('CVS status error, click for details', e)
             return False

@@ -16,6 +16,7 @@ from os.path import join, dirname, normpath, abspath, isabs, exists, \
 import re
 import sys
 import shutil
+import zipfile
 from glob import glob
 import subprocess
 import logging
@@ -103,9 +104,9 @@ class Language(object):
 
     def _download_to(self, url, dst_path):
         self.log.info("downloading %r", url)
-        import urllib2
-        response = urllib2.urlopen(url)
-        file(dst_path, "wb").write(response.read())
+        import urllib.request, urllib.error, urllib.parse
+        response = urllib.request.urlopen(url)
+        open(dst_path, "wb").write(response.read())
 
     @property
     def download_url(self):
@@ -461,7 +462,7 @@ class Nodejs06FromSource(NodejsLanguageFromSource):
 def unzip_file_into_dir(pkg_path, dst_dir):
     dst_dir = os.path.abspath(dst_dir)
     if not os.path.exists(dst_dir):
-        os.mkdir(dst_dir, 0777)
+        os.mkdir(dst_dir, 0o777)
     zfobj = zipfile.ZipFile(pkg_path)
     for name in zfobj.namelist():
         path = os.path.join(dst_dir, name)
@@ -472,12 +473,12 @@ def unzip_file_into_dir(pkg_path, dst_dir):
             mkdir_paths.append(parent_path)
             parent_path = os.path.dirname(parent_path)
         for parent_path in reversed(mkdir_paths):
-            os.mkdir(parent_path, 0777)
+            os.mkdir(parent_path, 0o777)
 
         if path.endswith('/'):
             os.mkdir(path)
         else:
-            file(path, 'wb').write(zfobj.read(name))
+            open(path, 'wb').write(zfobj.read(name))
 
 
 def install_languages(languages):
@@ -487,7 +488,7 @@ def install_languages(languages):
         try:
             lang.make()
             results.append((lang, None))
-        except Exception, ex:
+        except Exception as ex:
             lang.log.exception(ex)
             results.append((lang, ex))
         except KeyboardInterrupt:
@@ -503,31 +504,31 @@ def install_languages(languages):
     color_off = sys.platform.startswith("win") and "" or "\x1B[39m"
 
     # Print the paths.
-    print ""
+    print("")
     for lang, exception in results:
         if exception is None:
             assert exists(lang.install_bin_dir), "Bin dir does not exist: %r" % (lang.install_bin_dir, )
-            print "export PATH=$PATH:%s" % (lang.install_bin_dir, )
-    print ""
+            print("export PATH=$PATH:%s" % (lang.install_bin_dir, ))
+    print("")
 
     # Print the installation results.
-    print "Results:"
+    print("Results:")
     for lang, exception in results:
         if exception is None:
-            print "  %s%-12s %sOK%s%s" % (bold_on, lang.pkg_name, color_green, 
-                                       color_off, bold_off)
+            print("  %s%-12s %sOK%s%s" % (bold_on, lang.pkg_name, color_green, 
+                                       color_off, bold_off))
         elif isinstance(exception, InstallWarning):
-            print "  %s%-12s %sWarning%s%s - %s" % (bold_on, lang.pkg_name,
-                                       color_cyan, color_off, bold_off, exception.msg)
+            print("  %s%-12s %sWarning%s%s - %s" % (bold_on, lang.pkg_name,
+                                       color_cyan, color_off, bold_off, exception.msg))
         elif isinstance(exception, InstallException):
-            print "  %s%-12s %sError%s%s - %s" % (bold_on, lang.pkg_name,
-                                       color_red, color_off, bold_off, exception.msg)
+            print("  %s%-12s %sError%s%s - %s" % (bold_on, lang.pkg_name,
+                                       color_red, color_off, bold_off, exception.msg))
             if exception.stderr:
                 stderr = "    " + "\n    ".join(exception.stderr.split("\n"))
-                print stderr
+                print(stderr)
         else:
-            print "  %s%-12s %sError%s%s - %s" % (bold_on, lang.pkg_name,
-                                       color_red, color_off, bold_off, exception)
+            print("  %s%-12s %sError%s%s - %s" % (bold_on, lang.pkg_name,
+                                       color_red, color_off, bold_off, exception))
 
 # ==== Main ==== #
 

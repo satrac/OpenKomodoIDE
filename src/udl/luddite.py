@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 
 r"""A command-line interface for managing UDL (User-Defined Language)
@@ -175,7 +175,7 @@ class Shell(cmdln.Cmdln):
                     raise LudditeError("`%s' is not a GUID and does not "
                                        "exist" % opts.guid)
                 guid_from_lang = {} #dict((lang, g) for lang, g in)
-                for line in file(opts.guid):
+                for line in open(opts.guid):
                     if line.startswith("#"): continue
                     if not line.strip(): continue
                     lang, g = line.strip().split(None, 1)
@@ -327,7 +327,7 @@ if __name__ == "__main__":
             log.error(exc_info[0])
         if log.isEnabledFor(logging.DEBUG):
             import traceback
-            print
+            print()
             traceback.print_exception(*exc_info)
         sys.exit(1)
     else:

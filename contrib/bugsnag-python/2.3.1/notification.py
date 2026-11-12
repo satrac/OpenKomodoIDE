@@ -89,10 +89,10 @@ class Notification(object):
         self.grouping_hash = options.pop("grouping_hash", None)
 
         self.meta_data = {}
-        for name, tab in options.pop("meta_data", {}).items():
+        for name, tab in list(options.pop("meta_data", {}).items()):
             self.add_tab(name, tab)
 
-        for name, tab in options.items():
+        for name, tab in list(options.items()):
             self.add_tab(name, tab)
 
     def deliver(self):

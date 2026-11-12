@@ -19,7 +19,7 @@ import socket
 import subprocess
 
 if sys.platform.startswith('win'):
-    import _winreg
+    import winreg
 
 import black.configure
 from black.configure import ConfigureError
@@ -81,7 +81,7 @@ def P4Where(fileName):
     # Perforce may not be on the path, so see if we can
     # find a Perforce installation we can use.
     p4path = tmShUtil.Which("p4") # default is assume on the path.
-    o = os.popen('"%s" where %s' % (p4path, fileName) )
+    o = subprocess.Popen('"%s" where %s' % (p4path, fileName) )
     threeFiles = o.read()
     if o.close() is not None:
         raise black.configure.ConfigureError(\
@@ -115,7 +115,7 @@ def _getPrettyVersion(version):
         return version
     elif len(parts) == 2:
         ver, quality = parts
-        match = re.match("([a-z]+)(\d+)?", quality)
+        match = re.match(r"([a-z]+)(\d+)?", quality)
         qualityType, qualityVer = match.groups()
         if qualityVer is None:
             return "%s %s" % (ver, qualityType.capitalize())
@@ -128,7 +128,6 @@ def _getPrettyVersion(version):
 
 def _capture_stdout(argv, ignore_retval=False, cwd=None, env=None):
     # Only available on python 2.4 and above
-    import subprocess
     p = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE, env=env)
     stdout = p.stdout.read()
     retval = p.wait()
@@ -153,7 +152,7 @@ def _getValidPlatforms(linuxDistro=False, macUniversal=True):
         uname = os.uname()
         if uname[4] == "ia64":
             validPlats = []
-        elif re.match("i\d86", uname[4]):
+        elif re.match(r"i\d86", uname[4]):
             config = ""
             if linuxDistro:
                 config += "-" + _getLinuxDistro()
@@ -208,7 +207,7 @@ def _getDefaultPlatform(linuxDistro=False, macUniversal=True):
     try:
         return _getValidPlatforms(linuxDistro=linuxDistro,
                                   macUniversal=macUniversal)[0]
-    except IndexError, ex:
+    except IndexError as ex:
         raise ConfigureError("cannot build mozilla on this platform: '%s'"
                              % sys.platform)
 
@@ -216,7 +215,7 @@ def _getDefaultPlatform(linuxDistro=False, macUniversal=True):
 
 def _getRubyVersion(ruby):
     cmd = '"%s" --version' % ruby
-    o = os.popen(cmd)
+    o = subprocess.Popen(cmd)
     output = o.read().strip()
     retval = o.close()
     pattern = re.compile(r"^ruby (\d+\.\d+\.\d+)")
@@ -238,7 +237,7 @@ def _getMozDefinesAndSubsts(mozObjDir):
         mozconfig = join(mozObjDir, "config.status")
         cfg_globals = {"__file__": mozconfig}
         cfg_locals = {}
-        execfile(mozconfig, cfg_globals, cfg_locals)
+        exec(compile(open(mozconfig, "rb").read(), mozconfig, 'exec'), cfg_globals, cfg_locals)
         gMozDefines = dict(cfg_locals.get("defines"))
         gMozSubsts = dict(cfg_locals.get("substs"))
     return gMozDefines, gMozSubsts
@@ -418,7 +417,7 @@ class SiloedPythonVersion(black.configure.std.Datum):
                              siloedPythonExeName)
             try:
                 pythonExe = glob.glob(pythonExe)[0]
-            except IndexError, ex:
+            except IndexError as ex:
                 raise black.configure.ConfigureError(
                     "Could not determine %s: `%s' doesn't exist" % (
                     self.desc, pythonExe))
@@ -428,7 +427,7 @@ class SiloedPythonVersion(black.configure.std.Datum):
             env = "LD_LIBRARY_PATH=%s/lib" % siloedPythonInstallDir
         cmd = '%s %s -c "import sys; sys.stdout.write(\'.\'.join(map(str, sys.version_info[:3])))"'\
               % (env, pythonExe)
-        o = os.popen(cmd)
+        o = subprocess.Popen(cmd)
         self.value = o.read()
         self.determined = 1
 
@@ -460,7 +459,6 @@ class SiloedDistutilsLibDirName(black.configure.Datum):
                 "Could not determine %s." % self.desc)
 
     def _Determine_Do(self):
-        import distutils.util
         self.applicable = 1
         siloedPyVer = black.configure.items["siloedPyVer"].Get()
         siloedPython = black.configure.items["siloedPython"].Get()
@@ -522,7 +520,7 @@ class SetMozTools(black.configure.SetEnvVar):
                 "MOZ_TOOLS is bogus, there is no gmake "\
                 "executable (%s) there.\n" % gmakeExe)
         cmd = '"%s" --version' % gmakeExe
-        o = os.popen(cmd)
+        o = subprocess.Popen(cmd)
         outputLines = o.readlines()
         o.close()
         versionRe = re.compile("^GNU Make version (?P<version>[0-9.]+)")
@@ -556,7 +554,7 @@ class SetMozTools(black.configure.SetEnvVar):
                     self.value = os.path.abspath(os.path.normpath(optarg))
                     break
             else:
-                if os.environ.has_key(self.name):
+                if self.name in os.environ:
                     self.value = os.environ[self.name]
                 else:
                     self.value = None
@@ -889,7 +887,7 @@ class PerlExe(black.configure.Datum):
         ver_output = _capture_stdout([perl, "-V"]).strip()
         ver_match = ver_pat.search(ver_output)
         if ver_match is None:
-            raise black.configure.ConfigureError("""\
+            raise black.configure.ConfigureError(r"""\
 could not determine Perl version for '%s':
 /%s/ does not match `perl -V` output:
 -------------------------------------------------
@@ -1031,17 +1029,17 @@ class NonMsysPerlExe(black.configure.Datum):
                         os.path.join(systemDrive, os.sep, "Perl%s%s" % self.version))
 
                 # check the registry for AS Perl installs
-                import _winreg, itertools
-                for flags in 0, _winreg.KEY_WOW64_32KEY, _winreg.KEY_WOW64_64KEY:
+                import winreg, itertools
+                for flags in 0, winreg.KEY_WOW64_32KEY, winreg.KEY_WOW64_64KEY:
                     try:
-                        parent = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                        parent = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                                  r"Software\ActiveState\ActivePerl",
                                                  0,
-                                                 _winreg.KEY_READ | flags)
+                                                 winreg.KEY_READ | flags)
                         for i in itertools.count():
                             # EnumKey will raise WindowsError when done
-                            version = _winreg.EnumKey(parent, i)
-                            directory = _winreg.QueryValue(parent, version)
+                            version = winreg.EnumKey(parent, i)
+                            directory = winreg.QueryValue(parent, version)
                             self.candidates.append(os.path.join(directory, "bin"))
                     except WindowsError:
                         pass
@@ -1069,7 +1067,7 @@ class PythonExe(black.configure.Datum):
 
     def _getVersion(self, python):
         cmd = '%s -c "import sys; print(hex(sys.hexversion))"' % python
-        o = os.popen(cmd)
+        o = subprocess.Popen(cmd)
         hexverstr = o.read().strip()
         retval = o.close()
         if not hexverstr:
@@ -1079,8 +1077,8 @@ class PythonExe(black.configure.Datum):
                              % python)
         #print "HEXVER: %s" % hexverstr
         hexver = eval(hexverstr)
-        major = int((hexver & 0xff000000L) >> 24)
-        minor = int((hexver & 0x00ff0000L) >> 16)
+        major = int((hexver & 0xff000000) >> 24)
+        minor = int((hexver & 0x00ff0000) >> 16)
         return (major, minor)
 
     def _Determine_Sufficient(self):
@@ -1444,11 +1442,11 @@ class PHPsBaseDir(black.configure.Datum):
                      (not bestMatch or len(have[phpsBaseDir]) > len(bestMatch[1])):
                     bestMatch = (phpsBaseDir, have[phpsBaseDir])
             else:
-                print ("\nWARNING: cannot build all Xdebug extensions: none "
+                print(("\nWARNING: cannot build all Xdebug extensions: none "
                        "of the following dirs have %s PHP builds "
                        "(take a look at src/xdebug/README.txt): '%s'" 
                        % ('/'.join(xdebugPHPVers), 
-                          "', '".join(self.candidates)))
+                          "', '".join(self.candidates))))
                 # Take the best one of what we found.
                 if bestMatch:
                     self.value = bestMatch[0]
@@ -1522,7 +1520,7 @@ class KomodoDefaultUserInstallDir(black.configure.Datum):
         komodoVersion = black.configure.items["komodoVersion"].Get()
         majorVer = komodoVersion.split('.', 1)[0]
         if platform == "win":
-            self.value = "C:\\Program Files\\ActiveState Komodo %s %s" \
+            self.value = "C:\\\\Program Files\\\\ActiveState Komodo %s %s" \
                          % (prettyProductType, majorVer)
         elif platform == 'darwin':
             self.value = '/Applications/Komodo %s.app' % prettyProductType
@@ -1627,9 +1625,9 @@ class ConsVersion(black.configure.Datum):
         consExeName = os.path.join(installDir, "cons.pl")
         #XXX I am relying on .pl->Perl.exe association on windows here
         #    I should not.
-        o = os.popen('%s %s -V' % (perlExe, consExeName))
+        o = subprocess.Popen('%s %s -V' % (perlExe, consExeName))
         consVersionLine = o.read()
-        consVersionMatch = re.compile('This is Cons ([0-9\.]+) ').\
+        consVersionMatch = re.compile(r'This is Cons ([0-9\.]+) ').\
             search(consVersionLine)
         if consVersionMatch:
             self.value = consVersionMatch.group(1) 
@@ -1652,7 +1650,7 @@ class MD5PerlModuleInstalled(black.configure.BooleanDatum):
     def _Determine_Do(self):
         self.applicable = 1
         unsiloedPerlBinDir = black.configure.items["unsiloedPerlBinDir"].Get()
-        o = os.popen('%s -mMD5 -e "print \'madeit\';"' %\
+        o = subprocess.Popen('%s -mMD5 -e "print \'madeit\';"' %\
             os.path.join(unsiloedPerlBinDir, "perl"))
         if o.read() == 'madeit':
             self.value = 1
@@ -2249,11 +2247,10 @@ class LudditeVersion(black.configure.Datum):
     def _Determine_Do(self):
         self.applicable = 1
 
-        cmd = '%s src/udl/luddite.py --version' % (sys.executable)
-        i, o = os.popen2(cmd)
-        i.close()
-        output = o.read()
-        retval = o.close()
+        cmd = [sys.executable, 'src/udl/luddite.py', '--version']
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+        output, _ = p.communicate()
+        retval = p.returncode
         if retval:
             raise black.configure.ConfigureError(\
                 "error running '%s'" % cmd)
@@ -2623,11 +2620,11 @@ class SetupMozEnv(black.configure.RunEnvScript):
                         # Add in extra paths
                         for prefix in ("msys/local/bin", "msys/bin", "wget",
                                        "info-zip", "wix-351728", "yasm"):
-                            out_file.write("set PATH=%%MOZILLABUILD%%\%s;%%PATH%%\n"
+                            out_file.write("set PATH=%%MOZILLABUILD%%\\%s;%%PATH%%\n"
                                            % prefix.replace("/", os.sep))
                         # Include NSIS just so mozilla configure doesn't complain
                         for suffix in "nsis-2.46u", "nsis-2.33u", "nsis-2.22":
-                            out_file.write("set PATH=%%PATH%%;%%MOZILLABUILD%%\%s\n"
+                            out_file.write("set PATH=%%PATH%%;%%MOZILLABUILD%%\\%s\n"
                                            % suffix.replace("/", os.sep))
                         # Force the first directory on the path to be our own custom
                         # bin directory to use our patch.exe
@@ -2866,7 +2863,7 @@ class MozObjDir(black.configure.Datum):
                 scheme = optarg
                 break
         else:
-            if os.environ.has_key("MOZ_SRC"):
+            if "MOZ_SRC" in os.environ:
                 scheme = os.environ["MOZ_SRC"]
             else:
                 scheme = "latest"
@@ -3142,13 +3139,11 @@ class MozVersion(black.configure.Datum):
             milestone = milestone.replace('\\', '/')
 
         perlExe = black.configure.items["unsiloedPerlExe"].Get()
-        cmd = '%s %s -topsrcdir %s' % (perlExe, milestone, mozSrc)
-        i, o, e = os.popen3(cmd)
-        i.close()
-        output = o.read()
-        o.close()
-        stderr = e.read()
-        retval = e.close()
+        cmd = [perlExe, milestone, '-topsrcdir', mozSrc]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True)
+        output, stderr = p.communicate()
+        retval = p.returncode
         if retval:
             raise black.configure.ConfigureError(
                 "error running '%s': stdout='%r' stderr='%r'"
@@ -3178,13 +3173,11 @@ class MozVersionNumber(black.configure.Datum):
             milestone = milestone.replace('\\', '/')
 
         perlExe = black.configure.items["unsiloedPerlExe"].Get()
-        cmd = '%s %s -topsrcdir %s' % (perlExe, milestone, mozSrc)
-        i, o, e = os.popen3(cmd)
-        i.close()
-        output = o.read()
-        o.close()
-        stderr = e.read()
-        retval = e.close()
+        cmd = [perlExe, milestone, '-topsrcdir', mozSrc]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True)
+        output, stderr = p.communicate()
+        retval = p.returncode
         if retval:
             raise black.configure.ConfigureError(
                 "error running '%s': stdout='%r' stderr='%r'"
@@ -3347,7 +3340,7 @@ class Architecture(black.configure.Datum):
             self.value = "x86"
         else:
             uname = os.uname()
-            if re.match("i\d86", uname[4]):
+            if re.match(r"i\d86", uname[4]):
                 #XXX Currently disabling linux-distro differentiation until
                 #    we have a concrete reason for it.
                 #distro = _getLinuxDistro()
@@ -3371,9 +3364,9 @@ class BuildNum(black.configure.Datum):
                 "--komodo-buildnum configure option to override.\n" % self.desc)
 
     def _get_hg_changeset(self):
-        changeset_re = re.compile("changeset:\s+(\d+):")
+        changeset_re = re.compile(r"changeset:\s+(\d+):")
         cmd = "hg tip"
-        o = os.popen(cmd)
+        o = subprocess.Popen(cmd)
         stdout = o.read()
         retval = o.close()
         if retval:
@@ -3402,10 +3395,10 @@ class BuildNum(black.configure.Datum):
         # Simplify the possibly-complex svn version.
         try:
             changenum = int(changestr)
-        except ValueError, ex:
+        except ValueError as ex:
             # pull off front number (good enough for our purposes)
             try:
-                changenum = int(re.match("(\d+)", changestr).group(1))
+                changenum = int(re.match(r"(\d+)", changestr).group(1))
                 sys.stderr.write("configure: simplifying complex changenum "
                                  "from 'svn commit revision': %s -> %s\n"
                                  % (changestr, changenum))
@@ -3810,11 +3803,11 @@ class MSIVccrtRedistPath(black.configure.Datum):
             self.value = ""
             self.determined = True
             return
-        import _winreg
-        with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                              r"SOFTWARE\Wow6432Node\Microsoft\VisualStudio\SxS\VC7"
                              ) as regkey:
-            vc_path, value_type = _winreg.QueryValueEx(regkey, "%s.0" % (compiler_ver,))
+            vc_path, value_type = winreg.QueryValueEx(regkey, "%s.0" % (compiler_ver,))
             redist_dir = join(vc_path, "redist", "x86",
                               "Microsoft.VC%s0.CRT" % (compiler_ver,))
             if not exists(redist_dir):
@@ -4718,7 +4711,7 @@ class ReleaseASCTime(black.configure.Datum):
         self.applicable = 1
         komodoDevDir = black.configure.items["komodoDevDir"].Get()
         infoFile = os.path.join(komodoDevDir, "src", "releasetime.txt")
-        releaseASCTime = file(infoFile).readline().strip()
+        releaseASCTime = open(infoFile).readline().strip()
         releaseDateTime = datetime.datetime.strptime(
             releaseASCTime, '%a %b %d %H:%M:%S %Y')
         buildTime = black.configure.items["buildTime"].Get()

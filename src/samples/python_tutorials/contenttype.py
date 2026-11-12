@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Determine the content-type of a file.
 
@@ -93,7 +93,7 @@ def getContentType(filename):
     basename = os.path.basename(filename)
     contentType = None
     # Try to determine from the filename.
-    if not contentType and filenameMap.has_key(basename):
+    if not contentType and basename in filenameMap:
         contentType = filenameMap[basename]
         log.debug("Content type of '%s' is '%s' (determined from full "\
                   "filename).", filename, contentType)
@@ -103,13 +103,13 @@ def getContentType(filename):
         if sys.platform.startswith("win"):
             # Suffix patterns are case-insensitive on Windows.
             suffix = suffix.lower()
-        if suffixMap.has_key(suffix):
+        if suffix in suffixMap:
             contentType = suffixMap[suffix]
             log.debug("Content type of '%s' is '%s' (determined from "\
                       "suffix '%s').", filename, contentType, suffix)
     # Try to determine from the registered set of regex patterns.
     if not contentType:
-        for regex, ctype in regexMap.items():
+        for regex, ctype in list(regexMap.items()):
             if regex.search(basename):
                 contentType = ctype
                 log.debug("Content type of '%s' is '%s' (matches regex '%s')",

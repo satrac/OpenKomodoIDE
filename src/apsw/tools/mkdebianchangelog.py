@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -38,11 +38,11 @@ while len(lines[-1])==0:
     lines=lines[:-1]
 
 out=open("debian/changelog", "wt")
-print >> out, "python-apsw (%s-%s) %s; urgency=low" % (desiredversion, debver, series)
-print >> out
+print("python-apsw (%s-%s) %s; urgency=low" % (desiredversion, debver, series), file=out)
+print(file=out)
 for l in lines:
-    print >> out, "  "+l
-print >> out
-print >> out, " -- %s  %s" % (maintainer, time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
+    print("  "+l, file=out)
+print(file=out)
+print(" -- %s  %s" % (maintainer, time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())), file=out)
 out.close()
                               

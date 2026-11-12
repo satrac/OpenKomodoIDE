@@ -13,6 +13,12 @@ import logging
 
 from xpcom import components, nsError, ServerException, COMException
 from koTreeView import TreeView
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 #---- globals
 log = logging.getLogger('koRunTerminal')
@@ -34,7 +40,7 @@ MARKNUM_PROMPTS = (1 << MARKNUM_INTERACTIVE_PROMPT) | \
 
 
 def _isurl(path):
-    urlpattern = re.compile("^\w+://")
+    urlpattern = re.compile(r"^\w+://")
     if urlpattern.match(path):
         return 1
     else:
@@ -241,7 +247,7 @@ class koTerminalHandler:
         # log.debug("koTerminalHandler.proxyAddText: [%s] [%r]", name, text)
         eventMask = 0
         # Filter ansi escape sequences from input
-        text = re.sub('\x1b\[[0-9;]*m', "", text)
+        text = re.sub('\x1b\\[[0-9;]*m', "", text)
         # log.debug("koTerminalHandler.proxyAddText new text:[%r]", text)
 
         try:
@@ -332,7 +338,7 @@ class koTerminalHandler:
             self._scintilla.emptyUndoBuffer();
             if self._addTextCallbackHandler is not None:
                 self._addTextCallbackHandler.callback(0, text)
-          except COMException, e:
+          except COMException as e:
             # XXX we're catching an xpcom exception that happens
             # at shutdown. bug #28989
             # Exception: 0x8000ffff (NS_ERROR_UNEXPECTED)
@@ -428,7 +434,7 @@ class KoRunTerminal(koTerminalHandler, TreeView):
     def setParseRegex(self, parseRegex):
         try:
             self._parseRegex = re.compile(parseRegex)
-        except re.error, ex:
+        except re.error as ex:
             self._lastErrorSvc.setLastError(0, str(ex))
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, str(ex))
 
@@ -510,22 +516,22 @@ class KoRunTerminal(koTerminalHandler, TreeView):
                     # compare the integer values (line and column string
                     # can possibly be ranges, so pick first part of range)
                     try:
-                        self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                            cmp(int( dict1[sortBy].split('-')[0] ),
-                                                int( dict2[sortBy].split('-')[0] ))
+                        self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                            _cmp(int( dict1[sortBy].split('-')[0] ),
+                                                int( dict2[sortBy].split('-')[0] )))
                                        )
                     except ValueError:
-                        self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                            cmp(dict1[sortBy], dict2[sortBy])
+                        self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                            _cmp(dict1[sortBy], dict2[sortBy]))
                                        )
                 elif sortBy == 'runoutput-tree-content':
                     # strip leading whitespace for content sort order
-                    self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                        cmp(dict1[sortBy].lstrip(), dict2[sortBy].lstrip())
+                    self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                        _cmp(dict1[sortBy].lstrip(), dict2[sortBy].lstrip()))
                                    )
                 else:
-                    self._data.sort(lambda dict1,dict2,sortBy=sortBy:
-                                        cmp(dict1[sortBy], dict2[sortBy])
+                    self._data.sort(key=cmp_to_key(lambda dict1,dict2,sortBy=sortBy:
+                                        _cmp(dict1[sortBy], dict2[sortBy]))
                                    )
             except KeyError:
                 log.error("Cannot sort find results by: '%s'" % sortBy)
@@ -685,7 +691,7 @@ class _TerminalWriter(object):
             log.info("_TerminalWriter.close %r" % self.__name)
             try:
                 self.__stdin.close()
-            except IOError, ex:
+            except IOError as ex:
                 # The file is already closed or is owned by another thread (see
                 # bug 83303) - treat it as if it had closed successfully.
                 pass
@@ -806,7 +812,7 @@ class _TerminalReader(threading.Thread):
                 self.__terminal.addText(l, data, name)
                 #finally:
                     #self.__terminal.mutex.release()
-        except Exception, ex:
+        except Exception as ex:
             log.exception("_TerminalReader:: exception during %r socket read "
                           "for cmd: %r", name, self.__cmd)
         self.__terminal.notifyEOF(name)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2004-2006 ActiveState Software Inc.
 #
 # Contributors:

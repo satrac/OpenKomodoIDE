@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -28,15 +28,15 @@ logging.Logger.root = logging.root
 #      because the existing loggers aren't XPCOM components.
 #      Try to at least maintain as much of the levels as we can...
 levels = {}
-for key in logging.Logger.manager.loggerDict.keys():
+for key in list(logging.Logger.manager.loggerDict.keys()):
     try:
         level = logging.Logger.manager.loggerDict[key].level
         if level != logging.NOTSET:
             levels[key] = level
-    except Exception, e:
+    except Exception as e:
         pass
 logging.Logger.manager = logging.Manager(logging.Logger.root)
-for key, level in levels.items():
+for key, level in list(levels.items()):
     logging.getLogger(key).setLevel(level)
 del levels
 
@@ -62,7 +62,7 @@ class KoLoggingService(object):
         return logging.getLogger(logger_name)
      
     def getLoggerNames(self):
-        names = logging.Logger.manager.loggerDict.keys()
+        names = list(logging.Logger.manager.loggerDict.keys())
         names.sort()
         return names
 

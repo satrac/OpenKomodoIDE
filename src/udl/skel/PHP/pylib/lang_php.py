@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006 ActiveState Software Inc.
 # See LICENSE.txt for license details.
 #
@@ -16,7 +16,7 @@ import re
 import logging
 import time
 import warnings
-from cStringIO import StringIO
+from io import StringIO
 import weakref
 from glob import glob
 
@@ -42,9 +42,15 @@ from codeintel2.tree_php import PHPTreeEvaluator
 from codeintel2.langintel import (ParenStyleCalltipIntelMixin,
                                   ProgLangTriggerIntelMixin)
 from codeintel2.accessor import AccessorCache
+from functools import cmp_to_key
 
 if _xpcom_:
     from xpcom.server import UnwrapObject
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 
 
@@ -95,7 +101,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         # calltip if we find a function open paren "(" and function identifier
         #   http://bugs.activestate.com/show_bug.cgi?id=70470
         if DEBUG:
-            print "Arg separater found, looking for start of function"
+            print("Arg separater found, looking for start of function")
         # Move back to the open paren of the function
         paren_count = 0
         p = pos
@@ -111,7 +117,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         trg_from_pos = p+1
                         p, ch, style = ac.getPrevPosCharStyle()
                         if DEBUG:
-                            print "Function start found, pos: %d" % (p, )
+                            print("Function start found, pos: %d" % (p, ))
                         if style in self.comment_styles_or_whitespace:
                             # Find previous non-ignored style then
                             p, c, style = ac.getPrecedingPosCharStyle(style, self.comment_styles_or_whitespace)
@@ -124,11 +130,11 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 elif c in ";{}":
                     # Gone too far and noting was found
                     if DEBUG:
-                        print "No function found, hit stop char: %s at p: %d" % (c, p)
+                        print("No function found, hit stop char: %s at p: %d" % (c, p))
                     return None
         # Did not find the function open paren
         if DEBUG:
-            print "No function found, ran out of chars to look at, p: %d" % (p,)
+            print("No function found, ran out of chars to look at, p: %d" % (p,))
         return None
 
     #@util.hotshotit
@@ -147,10 +153,10 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         ac.setCacheFetchSize(20)
 
         if DEBUG:
-            print "\nphp trg_from_pos"
-            print "  last_pos: %s" % last_pos
-            print "  last_char: %s" % last_char
-            print "  last_style: %r" % last_style
+            print("\nphp trg_from_pos")
+            print("  last_pos: %s" % last_pos)
+            print("  last_char: %s" % last_char)
+            print("  last_style: %r" % last_style)
             ac.dump()
 
         try:
@@ -158,14 +164,14 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
             #       Generally we want it to be indicating a variable instead.
             if last_style == self.whitespace_style and last_char != "$":
                 if DEBUG:
-                    print "Whitespace style"
-                WHITESPACE = tuple(" \t\n\r\v\f")
+                    print("Whitespace style")
+                WHITESPACE = tuple(" \t\n\r\\v\f")
                 if not implicit:
                     # If we're not already at the keyword style, find it
                     if prev_style != self.keyword_style:
                         prev_pos, prev_char, prev_style = ac.getPrecedingPosCharStyle(last_style, self.comment_styles)
                         if DEBUG:
-                            print "Explicit: prev_pos: %d, style: %d, ch: %r" % (prev_pos, prev_style, prev_char)
+                            print("Explicit: prev_pos: %d, style: %d, ch: %r" % (prev_pos, prev_style, prev_char))
                 else:
                     prev_pos = pos - 2
                 if last_char in WHITESPACE and \
@@ -186,7 +192,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         ac.dump()
                     p, text = ac.getTextBackWithStyle(style, self.comment_styles, max_text_len=len("implements"))
                     if DEBUG:
-                        print "ac.getTextBackWithStyle:: pos: %d, text: %r" % (p, text)
+                        print("ac.getTextBackWithStyle:: pos: %d, text: %r" % (p, text))
                     if text in ("new", "extends"):
                         return Trigger(lang, TRG_FORM_CPLN, "classes", pos, implicit)
                     elif text in ("implements", ):
@@ -208,8 +214,8 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         return self._functionCalltipTrigger(ac, prev_pos, DEBUG)
             elif last_style == self.operator_style:
                 if DEBUG:
-                    print "  lang_style is operator style"
-                    print "Prev char: %r" % (prev_char)
+                    print("  lang_style is operator style")
+                    print("Prev char: %r" % (prev_char))
                     ac.dump()
                 if last_char == ":":
                     if not prev_char == ":":
@@ -217,7 +223,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                     ac.setCacheFetchSize(10)
                     p, c, style = ac.getPrecedingPosCharStyle(prev_style, self.comment_styles)
                     if DEBUG:
-                        print "Preceding: %d, %r, %d" % (p, c, style)
+                        print("Preceding: %d, %r, %d" % (p, c, style))
                     if style is None:
                         return None
                     elif style == self.keyword_style:
@@ -226,7 +232,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                                                           # Ensure we don't go too far
                                                           max_text_len=6)
                         if DEBUG:
-                            print "Keyword text: %d, %r" % (p, text)
+                            print("Keyword text: %d, %r" % (p, text))
                             ac.dump()
                         if text not in ("parent", "self", "static"):
                             return None
@@ -240,11 +246,11 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                             return Trigger(lang, TRG_FORM_CPLN, "object-members",
                                            pos, implicit)
                         elif DEBUG:
-                            print "Preceding style is not a variable, pos: %d, style: %d" % (p, style)
+                            print("Preceding style is not a variable, pos: %d, style: %d" % (p, style))
                 elif last_char in "(,":
                     # where to trigger from, updated by "," calltip handler
                     if DEBUG:
-                        print "Checking for function calltip"
+                        print("Checking for function calltip")
 
                     # Implicit calltip triggering from an arg separater ","
                     #   http://bugs.activestate.com/show_bug.cgi?id=70470
@@ -268,32 +274,32 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         p, c, style = ac.getPrecedingPosCharStyle(self.whitespace_style, max_look_back=30)
                     if style is None:
                         if DEBUG:
-                            print "Triggering namespace completion"
+                            print("Triggering namespace completion")
                         return Trigger(lang, TRG_FORM_CPLN, "namespace-members",
                                        pos, implicit)
                     prev_text = ac.getTextBackWithStyle(style, max_text_len=15)
                     if DEBUG:
-                        print "prev_text: %r" % (prev_text, )
+                        print("prev_text: %r" % (prev_text, ))
                     if prev_text[1] == "use":
                         if DEBUG:
-                            print "Triggering use-namespace completion"
+                            print("Triggering use-namespace completion")
                         return Trigger(lang, TRG_FORM_CPLN, "use-namespace",
                                        pos, implicit)
                     elif prev_text[1] in ("const", "function"):
                         if DEBUG:
-                            print "Triggering use-namespace completion with ilk %r" % (prev_text[1])
+                            print("Triggering use-namespace completion with ilk %r" % (prev_text[1]))
                         return Trigger(lang, TRG_FORM_CPLN, "use-namespace",
                                        pos, implicit, ilk=prev_text[1])
                     elif prev_text[1] != "namespace":
                         if DEBUG:
-                            print "Triggering namespace completion"
+                            print("Triggering namespace completion")
                         return Trigger(lang, TRG_FORM_CPLN, "namespace-members",
                                        pos, implicit)
 
             elif last_style == self.variable_style or \
                  (not implicit and last_char == "$"):
                 if DEBUG:
-                    print "Variable style"
+                    print("Variable style")
                 # Completion for variables (builtins and user defined variables),
                 # must occur after a "$" character.
                 if not implicit and last_char == '$':
@@ -313,9 +319,9 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
             elif last_style in (self.identifier_style, self.keyword_style):
                 if DEBUG:
                     if last_style == self.identifier_style:
-                        print "Identifier style"
+                        print("Identifier style")
                     else:
-                        print "Identifier keyword style"
+                        print("Identifier keyword style")
                 # Completion for keywords,function and class names
                 # Works after first 3 characters have been typed
                 #if DEBUG:
@@ -346,7 +352,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                                                trig_pos, implicit)
                             prev_text = ac.getTextBackWithStyle(style, max_text_len=15)
                             if DEBUG:
-                                print "prev_text: %r" % (prev_text, )
+                                print("prev_text: %r" % (prev_text, ))
                             if (prev_text[1] not in ("new", "function", "use",
                                                     "class", "interface", "implements",
                                                     "public", "private", "protected",
@@ -366,8 +372,8 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         #    return Trigger(lang, TRG_FORM_CPLN, "functions",
                         #                   p+1, implicit)
                         elif DEBUG:
-                            print "identifier preceeded by an invalid style: " \
-                                  "%r, p: %r" % (style, p, )
+                            print("identifier preceeded by an invalid style: " \
+                                  "%r, p: %r" % (style, p, ))
 
                     elif last_char == '_' and prev_char == '_' and \
                          style == self.whitespace_style:
@@ -377,7 +383,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         if style == self.keyword_style and \
                            ac.getTextBackWithStyle(style, max_text_len=9)[1] == "function":
                             if DEBUG:
-                                print "triggered:: complete magic-methods"
+                                print("triggered:: complete magic-methods")
                             return Trigger(lang, TRG_FORM_CPLN, "magic-methods",
                                            prev_pos, implicit)
 
@@ -388,7 +394,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 p = last_pos - 1
                 min_p = max(0, p - 50)      # Don't look more than 50 chars
                 if DEBUG:
-                    print "Checking match for phpdoc completions"
+                    print("Checking match for phpdoc completions")
                 accessor = buf.accessor
                 while p >= min_p and \
                       accessor.style_at_pos(p) in self.comment_styles:
@@ -398,16 +404,16 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                     #    print "Looking at ch: %r" % (ch)
                     if ch in "*\r\n":
                         break
-                    elif ch not in " \t\v":
+                    elif ch not in " \t\\v":
                         # Not whitespace, not a valid tag then
                         return None
                 else:
                     # Nothing found in the specified range
                     if DEBUG:
-                        print "trg_from_pos: not a phpdoc"
+                        print("trg_from_pos: not a phpdoc")
                     return None
                 if DEBUG:
-                    print "Matched trigger for phpdoc completion"
+                    print("Matched trigger for phpdoc completion")
                 return Trigger("PHP", TRG_FORM_CPLN,
                                "phpdoc-tags", pos, implicit)
 
@@ -417,7 +423,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 p = last_pos - 1
                 min_p = max(0, p - 50)      # Don't look more than 50 chars
                 if DEBUG:
-                    print "Checking match for phpdoc calltip"
+                    print("Checking match for phpdoc calltip")
                 ch = None
                 ident_found_pos = None
                 accessor = buf.accessor
@@ -433,27 +439,27 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                             ident_found_pos = p+1
                         else:
                             if DEBUG:
-                                print "No phpdoc, whitespace not preceeded " \
-                                      "by an identifer"
+                                print("No phpdoc, whitespace not preceeded " \
+                                      "by an identifer")
                             return None
                     elif ch == "@":
                         # This is what we've been looking for!
                         phpdoc_field = accessor.text_range(p+2,
                                                            ident_found_pos+1)
                         if DEBUG:
-                            print "Matched trigger for phpdoc calltip: '%s'" % (
-                                        phpdoc_field, )
+                            print("Matched trigger for phpdoc calltip: '%s'" % (
+                                        phpdoc_field, ))
                         return Trigger("PHP", TRG_FORM_CALLTIP,
                                        "phpdoc-tags", ident_found_pos, implicit,
                                        phpdoc_field=phpdoc_field)
                     elif not _isident(ch):
                         if DEBUG:
-                            print "No phpdoc, identifier not preceeded by '@'"
+                            print("No phpdoc, identifier not preceeded by '@'")
                         # Not whitespace, not a valid tag then
                         return None
                 # Nothing found in the specified range
                 if DEBUG:
-                    print "No phpdoc, ran out of characters to look at."
+                    print("No phpdoc, ran out of characters to look at.")
 
             # Array completions
             elif last_style == self.string_style and last_char in '\'"':
@@ -464,7 +470,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 if prev_char == '[':
                     # We're good to go.
                     if DEBUG:
-                        print "Matched trigger for array completions"
+                        print("Matched trigger for array completions")
                     return Trigger("PHP", TRG_FORM_CPLN,
                                    "array-members", pos, implicit,
                                    bracket_pos=prev_pos,
@@ -473,14 +479,14 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
             # Variable completions inside of comments
             elif prev_char == "$" and last_style in self.comment_styles:
                 if DEBUG:
-                    print "Comment variable style"
+                    print("Comment variable style")
                 # Completion for variables (builtins and user defined variables),
                 # must occur after a "$" character.
                 return Trigger(lang, TRG_FORM_CPLN, "comment-variables",
                                pos-1, implicit)
 
             elif DEBUG:
-                print "trg_from_pos: no handle for style: %d" % last_style
+                print("trg_from_pos: no handle for style: %d" % last_style)
 
         except IndexError:
             # Not enough chars found, therefore no trigger
@@ -516,40 +522,40 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
             pos_before_identifer, ch, prev_style = \
                      ac.getPrecedingPosCharStyle(prev_style)
             if DEBUG:
-                print "\nphp preceding_trg_from_pos, first chance for identifer style"
-                print "  curr_pos: %d" % (curr_pos)
-                print "  pos_before_identifer: %d" % (pos_before_identifer)
-                print "  ch: %r" % ch
-                print "  prev_style: %d" % prev_style
+                print("\nphp preceding_trg_from_pos, first chance for identifer style")
+                print("  curr_pos: %d" % (curr_pos))
+                print("  pos_before_identifer: %d" % (pos_before_identifer))
+                print("  ch: %r" % ch)
+                print("  prev_style: %d" % prev_style)
                 ac.dump()
             if pos_before_identifer < pos:
                 resetPos = min(pos_before_identifer + 4, accessor.length() - 1)
                 ac.resetToPosition(resetPos)
                 if DEBUG:
-                    print "preceding_trg_from_pos:: reset to position: %d, ac now:" % (resetPos)
+                    print("preceding_trg_from_pos:: reset to position: %d, ac now:" % (resetPos))
                     ac.dump()
                 # Trigger on the third identifier character
                 return self.trg_from_pos(buf, resetPos,
                                          implicit=False, DEBUG=DEBUG, ac=ac)
             elif DEBUG:
-                print "Out of scope of the identifier"
+                print("Out of scope of the identifier")
 
         elif prev_style in self.comment_styles:
             # Check if there is a PHPDoc to provide a calltip for, example:
             #       /** @param $foo foobar - This is field for <|>
             if DEBUG:
-                print "\nphp preceding_trg_from_pos::phpdoc: check for calltip"
+                print("\nphp preceding_trg_from_pos::phpdoc: check for calltip")
             comment = accessor.text_range(max(0, curr_pos-200), curr_pos)
             at_idx = comment.rfind("@")
             if at_idx >= 0:
                 if DEBUG:
-                    print "\nphp preceding_trg_from_pos::phpdoc: contains '@'"
+                    print("\nphp preceding_trg_from_pos::phpdoc: contains '@'")
                 space_idx = comment[at_idx:].find(" ")
                 if space_idx >= 0:
                     # Trigger after the space character.
                     trg_pos = (curr_pos - len(comment)) + at_idx + space_idx + 1
                     if DEBUG:
-                        print "\nphp preceding_trg_from_pos::phpdoc: calltip at %d" % (trg_pos, )
+                        print("\nphp preceding_trg_from_pos::phpdoc: calltip at %d" % (trg_pos, ))
                     return self.trg_from_pos(buf, trg_pos,
                                              implicit=False, DEBUG=DEBUG)
 
@@ -592,7 +598,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         else:
             try:
                 citdl_expr = self.citdl_expr_from_trg(buf, trg)
-            except CodeIntelError, ex:
+            except CodeIntelError as ex:
                 ctlr.error(str(ex))
                 ctlr.done("error")
                 return
@@ -604,7 +610,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                              include_forwards=False, DEBUG=False):
         #DEBUG = True
         #PERF: Would dicts be faster for all of these?
-        WHITESPACE = tuple(" \t\n\r\v\f")
+        WHITESPACE = tuple(" \t\n\r\\v\f")
         EOL = tuple("\r\n")
         BLOCKCLOSES = tuple(")}]")
         STOPOPS = tuple("({[,&$+=^|%/<;:->!.@?")
@@ -632,31 +638,31 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 while 1:
                     i, ch, style = ac.getNextPosCharStyle()
                     if DEBUG:
-                        print "include_forwards:: i now: %d, ch: %r" % (i, ch)
+                        print("include_forwards:: i now: %d, ch: %r" % (i, ch))
                     if ch in WHITESPACE:
                         if DEBUG:
-                            print "include_forwards:: ch in WHITESPACE"
+                            print("include_forwards:: ch in WHITESPACE")
                         break
                     if ch in STOPOPS:
                         if DEBUG:
-                            print "include_forwards:: ch in STOPOPS, i:%d ch:%r" % (i, ch)
+                            print("include_forwards:: ch in STOPOPS, i:%d ch:%r" % (i, ch))
                         break
                     elif ch in BLOCKCLOSES:
                         if DEBUG:
-                            print "include_forwards:: ch in BLOCKCLOSES, i:%d ch:%r" % (i, ch)
+                            print("include_forwards:: ch in BLOCKCLOSES, i:%d ch:%r" % (i, ch))
                         break
                 # Move back to last valid char
                 i -= 1
                 if DEBUG:
                     if i > pos:
-                        print "include_forwards:: Including chars from pos %d up to %d" % (pos, i)
+                        print("include_forwards:: Including chars from pos %d up to %d" % (pos, i))
                     else:
-                        print "include_forwards:: No valid chars forward from pos %d, i now: %d" % (pos, i)
+                        print("include_forwards:: No valid chars forward from pos %d, i now: %d" % (pos, i))
             except IndexError:
                 # Nothing forwards, user what we have then
                 i = min(i, accessor.length() - 1)
                 if DEBUG:
-                    print "include_forwards:: No more buffer, i now: %d" % (i)
+                    print("include_forwards:: No more buffer, i now: %d" % (i))
             ac.resetToPosition(i)
 
         ch = None
@@ -667,7 +673,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 else:
                     i, ch, style = ac.getPrevPosCharStyle()
                 if DEBUG:
-                    print "i now: %d, ch: %r" % (i, ch)
+                    print("i now: %d, ch: %r" % (i, ch))
 
                 if ch in WHITESPACE:
                     if trg.type in ("use-namespace", "namespace-members"):
@@ -680,7 +686,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                         if ch in WHITESPACE \
                            or (ch == '\\' and next_char in EOL):
                             if DEBUG:
-                                print "drop whitespace: %r" % ch
+                                print("drop whitespace: %r" % ch)
                     # If there are two whitespace-separated words then this is
                     # (likely or always?) a language keyword or declaration
                     # construct at which we want to stop. E.g.
@@ -691,18 +697,18 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                        and (_isident(citdl_expr[-1]) or citdl_expr[-1] == '\\') \
                        and (_isident(ch) or _isdigit(ch)):
                         if DEBUG:
-                            print "stop at (likely?) start of keyword or "\
-                                  "declaration: %r" % ch
+                            print("stop at (likely?) start of keyword or "\
+                                  "declaration: %r" % ch)
                         break
                     # Not whitespace anymore, move into the main checks below
                     if DEBUG:
-                        print "Out of whitespace: i now: %d, ch: %s" % (i, ch)
+                        print("Out of whitespace: i now: %d, ch: %s" % (i, ch))
 
                 if style in skip_styles: # drop styles to ignore
                     while i >= 0 and style in skip_styles:
                         i, ch, style = ac.getPrevPosCharStyle()
                         if DEBUG:
-                            print "drop char of style to ignore: %r" % ch
+                            print("drop char of style to ignore: %r" % ch)
                 elif ch in ":>" and i > 0:
                     # Next char has to be ":" or "-" respectively
                     prev_pos, prev_ch, prev_style = ac.getPrevPosCharStyle()
@@ -710,12 +716,12 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                        (ch == ":" and prev_ch == ":"):
                         citdl_expr.append(".")
                         if DEBUG:
-                            print "Turning member accessor '%s%s' into '.'" % (prev_ch, ch)
+                            print("Turning member accessor '%s%s' into '.'" % (prev_ch, ch))
                         i -= 2
                     else:
                         if DEBUG:
-                            print "citdl_expr: %r" % (citdl_expr)
-                            print "stop at special stop-operator %d: %r" % (i, ch)
+                            print("citdl_expr: %r" % (citdl_expr))
+                            print("stop at special stop-operator %d: %r" % (i, ch))
                         break
                 elif (ch in STOPOPS or ch in EXTRA_STOPOPS_PRECEDING_IDENT) and \
                      (ch != ")" or (citdl_expr and citdl_expr[-1] != ".")):
@@ -727,12 +733,12 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                             # Continue building up the citdl then.
                             continue
                     if DEBUG:
-                        print "citdl_expr: %r" % (citdl_expr)
-                        print "stop at stop-operator %d: %r" % (i, ch)
+                        print("citdl_expr: %r" % (citdl_expr))
+                        print("stop at stop-operator %d: %r" % (i, ch))
                     break
                 elif ch in BLOCKCLOSES:
                     if DEBUG:
-                        print "found block at %d: %r" % (i, ch)
+                        print("found block at %d: %r" % (i, ch))
                     citdl_expr.append(ch)
         
                     BLOCKS = { # map block close char to block open char
@@ -745,8 +751,8 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                     while i >= 0:
                         i, ch, style = ac.getPrevPosCharStyle()
                         if DEBUG:
-                            print "finding matching brace: ch %r (%s), stack %r"\
-                                  % (ch, ', '.join(buf.style_names_from_style_num(style)), stack)
+                            print("finding matching brace: ch %r (%s), stack %r"\
+                                  % (ch, ', '.join(buf.style_names_from_style_num(style)), stack))
                         if ch in BLOCKS and style not in skip_styles:
                             stack.append( (ch, style, BLOCKS[ch]) )
                         elif ch == stack[-1][2] and style not in skip_styles:
@@ -757,13 +763,13 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                             stack.pop()
                             if not stack:
                                 if DEBUG:
-                                    print "jump to matching brace at %d: %r" % (i, ch)
+                                    print("jump to matching brace at %d: %r" % (i, ch))
                                 citdl_expr.append(ch)
                                 break
                     else:
                         # Didn't find the matching brace.
                         if DEBUG:
-                            print "couldn't find matching brace"
+                            print("couldn't find matching brace")
                         raise EvalError("could not find matching brace for "
                                         "'%s' at position %d"
                                         % (stack[-1][0], stack[-1][3]))
@@ -771,7 +777,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
                 else:
                     if DEBUG:
                         style_names = buf.style_names_from_style_num(style)
-                        print "add char: %r (%s)" % (ch, ', '.join(style_names))
+                        print("add char: %r (%s)" % (ch, ', '.join(style_names)))
                     citdl_expr.append(ch)
                     i -= 1
         except IndexError:
@@ -784,8 +790,8 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         citdl_expr.reverse()
         citdl_expr = ''.join(citdl_expr)
         if DEBUG:
-            print "return: %r" % citdl_expr
-            print util.banner("done")
+            print("return: %r" % citdl_expr)
+            print(util.banner("done"))
         return citdl_expr
 
     def citdl_expr_from_trg(self, buf, trg):
@@ -813,7 +819,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         #DEBUG = True
         DEBUG = False
         if DEBUG:
-            print util.banner("%s citdl_expr_from_trg @ %r" % (buf.lang, trg))
+            print(util.banner("%s citdl_expr_from_trg @ %r" % (buf.lang, trg)))
 
         if trg.form == TRG_FORM_CPLN:
             # "->" or "::"
@@ -1106,7 +1112,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         module = elem.get("module")
         if alias is not None:
             if symbol is not None:
-                name = "%s (%s\%s)" % (alias, module, symbol)
+                name = r"%s (%s\%s)" % (alias, module, symbol)
                 detail = "from %(module)s import %(symbol)s as %(alias)s" % locals()
             else:
                 name = "%s (%s)" % (alias, module)
@@ -1172,7 +1178,8 @@ class PHPBuffer(UDLBuffer, XMLParsingBufferMixin):
 class PHPImportHandler(ImportHandler):
     sep = '/'
 
-    def _findScannableFiles(self, (files, searchedDirs), dirname, names):
+    def _findScannableFiles(self, xxx_todo_changeme, dirname, names):
+        (files, searchedDirs) = xxx_todo_changeme
         if sys.platform.startswith("win"):
             cpath = dirname.lower()
         else:
@@ -1218,7 +1225,7 @@ class PHPImportHandler(ImportHandler):
 
         try:
             names = os.listdir(dir)
-        except OSError, ex:
+        except OSError as ex:
             return {}
         dirs, nondirs = set(), set()
         for name in names:
@@ -1334,12 +1341,12 @@ TYPE_PARENT = 8
 def _sortByLineCmp(val1, val2):
     try:
     #if hasattr(val1, "line") and hasattr(val2, "line"):
-        return cmp(val1.linestart, val2.linestart)
+        return _cmp(val1.linestart, val2.linestart)
     except AttributeError:
-        return cmp(val1, val2)
+        return _cmp(val1, val2)
 
 def sortByLine(seq):
-    seq.sort(_sortByLineCmp)
+    seq.sort(key=cmp_to_key(_sortByLineCmp))
     return seq
 
 
@@ -1621,7 +1628,7 @@ class PHPFunction:
         #    createCixVariable(cixelement, "parent", vartype=self.classparent)
 
         # XXX for variables inside functions
-        for v in self.variables.values():
+        for v in list(self.variables.values()):
             v.toElementTree(cixelement)
 
 class PHPInterface:
@@ -1658,12 +1665,12 @@ class PHPInterface:
 
         if self.functions:            
             r += "functions:\n"
-            for f in self.functions.values():
+            for f in list(self.functions.values()):
                 r += "    %r" % f
 
         if self.variables:
             r += "variables:\n"
-            for v in self.variables.values():
+            for v in list(self.variables.values()):
                 r += "    %r" % v
             
         return r + '\n'
@@ -1684,8 +1691,8 @@ class PHPInterface:
         if self.doc:
             setCixDoc(self.doc)
 
-        allValues = self.functions.values() + self.constants.values() + \
-                    self.members.values() + self.variables.values()
+        allValues = list(self.functions.values()) + list(self.constants.values()) + \
+                    list(self.members.values()) + list(self.variables.values())
         for v in sortByLine(allValues):
             v.toElementTree(cixelement)
 
@@ -1758,21 +1765,21 @@ class PHPClass:
 
         if self.functions:            
             r += "functions:\n"
-            for f in self.functions.values():
+            for f in list(self.functions.values()):
                 r += "    %r" % f
 
         if self.variables:
             r += "variables:\n"
-            for v in self.variables.values():
+            for v in list(self.variables.values()):
                 r += "    %r" % v
             
         if self.traits:
             r += "traits:\n"
-            for k, v in self.traits.items():
+            for k, v in list(self.traits.items()):
                 r += "    %r" % k
             if self.traitOverrides:
                 r += "trait overrides:\n"
-                for k, v in self.traitOverrides.items():
+                for k, v in list(self.traitOverrides.items()):
                     r += "    %r, %r" % (k, v)
 
         return r + '\n'
@@ -1798,7 +1805,7 @@ class PHPClass:
 
         if self.traits:
             cixelement.attrib["traitrefs"] = " ".join(self.traits)
-            for citdl, data in self.traitOverrides.items():
+            for citdl, data in list(self.traitOverrides.items()):
                 alias, vis, insteadOf = data
                 if alias and not insteadOf:
                     name = alias
@@ -1813,8 +1820,8 @@ class PHPClass:
         for i in self.interfaces:
             addInterfaceRef(cixelement, i.strip())
 
-        allValues = self.functions.values() + self.constants.values() + \
-                    self.members.values() + self.variables.values()
+        allValues = list(self.functions.values()) + list(self.constants.values()) + \
+                    list(self.members.values()) + list(self.variables.values())
         for v in sortByLine(allValues):
             v.toElementTree(cixelement)
 
@@ -1883,19 +1890,19 @@ class PHPNamespace:
             r += "    %r" % v
 
         r += "constants:\n"
-        for v in self.constants.values():
+        for v in list(self.constants.values()):
             r += "    %r" % v
 
         r += "interfaces:\n"
-        for v in self.interfaces.values():
+        for v in list(self.interfaces.values()):
             r += "    %r" % v
 
         r += "functions:\n"
-        for f in self.functions.values():
+        for f in list(self.functions.values()):
             r += "    %r" % f
 
         r += "classes:\n"
-        for c in self.classes.values():
+        for c in list(self.classes.values()):
             r += repr(c)
 
         return r + '\n'
@@ -1912,8 +1919,8 @@ class PHPNamespace:
         for v in self.includes:
             v.toElementTree(cixelement)
 
-        allValues = self.functions.values() + self.constants.values() + \
-                    self.interfaces.values() + self.classes.values()
+        allValues = list(self.functions.values()) + list(self.constants.values()) + \
+                    list(self.interfaces.values()) + list(self.classes.values())
         for v in sortByLine(allValues):
             v.toElementTree(cixelement)
 
@@ -1949,27 +1956,27 @@ class PHPFile:
             r += "    %r" % v
 
         r += "constants:\n"
-        for v in self.constants.values():
+        for v in list(self.constants.values()):
             r += "    %r" % v
 
         r += "interfaces:\n"
-        for v in self.interfaces.values():
+        for v in list(self.interfaces.values()):
             r += "    %r" % v
 
         r += "functions:\n"
-        for f in self.functions.values():
+        for f in list(self.functions.values()):
             r += "    %r" % f
 
         r += "variables:\n"
-        for v in self.variables.values():
+        for v in list(self.variables.values()):
             r += "    %r" % v
 
         r += "classes:\n"
-        for c in self.classes.values():
+        for c in list(self.classes.values()):
             r += repr(c)
 
         r += "namespaces:\n"
-        for v in self.namespaces.values():
+        for v in list(self.namespaces.values()):
             r += "    %r" % v
 
         return r + '\n'
@@ -1978,9 +1985,9 @@ class PHPFile:
         for v in self.includes:
             v.toElementTree(cixmodule)
 
-        allValues = self.constants.values() + self.functions.values() + \
-                    self.interfaces.values() + self.variables.values() + \
-                    self.classes.values() + self.namespaces.values()
+        allValues = list(self.constants.values()) + list(self.functions.values()) + \
+                    list(self.interfaces.values()) + list(self.variables.values()) + \
+                    list(self.classes.values()) + list(self.namespaces.values())
         for v in sortByLine(allValues):
             v.toElementTree(cixmodule)
 
@@ -2018,11 +2025,11 @@ class PHPcile:
     #        f.toElementTree(cix)
 
     def convertToElementTreeModule(self, cixmodule):
-        for f in self.filesparsed.values():
+        for f in list(self.filesparsed.values()):
             f.convertToElementTreeModule(cixmodule)
 
     def convertToElementTreeFile(self, cix):
-        for f in self.filesparsed.values():
+        for f in list(self.filesparsed.values()):
             f.convertToElementTreeFile(cix)
 
 
@@ -2260,7 +2267,7 @@ class PHPParser:
         toScope = self.currentNamespace or self.fileinfo
         toScope.includes.append(PHPImport(namespace_path, self.lineno,
                                           alias=alias, symbol=symbol, ilk=ilk))
-        log.debug("IMPORT NAMESPACE: %s\%s as %r on line %d",
+        log.debug(r"IMPORT NAMESPACE: %s\%s as %r on line %d",
                   namespace_path, symbol, alias, self.lineno)
 
     def addVariable(self, name, vartype='', attributes=None, doc=None,
@@ -2747,7 +2754,7 @@ class PHPParser:
                                                     ".".join(typeNames),
                                                     doc=self.comment,
                                                     forceToClass=True)
-                    elif name is not "parent":
+                    elif name != "parent":
                         # If next text/style is not an "=" operator, then add
                         # __not_defined__, which means the variable was not yet
                         # defined at the position it was ciled.
@@ -3427,7 +3434,7 @@ class PHPParser:
         return self.csl_tokens, self.css_tokens
 
     def convertToElementTreeFile(self, cixelement):
-        """Store PHP information into the cixelement as a file(s) sub element"""
+        """Store PHP information into the cixelement as a open(s) sub element"""
         self.cile.convertToElementTreeFile(cixelement)
 
     def convertToElementTreeModule(self, cixblob):

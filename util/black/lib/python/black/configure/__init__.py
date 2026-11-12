@@ -1,7 +1,7 @@
 # Black "configure" command support.
 #
 # One of the std Black commands is "configure" which typically
-# processes configure options and generated configuration file(s)
+# processes configure options and generated configuration open(s)
 # specifying certain data appropriate for the specific project
 # and user configuration choices. Think "autoconf" not written in
 # m4 and with more config file output formats: C header file, 
@@ -10,16 +10,16 @@
 
 import os, sys, re, types, getopt
 import stat
-from UserDict import UserDict
+from collections import UserDict
 if sys.platform.startswith('win'):
-    import _winreg
+    import winreg
 import black
 import itertools
 
 try:
-    basestring
+    str
 except NameError:
-    basestring = (str, unicode)
+    str = (str, str)
 
 
 
@@ -221,7 +221,7 @@ class Datum(Item):
     def _Serialize_AsPython(self, stream):
         if self.value is None:
             pass
-        elif isinstance(self.value, (basestring, int, bool, list, tuple, dict)):
+        elif isinstance(self.value, (str, int, bool, list, tuple, dict)):
             stream.write('%s = %s\n' % (self.name, repr(self.value)))
         else:
             stream.write('%s = %s\n' % (self.name, repr(str(self.value))))
@@ -232,10 +232,10 @@ class Datum(Item):
         elif isinstance(self.value, str):
             stream.write('$%s = %s;\n' % (self.name, repr(self.value)))
             stream.scalarExports.append(self.name)
-        elif isinstance(self.value, unicode):
+        elif isinstance(self.value, str):
             try:
                 stream.write('$%s = %s;\n' % (self.name, repr(str(self.value))))
-            except UnicodeError, ex:
+            except UnicodeError as ex:
                 raise ConfigureError("can't serialize '%s' unicode datum "
                                      "to Perl because can't convert it to "
                                      "a string: %s" % (self.name, ex))
@@ -248,7 +248,7 @@ class Datum(Item):
             stream.scalarExports.append(self.name)
         elif isinstance(self.value, dict):
             # write it as:  %name = (key0,val0,key1,val1,...);
-            merge = itertools.chain(*map(list, self.value.items()))
+            merge = itertools.chain(*list(map(list, list(self.value.items()))))
             stream.write('%%%s = %s;\n' % (self.name, tuple(merge)))
             stream.hashExports.append(self.name)
         elif isinstance(self.value, (list, tuple)):
@@ -263,7 +263,7 @@ class Datum(Item):
             pass
         elif isinstance(self.value, str):
             stream.write('#define %s "%s"\n' % (self.name, self.value))
-        elif isinstance(self.value, (int, long)):
+        elif isinstance(self.value, int):
             stream.write('#define %s %d\n' % (self.name, self.value))
         else:
             raise ConfigureError("Don't know how to serialize datum %s of "\
@@ -337,7 +337,7 @@ class SetEnvVar(Item):
 
     def _Serialize_AsPython(self, stream):
         stream.write("import os")
-        if self.value is None or isinstance(self.value, basestring):
+        if self.value is None or isinstance(self.value, str):
             stream.write("os.environ[%s] = %s\n" %\
                (repr(self.name), repr(self.value)))
         else:
@@ -455,10 +455,10 @@ class Items(UserDict):
         """
         UserDict.__init__(self)
     
-        for name, item in rawItems.items():
+        for name, item in list(rawItems.items()):
             if item is None:
                 continue
-            elif isinstance(item, (int, long, float, str, tuple, list, dict)):
+            elif isinstance(item, (int, float, str, tuple, list, dict)):
                 # this is a simple Datum()
                 self.data[name] = Datum(name, value=item)
             elif type(item) == types.InstanceType:
@@ -543,7 +543,7 @@ if __name__ == "__main__":
         # `chmod +x $self.filename` so can just do 
         # `./bkconfig.py SUBSTRING...`
         mode = stat.S_IMODE(os.stat(self.filename).st_mode)
-        os.chmod(self.filename, mode | 0100)
+        os.chmod(self.filename, mode | 0o100)
     
 
 
@@ -634,18 +634,22 @@ def ImportProjectConfig(blackFileName, blackFile):
     Python module is presumed to be called "bkconfig". (XXX This
     will (eventually) be made overridable via a entry in the blackfile.)
     """
-    import imp
+    import importlib.machinery, importlib.util
     dirName = os.path.dirname(blackFileName)
     moduleName = "bkconfig"
-    file, pathname, description = imp.find_module(moduleName, [dirName])
-    return imp.load_module(moduleName, file, pathname, description)
+    spec = importlib.machinery.PathFinder.find_spec(moduleName, [dirName])
+    if spec is None or spec.loader is None:
+        raise ImportError("No module named %r in %r" % (moduleName, dirName))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def GetOptionMaps(items):
     # determine the allowable options (ensuring no conflicts)
     shortMap = {}  # map short and long options
     longMap = {}   #  to list of items that care about them
-    for name, item in items.items():
+    for name, item in list(items.items()):
         if item.acceptedOptions:
             shortString, longOpts = item.acceptedOptions
             # abort if there are any conflicts (i.e. an option that one
@@ -655,13 +659,13 @@ def GetOptionMaps(items):
                     conflictingShort = shortOpt[0:-1]
                 else:
                     conflictingShort = shortOpt + ":"
-                if shortMap.has_key(conflictingShort):
+                if conflictingShort in shortMap:
                     raise ConfigureError("Short option string '%s' for "\
                         "item '%s' conflicts with short option '%s' from "\
                         "item(s) %s\n" % (shortOpt, item.name,\
                         conflictingShort,\
                         [item.name for item in shortMap[conflictingShort]]))
-                elif shortMap.has_key(shortOpt):
+                elif shortOpt in shortMap:
                     shortMap[shortOpt].append(item)
                 else:
                     shortMap[shortOpt] = [item]
@@ -670,12 +674,12 @@ def GetOptionMaps(items):
                     conflictingLong = longOpt[0:-1]
                 else:
                     conflictingLong = longOpt + "="
-                if longMap.has_key(conflictingLong):
+                if conflictingLong in longMap:
                     raise ConfigureError("Long option string '%s' for "\
                         "item '%s' conflicts with long option '%s' from "\
                         "item(s) %s\n" % (longOpt, item.name, conflictingLong,\
                         [item.name for item in longMap[conflictingLong]]))
-                elif longMap.has_key(longOpt):
+                elif longOpt in longMap:
                     longMap[longOpt].append(item)
                 else:
                     longMap[longOpt] = [item]
@@ -706,18 +710,18 @@ def Configure(options, blackFileName, blackFile):
     # process the options list to get the users choices and let
     # the configuration items that care know about these choices
     try:
-        optlist, args = getopt.getopt(options, "".join(shortMap.keys()),
-                                      longMap.keys())
-    except getopt.GetoptError, msg:
+        optlist, args = getopt.getopt(options, "".join(list(shortMap.keys())),
+                                      list(longMap.keys()))
+    except getopt.GetoptError as msg:
         raise ConfigureError(msg)
     for opt,optarg in optlist:
         if opt.startswith("--"):
-            if longMap.has_key(opt[2:]):
+            if opt[2:] in longMap:
                 itemsThatCare = longMap[ opt[2:] ]
             else:
                 itemsThatCare = longMap[ opt[2:]+"=" ]
         else:
-            if shortMap.has_key(opt[1:]):
+            if opt[1:] in shortMap:
                 itemsThatCare = shortMap[ opt[1:] ]
             else:
                 itemsThatCare = shortMap[ opt[1:]+":" ]
@@ -725,7 +729,7 @@ def Configure(options, blackFileName, blackFile):
             item.chosenOptions.append( (opt, optarg) )
             
     # determine the value of each item
-    for item in items.values():
+    for item in list(items.values()):
         item.Determine()
 
     # serialize the configured values (add a configuration item for
@@ -745,11 +749,11 @@ def Configure(options, blackFileName, blackFile):
         items["envScriptName"].Determine()
     streams["perl"] = PerlConfigStream(configFileBase)
     streams["python"] = PythonConfigStream(configFileBase)
-    sorteditems = items.items()
+    sorteditems = list(items.items())
     sorteditems.sort(key=lambda i: (i[1].serializationOrdinal, i[0]))
     for name, item in sorteditems:
         item.Serialize(streams)
-    for stream in streams.values():
+    for stream in list(streams.values()):
         stream.close()
 
 

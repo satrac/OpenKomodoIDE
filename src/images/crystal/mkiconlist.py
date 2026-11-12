@@ -35,7 +35,7 @@ imgtemplate = """
      src="chrome://crystal/skin/icons/%(fname)s"/>"""
 
 import sys, os
-print sys.argv
+print(sys.argv)
 target = sys.argv[1]
 fp = open(target, 'w')
 where = os.path.dirname(target)
@@ -47,7 +47,7 @@ try:
     #print os.getcwd()
     fp.write(header)
     icons = os.path.normpath(os.path.join(os.getcwd(), sys.argv[2]))
-    print "icons are in ",icons
+    print("icons are in ",icons)
     for f in sorted(os.listdir(icons)):
         extension = os.path.splitext(f)[-1].lower()
         if extension in extensions:

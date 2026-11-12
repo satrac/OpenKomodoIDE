@@ -106,7 +106,7 @@ class KoNotificationBase(object):
         self.identifier = str(identifier)
 
         self.__manager = weakref.ref(mgr)
-        tags = map(lambda s: s.lower(), filter(None, tags)) # drop empty tags
+        tags = [s.lower() for s in [_f for _f in tags if _f]] # drop empty tags
         self.tags = list(set(tags)) # drop repeated tags
         self.contxt = context
 
@@ -149,7 +149,7 @@ class KoNotificationActionable(KoNotificationBase):
     def getActions(self, actionId=None):
         if not actionId:
             return list(self.actions)
-        return filter(lambda a: a.identifier == actionId, self.actions)
+        return [a for a in self.actions if a.identifier == actionId]
 
     def updateAction(self, action):
         if not action.identifier:

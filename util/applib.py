@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2005-2008 ActiveState Software Inc.
 # License: MIT
 
@@ -49,7 +49,7 @@ def user_data_dir(appname, owner=None, version=None):
             would typically be "<major>.<minor>".
     
     Typical user data directories are:
-        Win XP:     C:\Documents and Settings\USER\Application Data\<owner>\<appname>
+        Win XP:     C:\\Documents and Settings\\USER\\Application Data\\<owner>\\<appname>
         Mac OS X:   ~/Library/Application Support/<appname>
         Unix:       ~/.<lowercased-appname>
     
@@ -80,7 +80,7 @@ def user_data_dir(appname, owner=None, version=None):
 
 
 def site_data_dir(appname, owner=None, version=None):
-    """Return full path to the user-shared data dir for this application.
+    r"""Return full path to the user-shared data dir for this application.
     
         "appname" is the name of application.
         "owner" (only required and used on Windows) is the name of the
@@ -132,7 +132,7 @@ def user_cache_dir(appname, owner=None, version=None):
             would typically be "<major>.<minor>".
     
     Typical user data directories are:
-        Win XP:     C:\Documents and Settings\USER\Local Settings\Application Data\<owner>\<appname>
+        Win XP:     C:\\Documents and Settings\\USER\\Local Settings\\Application Data\\<owner>\\<appname>
         Mac OS X:   ~/Library/Caches/<appname>
         Unix:       ~/.<lowercased-appname>/caches
 
@@ -171,7 +171,7 @@ def _get_win_folder_from_registry(csidl_name):
     registry for this guarantees us the correct answer for all CSIDL_*
     names.
     """
-    import _winreg
+    import winreg
     
     shell_folder_name = {
         "CSIDL_APPDATA": "AppData",
@@ -179,9 +179,9 @@ def _get_win_folder_from_registry(csidl_name):
         "CSIDL_LOCAL_APPDATA": "Local AppData",
     }[csidl_name]
 
-    key = _winreg.OpenKey(_winreg.HKEY_CURRENT_USER,
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
         r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders")
-    dir, type = _winreg.QueryValueEx(key, shell_folder_name)
+    dir, type = winreg.QueryValueEx(key, shell_folder_name)
     return dir
 
 def _get_win_folder_with_pywin32(csidl_name):
@@ -191,7 +191,7 @@ def _get_win_folder_with_pywin32(csidl_name):
     # not return unicode strings when there is unicode data in the
     # path.
     try:
-        dir = unicode(dir)
+        dir = str(dir)
     except UnicodeError:
         pass
     return dir
@@ -225,7 +225,7 @@ if sys.platform == "win32":
 #---- self test code
 
 if __name__ == "__main__":
-    print "applib: user data dir:", user_data_dir("Komodo", "ActiveState")
-    print "applib: site data dir:", site_data_dir("Komodo", "ActiveState")
-    print "applib: user cache dir:", user_cache_dir("Komodo", "ActiveState")
+    print("applib: user data dir:", user_data_dir("Komodo", "ActiveState"))
+    print("applib: site data dir:", site_data_dir("Komodo", "ActiveState"))
+    print("applib: user cache dir:", user_cache_dir("Komodo", "ActiveState"))
 

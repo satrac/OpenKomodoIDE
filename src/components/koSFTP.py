@@ -121,7 +121,7 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             # _sftp.sock in this case is actually a paramiko.Channel object
             self._sftp.sock.settimeout(self._socket_timeout)
             self._homedirectory = self.do_currentDirectory()
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     # Authenicate to the remote SSH server using the supplied username/password
@@ -174,7 +174,7 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
                 rf.initFromStats(dirname, filename, str(fileinfo.st_size),
                                  str(fileinfo.st_uid), str(fileinfo.st_gid),
                                  fileinfo.st_mode, fileinfo.st_mtime)
-            except Exception, e:
+            except Exception as e:
                 # No go, we assume it was not found in this string
                 self.log.debug("Error '%s' decoding filename: '%s'" % (e, filename))
                 del rf
@@ -208,11 +208,11 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             if path == "/":
                 return self._createRFInfoFromStat(parentPath, path, info)
             return self._createRFInfoFromStat(parentPath, os.path.basename(path), info)
-        except IOError, e:
+        except IOError as e:
             # Likely this path does not exist then, else it needs to be encoded
             self.log.debug("do_getPathInfo: error: %s on path '%s'", e.args[-1], path)
             return None
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_getDirectoryList(self, path, dir_rfinfo):
@@ -228,29 +228,29 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
                     rf_fileinfo = self._createRFInfoFromStat(orig_path, fileinfo.filename, fileinfo)
                     if rf_fileinfo is not None:
                         dirinfo.append(rf_fileinfo)
-                except Exception, e:
+                except Exception as e:
                     self.log.error("Unable to create a listing element for: %s", fileinfo.filename)
                     self.log.debug("Error: %s: %s", e, e.args)
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
         return dirinfo
 
     def do_rename(self, oldName, newName):
         try:
             self._sftp.rename(self._fixPath(oldName), self._fixPath(newName))
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_changeDirectory(self, path):
         try:
             self._sftp.chdir(self._fixPath(path))
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_currentDirectory(self):
         try:
             return self._sftp.normalize(".")
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_getHomeDirectory(self):
@@ -265,19 +265,19 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
                 parent_path = "/"
             self.log.debug("do_getParentPath: '%s' -> '%s'", path, parent_path)
             return parent_path
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_removeFile(self, name):
         try:
             self._sftp.remove(self._fixPath(name))
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_removeDirectory(self, name):
         try:
             return self._sftp.rmdir(self._fixPath(name))
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_createDirectory(self, name, permissions):
@@ -286,7 +286,7 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             # I.e. 755 as octet, the integer value of this is 493
             # permissions = int(str(permissions), 8)
             return self._sftp.mkdir(self._fixPath(name), permissions)
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_createFile(self, name, permissions):
@@ -299,13 +299,13 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             # Open and then close the file to create it
             self._sftp.open(filename, 'wb').close()
             self._sftp.chmod(filename, permissions)
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_chmod(self, filepath, permissions):
         try:
             self._sftp.chmod(self._fixPath(filepath), permissions)
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_readFile(self, filename):
@@ -316,7 +316,7 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             data = self._sftp.open(filename, 'rb').read()
             self.log.debug("do_readFile: Read in %d characters", len(data))
             return data
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
     def do_writeFile(self, filename, data):
@@ -326,7 +326,7 @@ class koSFTPConnection(remotefilelib.koRemoteSSH):
             self.log.debug("do_writeFile: Writing sftp file: %s", filename)
             self._sftp.open(filename, 'wb').write(data)
             self.log.debug("do_writeFile: Wrote %s characters", len(data))
-        except self._SFTPExceptions, e:
+        except self._SFTPExceptions as e:
             self._raiseWithException(e)
 
 

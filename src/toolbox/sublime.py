@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import re
 import json
@@ -255,7 +255,7 @@ for more information.
     #        ${TM_FILENAME/(\w+)\.js/\1/g}
     #        ${TM_FILENAME/(\w+)\.js/\1/}
     def checkSubstitutionSyntax(self, data):
-        pattern = re.compile("\${.*?/.*?/.*?/[igm]*?}") # substitution
+        pattern = re.compile(r"\${.*?/.*?/.*?/[igm]*?}") # substitution
         if pattern.search(data):
             self.disabledVarsInFile = True
             return 1
@@ -265,7 +265,7 @@ for more information.
     #   $PARAM variables passed in to snippets at run time
     #   $$TM_SOFT_TABS
     def checkInvalidVariables(self, data):
-        pattern = re.compile("\$(PARAM\d+)|\$(TM_SOFT_TABS)") # substitution
+        pattern = re.compile(r"\$(PARAM\d+)|\$(TM_SOFT_TABS)") # substitution
         if pattern.search(data):
             self.disabledVarsInFile = True
             return 1
@@ -286,7 +286,7 @@ for more information.
     placeHolderStrings = {}
 
     def _replSublimeTabstops(self, match):
-        pattern = re.compile("\$\d+|\$\{\d+")
+        pattern = re.compile(r"\$\d+|\$\{\d+")
         match1 = match.group(1)
         match2 = match.group(2)
         match3 = match.group(3)
@@ -332,7 +332,7 @@ for more information.
             "$TM_SELECTED_TEXT" : "require(\"ko/editor\").getColumnNumber()",
             "$TM_TAB_SIZE" : "require(\"ko/views\").current().get().koDoc.tabWidth"
             }
-        for key, value in subVarsToShortcuts.items():
+        for key, value in list(subVarsToShortcuts.items()):
             content = content.replace(key, "<%= "+value+" %>")
         return content
 
@@ -354,15 +354,15 @@ for more information.
         if self.subFound:
             return content
         if self.unSupVarsFound:
-            pattern = re.compile("\$(PARAM\d+)|\$(TM_SOFT_TABS)")
+            pattern = re.compile(r"\$(PARAM\d+)|\$(TM_SOFT_TABS)")
             content = pattern.sub(self._disableVarsInTabstops, content)
         # Replace the tabstops
-        pattern = re.compile("\${?(\d+):(.*?)}|\${?(\d+)}?")
+        pattern = re.compile(r"\${?(\d+):(.*?)}|\${?(\d+)}?")
         content = pattern.sub(self._replSublimeTabstops, content)
         content = self._convertSublimeVarsToShortcuts(content)
         # Sublime snippets have to escape "$"
         # and when they are loaded into a string, the escape char gets escaped
         # so i have to escape the escaping escape char...fun!
-        pattern = re.compile("\\\\\$")
+        pattern = re.compile("\\\\\\$")
         content = pattern.sub("$",content)
         return content

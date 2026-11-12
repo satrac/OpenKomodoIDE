@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     Generate DTD references from an XML file.
@@ -136,25 +136,25 @@ def dtdcollect(xmlfile, dtdfile):
                 continue
             if attr == "accesskey" and id:
                 try:
-                    words = [w for w in re.split("[\W_]+", id) if w]
+                    words = [w for w in re.split(r"[\W_]+", id) if w]
                     if len(words[0]) > 1 and not words[0][1].isupper():
                         # lowercase the first letter
                         words[0] = words[0][0].lower()+words[0][1:]
                     entityName = words[0] + "".join([w[0].upper()+w[1:] for w in words[1:]])
-                except IndexError, e:
-                    print "failure on name %s" % entityVal
+                except IndexError as e:
+                    print("failure on name %s" % entityVal)
                     raise
             elif entityVal in specialNames:
                 entityName = specialNames[entityVal]
             else:
                 try:
-                    words = [w for w in re.split("[\W_]+", entityVal) if w]
+                    words = [w for w in re.split(r"[\W_]+", entityVal) if w]
                     if len(words[0]) > 1 and not words[0][1].isupper():
                         # lowercase the first letter
                         words[0] = words[0][0].lower()+words[0][1:]
                     entityName = words[0] + "".join([w[0].upper()+w[1:] for w in words[1:]])
-                except IndexError, e:
-                    print "failure on name %s" % entityVal
+                except IndexError as e:
+                    print("failure on name %s" % entityVal)
                     raise
             
             if entityName[0].isdigit():
@@ -179,7 +179,7 @@ def dtdcollect(xmlfile, dtdfile):
             xmlContent = re.subn(entityAttr, entityRef, xmlContent, 1)[0]
 
     # add the doctype data to the content
-    if type(dtdfile) in types.StringTypes:
+    if type(dtdfile) in (str,):
         # XXX make big assumptions here....
         chrome = "%s%s" % (chromeURI, os.path.basename(dtdfile))
         basename = os.path.splitext(os.path.basename(chrome))[0]
@@ -216,10 +216,10 @@ def dtdcollect(xmlfile, dtdfile):
 def dtdwrite(dtdfile, entities, force=False):
     if not entities:
         return
-    dtdEntities = ['<!ENTITY %s "%s">' % (id, escape(val, entitydefs)) for id, val in entities.items()]
+    dtdEntities = ['<!ENTITY %s "%s">' % (id, escape(val, entitydefs)) for id, val in list(entities.items())]
     dtdEntities.sort()
     dtdFileData = "\n".join(dtdEntities)+"\n"
-    if type(dtdfile) in types.StringTypes:
+    if type(dtdfile) in (str,):
         if os.path.exists(dtdfile):
             if force:
                 os.remove(dtdfile)
@@ -238,7 +238,7 @@ def xmlwrite(outfile, xmlContent, force=False):
     if nowrite:
         return
 
-    if type(outfile) in types.StringTypes:
+    if type(outfile) in (str,):
         if os.path.exists(outfile):
             if force:
                 os.remove(outfile)
@@ -268,7 +268,7 @@ def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "hVvo:ifdc:",
             ["help", "version", "verbose", "force", "dry-run", "chrome"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         log.error("%s. Your invocation was: %s\n"\
                          % (msg, argv))
         log.error("See 'dtdgen --help'.\n")
@@ -312,11 +312,11 @@ def main(argv):
     xmlfile, dtdfile = args
     if os.path.isdir(xmlfile):
         if not os.path.isdir(dtdfile):
-            print "second argument must be the path to the locale directory"
+            print("second argument must be the path to the locale directory")
             sys.exit(-1)
         for root, dirs, files in os.walk(xmlfile):
-            print 20*'-'
-            print root
+            print(20*'-')
+            print(root)
             for dname in dirs:
                 if dname == "test":
                     del dirs[dirs.index(dname)]
@@ -352,7 +352,7 @@ def main(argv):
     
         try:
             dtdgen(xmlfile, dtdfile, outfile, force)
-        except DTDGenError, ex:
+        except DTDGenError as ex:
             log.exception(ex)
 
 if __name__ == "__main__":

@@ -191,7 +191,7 @@ class GenericCommandHandler:
         try:
             currentPosFilePath, currentPosFileLine, currentPosFileCol \
                 = diff.file_pos_from_diff_pos(currentPosLine, currentPosCol)
-        except difflibex.DiffLibExError, ex:
+        except difflibex.DiffLibExError as ex:
             log.warn("could not jump to corresponding line: %s", ex)
             return
         
@@ -216,7 +216,7 @@ class GenericCommandHandler:
             try:
                 anchorFilePath, anchorFileLine, anchorFileCol \
                     = diff.file_pos_from_diff_pos(anchorLine, anchorCol)
-            except difflibex.DiffLibExError, ex:
+            except difflibex.DiffLibExError as ex:
                 log.warn("could not jump to corresponding line: %s", ex)
                 return
             
@@ -742,7 +742,7 @@ class GenericCommandHandler:
             key = str(i)
             try:
                 val_type = command_params.getValueType(key)
-            except COMException, e:
+            except COMException as e:
                 # out of positional arguments, probably
                 break
             args.append(get_param(key, val_type))
@@ -1016,7 +1016,7 @@ class GenericCommandHandler:
             # end is the same. When coming across a '"' for example, it's not
             # clear if it is the beginning of a multi-line string or the end
             # of a singe-line string without considering syntax highlighting.
-            delimiters = re.sub('[^(\[{<]', '', delimiters)
+            delimiters = re.sub(r'[^(\[{<]', '', delimiters)
         xml = self._view.languageObj.supportsXMLIndentHere(sm, sm.currentPos)
         if xml:
             if chPrev == '>':
@@ -1057,10 +1057,10 @@ class GenericCommandHandler:
                 elif ch in delimiters:
                     # Found a beginning delimiter to skip.
                     ignore[ch] -= 1
-                elif ch in endDelimiters.values():
+                elif ch in list(endDelimiters.values()):
                     # Check if this is an end delimiter. If so, its beginning
                     # complement needs to be skipped when encountered.
-                    for key in ignore.keys():
+                    for key in list(ignore.keys()):
                         if endDelimiters[key] == ch:
                             ignore[key] += 1
                             break
@@ -1472,7 +1472,7 @@ class GenericCommandHandler:
         
         # get the last line visible in this fold and go up from there
         lastchild = sm.getLastChild(lineno, -1)
-        lines = range(lineno, lastchild)
+        lines = list(range(lineno, lastchild))
         lines.reverse()
         
         # close em up
@@ -1495,7 +1495,7 @@ class GenericCommandHandler:
             tabwidth = self._view.prefs.getLongPref('tabWidth')
             if tabwidth != 0:
                 return tabwidth
-        except COMException, ex:
+        except COMException as ex:
             pass
         dialogproxy = components.classes['@activestate.com/asDialogProxy;1'].\
             getService(components.interfaces.asIDialogProxy)
@@ -2015,7 +2015,7 @@ class GenericCommandHandler:
         indentlog.info("delta = %d", delta)
         # apply that delta to each line in the region
         sm.beginUndoAction()
-        for i in xrange(startLineNo, endLineNo + 1):
+        for i in range(startLineNo, endLineNo + 1):
             sm.targetStart = sm.positionFromLine(i)
             sm.targetEnd = sm.getLineEndPosition(i)
             line = sm.getTargetText()[1]
@@ -2139,7 +2139,7 @@ def _sendStatusMessage(msg, highlight=False, timeout=3000):
     sm.highlight = highlight
     try:
         observerSvc.notifyObservers(sm, "status_message", None)
-    except COMException, ex:
+    except COMException as ex:
         pass
 
 def classifyws(s, tabwidth):
@@ -2163,7 +2163,7 @@ def getLine(scin, lineNo):
 
 def str_to_title_case(str):
     rtn = "";
-    for match in re.finditer("(\s*)([^\s]+)", str):
+    for match in re.finditer(r"(\s*)([^\s]+)", str):
         word = match.group(2)
         rtn += match.group(1) + word[0].upper() + word[1:]
     return rtn

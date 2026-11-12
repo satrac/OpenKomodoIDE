@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -13,8 +13,8 @@ class FormattedOutput:
         self.prefix = prefix
         self.content = ''
 
-    TT_WS, TT_NEWLINE, TT_WORD = range(3) # token types
-    WHITESPACE = ' \t\r\f\v'  # excluding '\n' on purpose
+    TT_WS, TT_NEWLINE, TT_WORD = list(range(3)) # token types
+    WHITESPACE = ' \t\r\f\\v'  # excluding '\n' on purpose
     def parse(self, text):
         """return a list of tuples (TOKEN_TYPE, <token>)"""
         tokens = []
@@ -108,7 +108,7 @@ class MarkedUpOutput(FormattedOutput):
     # understood types of markup
     MT_START_GROUP, MT_END_GROUP,\
         MT_START_ITEM, MT_END_ITEM,\
-        MT_START_ERROR_ITEM, MT_END_ERROR_ITEM = range(6)
+        MT_START_ERROR_ITEM, MT_END_ERROR_ITEM = list(range(6))
     def startGroup(self): self.markup(self.MT_START_GROUP)
     def endGroup(self): self.markup(self.MT_END_GROUP)
     def startItem(self): self.markup(self.MT_START_ITEM)

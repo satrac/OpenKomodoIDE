@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """A client library for firefly.activestate.com.
 
@@ -20,8 +20,8 @@ Some links to get you started:
 """
 
 from pprint import pprint, pformat
-from urllib import urlencode, quote as urlquote
-import xmlrpclib
+from urllib.parse import urlencode, quote as urlquote
+import xmlrpc.client
 import time
 
 if __name__ == "__main__":
@@ -52,7 +52,7 @@ class FireflyAPI(apibase.XmlrpcAPIBase):
         """
         try:
             raw = self._server.product.getUserSubscriptions(username)
-        except xmlrpclib.Error, ex:
+        except xmlrpc.client.Error as ex:
             raise self.APIError("XML-RPC error calling "
                 "'product.getUserSubscriptions': %s" % ex)
         return [Subscription(d) for d in raw]
@@ -70,7 +70,7 @@ class FireflyAPI(apibase.XmlrpcAPIBase):
         """
         try:
             raw = self._server.product.getSubscription(service_account_id)
-        except xmlrpclib.Error, ex:
+        except xmlrpc.client.Error as ex:
             raise self.APIError("XML-RPC error calling "
                 "'product.getSubscription': %s" % ex)
         return Subscription(raw)
@@ -122,7 +122,7 @@ class FireflyAPI(apibase.XmlrpcAPIBase):
         
         try:
             result = self._server.product.setSubscription(service_account_id, data)
-        except xmlrpclib.Error, ex:
+        except xmlrpc.client.Error as ex:
             raise self.APIError("XML-RPC error calling "
                 "'product.setSubscription': %s" % ex)
         return result
@@ -201,7 +201,7 @@ class Subscription(object):
 def main(argv):
     """Usage: ./fireflyapi.py METHOD ARGS"""
     from os.path import exists, expanduser
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
     import optparse
     
     parser = optparse.OptionParser(usage="%prog METHOD [ARGS...]")
@@ -217,7 +217,7 @@ def main(argv):
     kwargs = {}
     conf_path = expanduser("~/.fireflyapi.ini")
     if exists(conf_path):
-        conf = SafeConfigParser()
+        conf = ConfigParser()
         conf.read(conf_path)
         section = "auth"
         if conf.has_section(section):
@@ -235,17 +235,17 @@ def main(argv):
             method_args.append(int(s))
         except ValueError:
             method_args.append(s)
-    print "--", _display_url_from_url(api._api_url)
-    print "  method: %s" % method_name
-    print "    args: %s" % ", ".join([repr(a) for a in method_args])
+    print("--", _display_url_from_url(api._api_url))
+    print("  method: %s" % method_name)
+    print("    args: %s" % ", ".join([repr(a) for a in method_args]))
     response = method(*method_args)
     pprint(response)
 
 def _display_url_from_url(url):
     """Hide the password in the URL, if any."""
-    import urlparse
+    import urllib.parse
     display_url = url
-    parsed = urlparse.urlparse(url)
+    parsed = urllib.parse.urlparse(url)
     if parsed.password:
         display_url = url.replace(":"+parsed.password+"@",
             ":%s@" % ("*" * len(parsed.password)), 1)

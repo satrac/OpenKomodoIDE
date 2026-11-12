@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 r"""
     build.py -- Main build script for Mozilla-devel
@@ -84,8 +84,8 @@ import shutil
 import pprint
 import time
 import glob
-import urllib
-import urllib2
+import urllib.request
+import urllib.error
 import string
 import types
 import logging
@@ -111,20 +111,26 @@ def _getChangeNum():
     # suitable for inclusion in a filename if ':' is in it). See
     # "svnversion --help" for details.
     up_one_dir = dirname(dirname(abspath(__file__)))
-    changestr = _capture_output('svnversion "%s"' % up_one_dir).strip()
+    try:
+        changestr = _capture_output('svnversion "%s"' % up_one_dir).strip()
+    except OSError:
+        try:
+            changestr = _capture_output('git log --oneline -1').strip().split()[0]
+        except OSError:
+            changestr = "0"
 
     if changestr == "exported":
         changestr = 0  # fallback
     try:
         changenum = int(changestr)
-    except ValueError, ex:
+    except ValueError as ex:
         # pull off front number (good enough for our purposes)
         try:
-            changenum = int(re.match("(\d+)", changestr).group(1))
+            changenum = int(re.match(r"(\d+)", changestr).group(1))
             log.warn("simplifying complex changenum from 'svnversion': %s -> %s"
                      " (see `svnversion --help` for details)",
                      changestr, changenum)
-        except AttributeError, ex:
+        except AttributeError as ex:
             changenum = 0
             log.warn("Failed to get changenum, using 0 instead")
     return changenum
@@ -140,6 +146,7 @@ gPlat2BinDir = {
     'win32': os.path.abspath('bin-win32'),
     'sunos5': os.path.abspath('bin-solaris-sun'),
     'linux2': os.path.abspath('bin-linux-x86'),
+    'linux': os.path.abspath('bin-linux-x86'),
     'hp-uxB': os.path.abspath('bin-hpux'),
     'darwin': os.path.abspath('bin-darwin'),
     'freebsd6': os.path.abspath('bin-freebsd-x86'),
@@ -217,12 +224,10 @@ def _run_in_dir(cmd, cwd, logstream=_RUN_DEFAULT_LOGSTREAM):
 
 
 def _importConfig():
-    import imp
-    f = open(gConfigFileName)
-    try:
-        config = imp.load_source("config", gConfigFileName, f)
-    finally:
-        f.close()
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("config", gConfigFileName)
+    config = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(config)
     return config
 
 def _validateEnv():
@@ -302,7 +307,7 @@ def _validatePython(config):
         return
 
     if exists("/Library/Frameworks/Python.framework/Versions/"+config.pyVer):
-        err = _dedent("""\
+        err = _dedent(r"""\
             Your current Python in '/Library/Frameworks'
             is version %s, but you are attempting to build Mozilla/PyXPCOM
             with a siloed Python of version %s. This cannot work on Mac OS X
@@ -321,7 +326,7 @@ def _validatePython(config):
                config.pyVer, config.pyVer,
                curr_pyver, curr_pyver))
     else:
-        err = _dedent("""\
+        err = _dedent(r"""\
             Your current Python in '/Library/Frameworks'
             is version %s, but you are attempting to build Mozilla/PyXPCOM
             with a siloed Python of version %s. This cannot work on Mac OS X
@@ -356,9 +361,9 @@ def _getAutoconfVersion(autoconf=None):
         raise ValueError("'%s' does not exist" % autoconf)
 
     # Ask 'autoconf' for its version.
-    o = os.popen("autoconf --version")
-    firstline = o.readlines()[0]
-    o.close()
+    o = subprocess.Popen("autoconf --version", shell=True, stdout=subprocess.PIPE)
+    firstline = o.stdout.readline().decode('utf-8')
+    o.wait()
 
     # Parse out the version. Example output:
     #
@@ -367,7 +372,7 @@ def _getAutoconfVersion(autoconf=None):
     #
     #   Autoconf version 2.12
     #
-    patterns = [re.compile("\d+\.\d+")]
+    patterns = [re.compile(r"\d+\.\d+")]
     for pattern in patterns:
         match = pattern.search(firstline)
         if match:
@@ -422,7 +427,7 @@ def _setupMozillaEnv():
         # ensure ActivePerl is the first perl on the path.
         p = subprocess.Popen("where perl", shell=True, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
-        perl_exes = stdout.splitlines(0)
+        perl_exes = stdout.decode('utf-8').splitlines()
         if perl_exes and "msys" in perl_exes[0]:
             for alt_perl in perl_exes[1:]:
                 if "msys" not in alt_perl:
@@ -450,6 +455,12 @@ def _setupMozillaEnv():
         binDir = join(config.buildDir, config.srcTreeName, "mozilla",
                       config.mozObjDir, "dist", "bin")
         os.environ["PATH"] = binDir + os.pathsep + os.environ["PATH"]
+
+        # Add prebuilt Python to PATH so mozilla's build system can find python2.7.
+        prebuiltPythonDir = dirname(config.python)
+        os.environ["PATH"] = prebuiltPythonDir + os.pathsep + os.environ["PATH"]
+        prebuiltPythonLibDir = abspath(join(prebuiltPythonDir, "..", "lib"))
+        os.environ["LD_LIBRARY_PATH"] = prebuiltPythonLibDir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
         
         # Ensure have the required autoconf version (use our own).
         autoconfPrefix = abspath(join(dirname(__file__), "support", "autoconf-2.13"))
@@ -472,7 +483,7 @@ def _setupMozillaEnv():
 
     # Check for Centos 6, and add appropriate LDFLAGS.
     if sys.platform == "linux" and exists("/etc/redhat-release"):
-        contents = file("/etc/redhat-release").read()
+        contents = open("/etc/redhat-release").read()
         if "CentOS release 6." in contents:
             ldflags = os.environ.get('LDFLAGS', '').split(' ')
             ldflags.append("-lrt")
@@ -538,7 +549,7 @@ def _applyMozillaPatch(patchFile, mozSrcDir):
     stdout, stderr = p.communicate(open(patchFile, 'r').read())
     retval = p.wait()
     if retval:
-        raise BuildError("""\
+        raise BuildError(r"""\
 Patch '%s' will not apply cleanly:
    argv:    %s
    stdin:   %s
@@ -602,14 +613,15 @@ def _getMozSrcInfo(scheme):
             mozSrcTarball=scheme,
         )
 
-        patterns = [re.compile("^firefox-(.*?)-source%s$"
-                             % re.escape(suffix))]
+        patterns = [re.compile(r"^firefox-(.*?)-source" + re.escape(suffix) + r"$"),
+                    re.compile(r"^firefox-(.*?)\.source" + re.escape(suffix) + r"$")]
         for pattern in patterns:
             scheme_basename = basename(scheme)
             match = pattern.match(scheme_basename)
             if match:
-                config["mozSrcName"] = match.group(1)
-                ver_match = re.match(r"(\d+\.\d+)\..*", match.group(1))
+                name_part = match.group(1)
+                config["mozSrcName"] = name_part
+                ver_match = re.search(r"(\d+\.\d+)", name_part)
                 if not ver_match:
                     raise BuildError("Could not detect source file version: %r"
                                      % (scheme_basename, ))
@@ -618,7 +630,8 @@ def _getMozSrcInfo(scheme):
                 config["mozVer"] = version_num
                 break
         else:
-            config["mozSrcName"] = name
+            config["mozSrcName"] = config.get("mozSrcName", None) or basename(scheme)
+            config["mozVer"] = config.get("mozVer", 35.0)
 
     elif scheme.startswith("git:"):
         # "git:1700" for "Gecko 17", or "git:FIREFOX_16_0_1_RELEASE" for a tag
@@ -680,11 +693,11 @@ def _reporthook(numblocks, blocksize, filesize, url=None):
 def _download_url(url, dst):
     log.info("get url '%s' to '%s'", url, dst)
     if sys.stdout.isatty():
-        urllib.urlretrieve(url, dst,
+        urllib.request.urlretrieve(url, dst,
                            lambda nb, bs, fs, url=url: _reporthook(nb,bs,fs,url))
         sys.stdout.write('\n')
     else:
-        urllib.urlretrieve(url, dst)
+        urllib.request.urlretrieve(url, dst)
 
 
 # Recipe: dedent (0.1.2)
@@ -702,8 +715,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     """
     DEBUG = False
     if DEBUG: 
-        print "dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
-              % (tabsize, skip_first_line)
+        print(("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
+              % (tabsize, skip_first_line)))
     indents = []
     margin = None
     for i, line in enumerate(lines):
@@ -720,12 +733,12 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 break
         else:
             continue # skip all-whitespace lines
-        if DEBUG: print "dedent: indent=%d: %r" % (indent, line)
+        if DEBUG: print(("dedent: indent=%d: %r" % (indent, line)))
         if margin is None:
             margin = indent
         else:
             margin = min(margin, indent)
-    if DEBUG: print "dedent: margin=%r" % margin
+    if DEBUG: print(("dedent: margin=%r" % margin))
 
     if margin is not None and margin > 0:
         for i, line in enumerate(lines):
@@ -737,7 +750,7 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                 elif ch == '\t':
                     removed += tabsize - (removed % tabsize)
                 elif ch in '\r\n':
-                    if DEBUG: print "dedent: %r: EOL -> strip up to EOL" % line
+                    if DEBUG: print(("dedent: %r: EOL -> strip up to EOL" % line))
                     lines[i] = lines[i][j:]
                     break
                 else:
@@ -745,8 +758,8 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
                                      "line %r while removing %d-space margin"
                                      % (ch, line, margin))
                 if DEBUG:
-                    print "dedent: %r: %r -> removed %d/%d"\
-                          % (line, ch, removed, margin)
+                    print(("dedent: %r: %r -> removed %d/%d"\
+                          % (line, ch, removed, margin)))
                 if removed == margin:
                     lines[i] = lines[i][j+1:]
                     break
@@ -769,7 +782,7 @@ def _dedent(text, tabsize=8, skip_first_line=False):
     
     textwrap.dedent(s), but don't expand tabs to spaces
     """
-    lines = text.splitlines(1)
+    lines = text.splitlines(True)
     _dedentlines(lines, tabsize=tabsize, skip_first_line=skip_first_line)
     return ''.join(lines)
 
@@ -1013,7 +1026,7 @@ def target_configure(argv):
              "p4-changenum=",
              "compiler=", "gcc=", "gxx=",
              "moz-objdir="])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         raise BuildError("configure: %s" % str(msg))
 
     for opt, optarg in optlist:
@@ -1042,7 +1055,7 @@ def target_configure(argv):
         elif opt == "--no-mar":
             config["enableMar"] = False
         elif opt in ("-k", "--komodo-version"):
-            if not re.match("^\d+\.\d+$", optarg):
+            if not re.match(r"^\d+\.\d+$", optarg):
                 raise BuildError("illegal value for --komodo-version, it "\
                                  "must be of the form #.#: %r" % optarg)
             config["komodoVersion"] = optarg
@@ -1109,7 +1122,7 @@ def target_configure(argv):
             config["parallel"] = int(optarg)
 
     # Ensure all require information was specified.
-    for name, value in config.items():
+    for name, value in list(config.items()):
         if isinstance(value, Exception):
             raise value
 
@@ -1181,7 +1194,7 @@ def target_configure(argv):
         if osx_major_ver >= 10: # aka Snow Leopard or greater
             if is_gcc:
                 version = version_string.split(" ")[2]
-                from distutils.version import LooseVersion
+                from version_compat import LooseVersion
                 if LooseVersion(version) < "4.2":
                     raise BuildError("GCC 4.2 or higher is required, " \
                                      "you have GCC %s, please install a " \
@@ -1208,7 +1221,7 @@ def target_configure(argv):
             gcc = which.which("gcc")
             gxx = which.which("g++")
         version = _capture_output("%s --version" % (gcc,)).split(" ")[2]
-        from distutils.version import LooseVersion
+        from version_compat import LooseVersion
         if LooseVersion(version) < "4.2":
             machine = _capture_output("%s -dumpmachine" % (gcc,)).split("-")[0]
             if machine == "x86_64":
@@ -1435,7 +1448,7 @@ the following when all paths involved *do* exist:
 
 Currently the longest known sub-path in the Mozilla tree is:
 
-    %%MOZ_OBJDIR%%\%s
+    %%MOZ_OBJDIR%%\\%s
     (length %s)
 
 which means that your MOZ_OBJDIR cannot be any longer than %s
@@ -1480,7 +1493,7 @@ You need to do one or more of the following to work around this problem
 
     # Write out configuration.
     fout = open(gConfigFileName, 'w')
-    fout.write("""\
+    fout.write(r"""\
 #
 # config.py -- Mozilla-devel build configuration file
 #
@@ -1490,8 +1503,7 @@ You need to do one or more of the following to work around this problem
 # See "build -h configure" for details.
 
 """)
-    items = config.items()
-    items.sort()
+    items = sorted(config.items())
     for name, value in items:
         #XXX Might need to do some type checking here to ensure
         #    serialization will work.
@@ -1520,16 +1532,20 @@ def _relocatePyxpcom(config):
         # files differently, some symlinking while other copying.  We
         # have to resolve the symlink then veryify this is a file
         cmd = "find %s -name %s" % (distDir, libname)
-        for line in os.popen(cmd).readlines():
-            p = os.path.realpath(line.strip())
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        for line_bytes in proc.stdout:
+            p = os.path.realpath(line_bytes.decode('utf-8').strip())
             if os.path.isfile(p):
                 found[p]=1
-        libs += found.keys()
+        proc.wait()
+        libs += list(found.keys())
     for lib in libs:
         # Ensure the lib was built against a Python of the correct version.
         landmark = "Python.framework/Versions/%s/Python" % config.pyVer
         old = None
-        linkage = os.popen("otool -L %s" % lib).readlines()
+        linkage_proc = subprocess.Popen("otool -L %s" % lib, shell=True, stdout=subprocess.PIPE)
+        linkage = [l.decode('utf-8') for l in linkage_proc.stdout]
+        linkage_proc.wait()
         for line in linkage:
             if line.find(landmark) == -1: continue
             old = line.strip().split(None, 1)[0]
@@ -1580,7 +1596,7 @@ def _disablePythonUserSiteFeature(site_filepath):
     """Turn off the ENABLE_USER_SITE (PEP 370) feature (bug 85725)."""
 
     log.info("Disabling user site feature in: %r", site_filepath)
-    contents = file(site_filepath, "rb").read()
+    contents = open(site_filepath, "rb").read()
     assert "ENABLE_USER_SITE = None" in contents
     contents = contents.replace("ENABLE_USER_SITE = None",
                                 "ENABLE_USER_SITE = False")
@@ -1590,7 +1606,7 @@ def _disablePythonUserSiteFeature(site_filepath):
         assert contents.count('if sys.platform == "darwin":') == 1
         contents = contents.replace('if sys.platform == "darwin":', 'if 0: # disabled for KOMODO')
 
-    file(site_filepath, "wb").write(contents)
+    open(site_filepath, "wb").write(contents)
 
 
 def target_silo_python(argv=["silo_python"]):
@@ -1920,8 +1936,8 @@ def target_pyxpcom(argv=["pyxpcom"]):
         # fail to load pyxpcom components.
         dependentlibs_path = join(moz_obj_dir, "dist", "bin", "dependentlibs.list")
         assert exists(dependentlibs_path)
-        if "libpyxpcom.so" not in file(dependentlibs_path).read():
-            file(dependentlibs_path, "a").write("libpyxpcom.so\n")
+        if "libpyxpcom.so" not in open(dependentlibs_path).read():
+            open(dependentlibs_path, "a").write("libpyxpcom.so\n")
             log.info("pyxpcom: added libpyxpcom.so to dependentlibs.list")
 
     _relocatePyxpcom(config)
@@ -2047,7 +2063,7 @@ def target_src(argv=["src"]):
             try:
                 internal_url = "http://komodo.nas1.activestate.com/build-support/mozilla-build/%s.hg" % (treeName,)
                 # check that the URL can be opened (not 404, etc.) We don't need to read it.
-                urllib2.urlopen(internal_url, None, 10).close()
+                urllib.request.urlopen(internal_url, timeout=10).close()
                 bundleURL = internal_url
             except IOError:
                 # assume we're not in ActiveState's internal network and can't get
@@ -2056,7 +2072,7 @@ def target_src(argv=["src"]):
                          "using Mozilla canonical server")
         if not bundleURL:
             log.info("retrieving available bundles from hg.cdn.mozilla.net")
-            hg_data = json.load(urllib2.urlopen('https://hg.cdn.mozilla.net/bundles.json'))['releases/%s' % (treeName,)]["gzip-v2"]
+            hg_data = json.load(urllib.request.urlopen('https://hg.cdn.mozilla.net/bundles.json'))['releases/%s' % (treeName,)]["gzip-v2"]
             relativebundleURL = hg_data['path']
             bundleURL = "https://hg.cdn.mozilla.net/%s" % (relativebundleURL,)
 
@@ -2076,8 +2092,8 @@ def target_src(argv=["src"]):
         tags = _capture_output("git --git-dir=\"%s/.git\" tag -l" % (srcRepo,)).splitlines()
         if config.mozSrcGitRev in tags:
             branch = config.mozSrcGitRev
-        elif config.mozSrcGitRev.translate(None, "0123456789") == "":
-            from distutils.version import LooseVersion, StrictVersion
+        elif config.mozSrcGitRev.isdigit():
+            from version_compat import LooseVersion, StrictVersion
             versions = []
             for tag in tags:
                 if not (tag.startswith("FIREFOX_") and tag.endswith("_RELEASE")):
@@ -2119,6 +2135,14 @@ def target_src(argv=["src"]):
 
     elif mozSrcType == "tarball":
         _extract_tarball(tarballLocalPath, buildDir)
+        mozDir = os.path.join(buildDir, "mozilla")
+        if not os.path.isdir(mozDir):
+            # tarball might extract to a differently named dir; find and rename
+            entries = [e for e in os.listdir(buildDir)
+                       if os.path.isdir(os.path.join(buildDir, e))]
+            if entries:
+                src = os.path.join(buildDir, entries[0])
+                os.rename(src, mozDir)
 
     else:
         raise BuildError("unknown mozSrcType: %r" % mozSrcType)
@@ -2160,7 +2184,7 @@ def _get_mozilla_objdir(convert_to_native_win_path=False, force_echo_variable=Fa
         for cmd in cmds:
             try:
                 output = _capture_output(cmd)
-                objdir = output.splitlines(0)[0].strip()
+                objdir = output.splitlines()[0].strip()
             except OSError:
                 pass  # try the next command
             else:
@@ -2262,9 +2286,10 @@ def target_configure_mozilla(argv=["configure_mozilla"]):
 
     # Add komodo build dir to .hgignore file.
     hgignore_filepath = join(buildDir, ".hgignore")
-    contents = file(hgignore_filepath).read()
-    entry = "^" + config.mozObjDir + "/*"
-    file(hgignore_filepath, "w").write(contents + "\n" + entry + "\n")
+    if os.path.exists(hgignore_filepath):
+        contents = open(hgignore_filepath).read()
+        entry = "^" + config.mozObjDir + "/*"
+        open(hgignore_filepath, "w").write(contents + "\n" + entry + "\n")
 
     return argv[1:]
 
@@ -2510,7 +2535,7 @@ def target_upload(argv=["upload"]):
         "patches": "mozilla-patches-%s-%s.zip"
                    % (config.srcTreeName, config.platform),
     }
-    for name, filename in packages.items():
+    for name, filename in list(packages.items()):
         src = join(gPackagesDir, filename)
         if not exists(src):
             log.warn("could not upload %s package: `%s' does not exist",
@@ -2653,10 +2678,10 @@ def _capture_output(cmd, capture_stderr=False):
     else:
         stderr = None
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr, shell=True)
-    output = p.stdout.read()
-    retval = p.returncode
-    if retval:
-        raise OSError("error capturing output of `%s': %r" % (cmd, retval))
+    output, _ = p.communicate()
+    output = output.decode('utf-8')
+    if p.returncode:
+        raise OSError("error capturing output of `%s': %r" % (cmd, p.returncode))
     return output
 
 def _capture_status(argv):
@@ -2670,7 +2695,7 @@ def _capture_status(argv):
         # WindowsError: [Error 2] The system cannot find the file specified
         return -1
 
-_remote_path_re = re.compile("(\w+@)?\w+:/(?!/)")
+_remote_path_re = re.compile(r"(\w+@)?\w+:/(?!/)")
 def is_remote_path(rpath):
     return _remote_path_re.search(rpath) is not None
 
@@ -2720,7 +2745,7 @@ def build(argv):
         target = argv[0]
         try:
             targetFunc = getattr(sys.modules[__name__], 'target_' + target)
-        except AttributeError, e:
+        except AttributeError as e:
             log.error("no '%s' (function target_%s()) target exists"\
                       % (target, target))
             return 1
@@ -2728,10 +2753,10 @@ def build(argv):
         # Run the target.
         try:
             newArgv = targetFunc(argv)
-        except BuildError, ex:
+        except BuildError as ex:
             log.error("%s: %s", target, str(ex))
             if log.isEnabledFor(logging.DEBUG):
-                print
+                print()
                 import traceback
                 traceback.print_exception(*sys.exc_info())
             return 1
@@ -2753,15 +2778,15 @@ def _helpOnTargets(targets):
     for target in targets:
         try:
             targetFunc = getattr(sys.modules[__name__], 'target_' + target)
-        except AttributeError, e:
+        except AttributeError as e:
             log.error("no '%s' (function target_%s()) target exists"\
                       % (target, target))
             return 1
         doc = targetFunc.__doc__
         if doc:
-            print target+" -- "+doc
+            print((target+" -- "+doc))
         else:
-            print "No help for target '%s'." % target
+            print(("No help for target '%s'." % target))
 
 
 def _listTargets():
@@ -2770,14 +2795,14 @@ def _listTargets():
     A "target" is a method named target_*.
     """
     docmap = {}
-    for target, attr in sys.modules[__name__].__dict__.items():
+    for target, attr in list(sys.modules[__name__].__dict__.items()):
         if target[:7] == 'target_':
             if attr.__doc__:
                 doc = attr.__doc__
             else:
                 doc = ''
             docmap[target[7:]] = doc
-    targets = docmap.keys()
+    targets = list(docmap.keys())
 
     # Sort the targets into groups
     groupMap = { # mapping of group regex to group order and title
@@ -2790,7 +2815,7 @@ def _listTargets():
         # <group title>: [<member targets>...]
     }
     for target in targets:
-        for pattern, (order, title) in groupMap.items():
+        for pattern, (order, title) in list(groupMap.items()):
             if pattern and re.search(pattern, target):
                 if title in grouped:
                     grouped[title].append(target)
@@ -2803,31 +2828,30 @@ def _listTargets():
                 grouped[title].append(target)
             else:
                 grouped[title] = [target]
-    for memberList in grouped.values(): memberList.sort()
+    for memberList in list(grouped.values()): memberList.sort()
     groups = []
-    titles = groupMap.values()
-    titles.sort()
+    titles = sorted(groupMap.values())
 
-    print "                    Mozilla-devel BUILD TARGETS"
-    print "                    ==========================="
+    print("                    Mozilla-devel BUILD TARGETS")
+    print("                    ===========================")
     for order, title in titles:
         if title not in grouped: continue
-        print '\n' + title + ':'
+        print(('\n' + title + ':'))
         #XXX long form output
         #for target in grouped[title]:
-        #    print "  %-20s" % target
+        #    print("  %-20s" % target)
         #    doc = docmap[target]
         #    if doc:
-        #        print "    "+doc
+        #        print("    "+doc)
         #    if "\n" not in doc:
-        #        print
+        #        print()
         for target in grouped[title]:
             doc = docmap[target]
             if doc:
                 doc = doc.splitlines()[0]
             if len(doc) > 53:
                 doc = doc[:50] + "..."
-            print "  %-20s  %s" % (target, doc)
+            print(("  %-20s  %s" % (target, doc)))
 
 
 # Recipe: pretty_logging (0.1) in C:\trentm\tm\recipes\cookbook
@@ -2877,7 +2901,7 @@ def main(argv):
     try:
         optlist, args = getopt.getopt(argv[1:], "htvf:c:",
             ["help", "targets", "verbose", "config"])
-    except getopt.GetoptError, msg:
+    except getopt.GetoptError as msg:
         log.error(str(msg))
         log.error("Your invocation was: %s. Try 'build --help'.\n" % argv)
         return 1

@@ -34,7 +34,7 @@ class TestTimestampVar(BaseTestCase):
     def testBindTimestamp(self):
         "test binding in a timestamp"
         self.cursor.setinputsizes(value = cx_Oracle.TIMESTAMP)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestTimestamps
                 where TimestampCol = :value""",
                 value = cx_Oracle.Timestamp(2002, 12, 14, 0, 0, 10, 250000))
@@ -43,7 +43,7 @@ class TestTimestampVar(BaseTestCase):
     def testBindNull(self):
         "test binding in a null"
         self.cursor.setinputsizes(p_Value = cx_Oracle.TIMESTAMP)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestTimestamps
                 where TimestampCol = :p_Value""",
                 p_Value = None)
@@ -52,7 +52,7 @@ class TestTimestampVar(BaseTestCase):
     def testBindOutSetInputSizes(self):
         "test binding out with set input sizes defined"
         vars = self.cursor.setinputsizes(p_Value = cx_Oracle.TIMESTAMP)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := to_timestamp('20021209', 'YYYYMMDD');
                 end;""")
@@ -62,7 +62,7 @@ class TestTimestampVar(BaseTestCase):
     def testBindInOutSetInputSizes(self):
         "test binding in/out with set input sizes defined"
         vars = self.cursor.setinputsizes(p_Value = cx_Oracle.TIMESTAMP)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := :p_Value + 5.25;
                 end;""",
@@ -73,7 +73,7 @@ class TestTimestampVar(BaseTestCase):
     def testBindOutVar(self):
         "test binding out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.TIMESTAMP)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := to_date('20021231 12:31:00',
                       'YYYYMMDD HH24:MI:SS');
@@ -86,7 +86,7 @@ class TestTimestampVar(BaseTestCase):
         "test binding in/out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.TIMESTAMP)
         var.setvalue(0, cx_Oracle.Timestamp(2002, 12, 9, 6, 0, 0))
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := :p_Value + 5.25;
                 end;""",
@@ -96,7 +96,7 @@ class TestTimestampVar(BaseTestCase):
 
     def testCursorDescription(self):
         "test cursor description is accurate"
-        self.cursor.execute(u"select * from TestTimestamps")
+        self.cursor.execute("select * from TestTimestamps")
         self.failUnlessEqual(self.cursor.description,
                 [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
                   ('TIMESTAMPCOL', cx_Oracle.TIMESTAMP, -1, 11, 0, 0, 0),
@@ -104,13 +104,13 @@ class TestTimestampVar(BaseTestCase):
 
     def testFetchAll(self):
         "test that fetching all of the data returns the correct results"
-        self.cursor.execute(u"select * From TestTimestamps order by IntCol")
+        self.cursor.execute("select * From TestTimestamps order by IntCol")
         self.failUnlessEqual(self.cursor.fetchall(), self.rawData)
         self.failUnlessEqual(self.cursor.fetchall(), [])
 
     def testFetchMany(self):
         "test that fetching data in chunks returns the correct results"
-        self.cursor.execute(u"select * From TestTimestamps order by IntCol")
+        self.cursor.execute("select * From TestTimestamps order by IntCol")
         self.failUnlessEqual(self.cursor.fetchmany(3), self.rawData[0:3])
         self.failUnlessEqual(self.cursor.fetchmany(2), self.rawData[3:5])
         self.failUnlessEqual(self.cursor.fetchmany(4), self.rawData[5:9])
@@ -119,7 +119,7 @@ class TestTimestampVar(BaseTestCase):
 
     def testFetchOne(self):
         "test that fetching a single row returns the correct results"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select *
                 from TestTimestamps
                 where IntCol in (3, 4)

@@ -25,7 +25,7 @@ class TestDateTimeVar(BaseTestCase):
 
     def testBindDate(self):
         "test binding in a date"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestDates
                 where DateCol = :p_Value""",
                 p_Value = cx_Oracle.Timestamp(2002, 12, 13, 9, 36, 0))
@@ -33,7 +33,7 @@ class TestDateTimeVar(BaseTestCase):
 
     def testBindDateTime(self):
         "test binding in a Python 2.3 and higher date time"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestDates
                 where DateCol = :value""",
                 value = datetime.datetime(2002, 12, 13, 9, 36, 0))
@@ -42,7 +42,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindDateAfterString(self):
         "test binding in a date after setting input sizes to a string"
         self.cursor.setinputsizes(p_Value = 15)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestDates
                 where DateCol = :p_Value""",
                 p_Value = cx_Oracle.Timestamp(2002, 12, 14, 12, 0, 0))
@@ -51,7 +51,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindNull(self):
         "test binding in a null"
         self.cursor.setinputsizes(p_Value = cx_Oracle.DATETIME)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select * from TestDates
                 where DateCol = :p_Value""",
                 p_Value = None)
@@ -61,7 +61,7 @@ class TestDateTimeVar(BaseTestCase):
         "test binding in a date array"
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         array = [r[1] for r in self.rawData]
-        statement = u"""
+        statement = """
                 begin
                   :p_ReturnValue := pkg_TestDateArrays.TestInArrays(
                       :p_StartValue, :p_BaseDate, :p_Array);
@@ -84,7 +84,7 @@ class TestDateTimeVar(BaseTestCase):
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         self.cursor.setinputsizes(p_Array = [cx_Oracle.DATETIME, 10])
         array = [r[1] for r in self.rawData]
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_ReturnValue := pkg_TestDateArrays.TestInArrays(
                       :p_StartValue, :p_BaseDate, :p_Array);
@@ -100,7 +100,7 @@ class TestDateTimeVar(BaseTestCase):
         returnValue = self.cursor.var(cx_Oracle.NUMBER)
         array = self.cursor.arrayvar(cx_Oracle.DATETIME, 10, 20)
         array.setvalue(0, [r[1] for r in self.rawData])
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_ReturnValue := pkg_TestDateArrays.TestInArrays(
                       :p_StartValue, :p_BaseDate, :p_Array);
@@ -116,7 +116,7 @@ class TestDateTimeVar(BaseTestCase):
         array = self.cursor.arrayvar(cx_Oracle.DATETIME, 10, 100)
         originalData = [r[1] for r in self.rawData]
         array.setvalue(0, originalData)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   pkg_TestDateArrays.TestInOutArrays(:p_NumElems, :p_Array);
                 end;""",
@@ -133,7 +133,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindOutDateArrayByVar(self):
         "test binding out a date array (with arrayvar)"
         array = self.cursor.arrayvar(cx_Oracle.DATETIME, 6, 100)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   pkg_TestDateArrays.TestOutArrays(:p_NumElems, :p_Array);
                 end;""",
@@ -150,7 +150,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindOutSetInputSizes(self):
         "test binding out with set input sizes defined"
         vars = self.cursor.setinputsizes(p_Value = cx_Oracle.DATETIME)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := to_date(20021209, 'YYYYMMDD');
                 end;""")
@@ -160,7 +160,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindInOutSetInputSizes(self):
         "test binding in/out with set input sizes defined"
         vars = self.cursor.setinputsizes(p_Value = cx_Oracle.DATETIME)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := :p_Value + 5.25;
                 end;""",
@@ -171,7 +171,7 @@ class TestDateTimeVar(BaseTestCase):
     def testBindOutVar(self):
         "test binding out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.DATETIME)
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := to_date('20021231 12:31:00',
                       'YYYYMMDD HH24:MI:SS');
@@ -184,7 +184,7 @@ class TestDateTimeVar(BaseTestCase):
         "test binding in/out with cursor.var() method"
         var = self.cursor.var(cx_Oracle.DATETIME)
         var.setvalue(0, cx_Oracle.Timestamp(2002, 12, 9, 6, 0, 0))
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 begin
                   :p_Value := :p_Value + 5.25;
                 end;""",
@@ -194,21 +194,21 @@ class TestDateTimeVar(BaseTestCase):
 
     def testCursorDescription(self):
         "test cursor description is accurate"
-        self.cursor.execute(u"select * from TestDates")
+        self.cursor.execute("select * from TestDates")
         self.failUnlessEqual(self.cursor.description,
-                [ (u'INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
-                  (u'DATECOL', cx_Oracle.DATETIME, 23, 7, 0, 0, 0),
-                  (u'NULLABLECOL', cx_Oracle.DATETIME, 23, 7, 0, 0, 1) ])
+                [ ('INTCOL', cx_Oracle.NUMBER, 10, 22, 9, 0, 0),
+                  ('DATECOL', cx_Oracle.DATETIME, 23, 7, 0, 0, 0),
+                  ('NULLABLECOL', cx_Oracle.DATETIME, 23, 7, 0, 0, 1) ])
 
     def testFetchAll(self):
         "test that fetching all of the data returns the correct results"
-        self.cursor.execute(u"select * From TestDates order by IntCol")
+        self.cursor.execute("select * From TestDates order by IntCol")
         self.failUnlessEqual(self.cursor.fetchall(), self.rawData)
         self.failUnlessEqual(self.cursor.fetchall(), [])
 
     def testFetchMany(self):
         "test that fetching data in chunks returns the correct results"
-        self.cursor.execute(u"select * From TestDates order by IntCol")
+        self.cursor.execute("select * From TestDates order by IntCol")
         self.failUnlessEqual(self.cursor.fetchmany(3), self.rawData[0:3])
         self.failUnlessEqual(self.cursor.fetchmany(2), self.rawData[3:5])
         self.failUnlessEqual(self.cursor.fetchmany(4), self.rawData[5:9])
@@ -217,7 +217,7 @@ class TestDateTimeVar(BaseTestCase):
 
     def testFetchOne(self):
         "test that fetching a single row returns the correct results"
-        self.cursor.execute(u"""
+        self.cursor.execute("""
                 select *
                 from TestDates
                 where IntCol in (3, 4)

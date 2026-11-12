@@ -109,7 +109,7 @@ class KoPublishingStatus(KoFileCheckerBase):
             publishingSvc = components.classes["@activestate.com/koPublishingService;1"]. \
                                    getService(components.interfaces.koIPublishingService)
             # Unwrap the configs.
-            self._publishingConfigs = map(UnwrapObject, publishingSvc.getPublishingSettings())
+            self._publishingConfigs = list(map(UnwrapObject, publishingSvc.getPublishingSettings()))
         return self._publishingConfigs
         
     def _getPublishingSettingsForUri(self, uri_cache_key):

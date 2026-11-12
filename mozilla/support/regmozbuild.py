@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2006-2008 ActiveState Software Inc.
 
 r"""regmozbuild -- a registry of local Mozilla builds
@@ -25,10 +25,21 @@ from os.path import join, exists, abspath, dirname, normcase
 import sys
 import optparse
 import logging
-import imp
 import re
 import shutil
 from glob import glob
+
+
+def _load_source(name, path):
+    """Import a Python source file as a module (replacement for imp.load_source)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %r from %r" % (name, path))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 
 sys.path.insert(0, join(dirname(dirname(dirname(abspath(__file__)))), "util"))
 try:
@@ -157,13 +168,9 @@ class _MozBuildRegistry:
                 continue
             build_num = int(match.group(1))
             try:
-                f = open(config_path)
-                try:
-                    config = imp.load_source(
-                        "_mozbuild_config_%d_" % build_num, config_path, f)
-                finally:
-                    f.close()
-            except (EnvironmentError, ImportError), ex:
+                config = _load_source(
+                    "_mozbuild_config_%d_" % build_num, config_path)
+            except (EnvironmentError, ImportError) as ex:
                 log.warn("could not import registered `%s': skipping",
                          config_path)
             else:
@@ -226,7 +233,7 @@ class _MozBuildRegistry:
                             break
                     elif getattr(config, attr) != value:
                         break
-                except AttributeError, ex:
+                except AttributeError as ex:
                     # This attr is a likely a new configuration items
                     # since this mozbuild config was registered.
                     break
@@ -236,13 +243,8 @@ class _MozBuildRegistry:
     def register(self, config_path):
         # Ensure that this config path represents an existing build.
         try:
-            f = open(config_path)
-            try:
-                new_config = imp.load_source("_mozbuild_config_",
-                                             config_path, f)
-            finally:
-                f.close()
-        except (EnvironmentError, ImportError), ex:
+            new_config = _load_source("_mozbuild_config_", config_path)
+        except (EnvironmentError, ImportError) as ex:
             raise Error("cannot register moz build: %s", ex)
         new_moz_obj_dir = join(new_config.buildDir,
                                _srcTreeName_from_config(new_config),
@@ -267,12 +269,8 @@ class _MozBuildRegistry:
         new_config_path = join(self.app_data_dir,
                                "config-%d.py" % new_build_num)
         shutil.copy(config_path, new_config_path)
-        f = open(new_config_path)
-        try:
-            new_config = imp.load_source(
-                "_mozbuild_config_%d_" % new_build_num, new_config_path, f)
-        finally:
-            f.close()
+        new_config = _load_source(
+            "_mozbuild_config_%d_" % new_build_num, new_config_path)
         self.configs[new_build_num] = new_config
         self._set_num_builds(new_build_num)
 

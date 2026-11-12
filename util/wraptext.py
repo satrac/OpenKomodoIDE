@@ -78,8 +78,8 @@ class FormattedOutput:
     def _GetIndentation(self):
         return "".join(self.__indentation)
 
-    TT_WS, TT_NEWLINE, TT_WORD = range(3) # token types
-    WHITESPACE = ' \t\r\f\v'  # excluding '\n' on purpose
+    TT_WS, TT_NEWLINE, TT_WORD = list(range(3)) # token types
+    WHITESPACE = ' \t\r\f\\v'  # excluding '\n' on purpose
     def _Parse(self, text):
         """return a list of tuples (TOKEN_TYPE, <token>)"""
         tokens = []

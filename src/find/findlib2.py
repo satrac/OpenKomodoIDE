@@ -46,7 +46,7 @@ import re
 import logging
 import codecs
 from glob import glob
-import cPickle as pickle
+import pickle as pickle
 from hashlib import md5
 from pprint import pprint, pformat
 
@@ -174,7 +174,7 @@ def grep(regex, paths, files_with_matches=False,
                 if statinfo.st_size > skip_filesizes_larger_than:
                     yield SkipLargeFilePath(path, statinfo.st_size)
                     continue
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 yield SkipPath(path, "error determining file info: %s" % ex)
                 continue
         try:
@@ -184,7 +184,7 @@ def grep(regex, paths, files_with_matches=False,
                 ti = textinfo.TextInfo.init_from_path(path,
                         follow_symlinks=True, env=env)
                 ti.is_loaded_path = False
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             yield SkipPath(path, "error determining file info: %s" % ex)
             continue
 
@@ -470,7 +470,7 @@ def undo_replace(journal_id, dry_run=False, loadedFileManager=None):
     # 4. Sanity check.
     #TODO: Something more useful than just warning. Yield event?
     if paths_failing_sanity_check:
-        log.warn("sanity check failure: the following file(s) weren't "
+        log.warn("sanity check failure: the following open(s) weren't "
                  "restored to their exact state before the replacement: '%s'",
                  "', '".join(paths_failing_sanity_check))
 
@@ -478,12 +478,12 @@ def undo_replace(journal_id, dry_run=False, loadedFileManager=None):
     if not dry_run:
         try:
             os.remove(journal.path)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             log.warn("couldn't remove journal '%s': %s", journal.path, ex)
         if exists(journal.summary_path):
             try:
                 os.remove(journal.summary_path)
-            except EnvironmentError, ex:
+            except EnvironmentError as ex:
                 log.warn("couldn't remove journal summary '%s': %s", 
                          journal.summary_path, ex)
 
@@ -1037,7 +1037,7 @@ class Journal(list):
                     os.remove(spath)
                 except:
                     log.error("Can't remove remove %s", spath)
-        except EnvironmentError, ex:
+        except EnvironmentError as ex:
             log.warn("error removing old journals: %s (ignored)", ex)
 
     @classmethod
@@ -1193,7 +1193,7 @@ def str_from_regex_info(regex, repl=None):
         if not flags:
             return ""
         chars = []
-        for flag, ch in ch_from_flag.items():
+        for flag, ch in list(ch_from_flag.items()):
             if flags & flag:
                 chars.append(ch)
         chars.sort()
@@ -1263,7 +1263,7 @@ def regex_info_from_str(s, allow_replace=True, word_match=False,
             except KeyError:
                 raise ValueError("unsupported regex flag: '%s' in '%s' "
                                  "(must be one of '%s')"
-                                 % (ch, flags_str, ''.join(flag_from_ch.keys())))
+                                 % (ch, flags_str, ''.join(list(flag_from_ch.keys()))))
         return flags
 
     plain = False
@@ -1308,7 +1308,7 @@ def regex_info_from_str(s, allow_replace=True, word_match=False,
             # occurrences '$' with a pattern that properly matches all
             # EOL styles, being careful to skip escaped dollar signs.
             chs = []
-            STATE_DEFAULT, STATE_ESCAPE, STATE_CHARCLASS = range(3)
+            STATE_DEFAULT, STATE_ESCAPE, STATE_CHARCLASS = list(range(3))
             state = STATE_DEFAULT
             for ch in pattern:
                 chs.append(ch)
@@ -1380,7 +1380,7 @@ def _walk(top, topdown=True, onerror=None, follow_symlinks=False):
     # left to visit.  That logic is copied here.
     try:
         names = os.listdir(top)
-    except OSError, err:
+    except OSError as err:
         if onerror is not None:
             onerror(err)
         return
@@ -1498,7 +1498,7 @@ def paths_from_path_patterns(path_patterns, files=True, dirs="never",
     TODO: perf improvements (profile, stat just once)
     """
 
-    assert not isinstance(path_patterns, basestring), \
+    assert not isinstance(path_patterns, str), \
         "'path_patterns' must be a sequence, not a string: %r" % path_patterns
     GLOB_CHARS = '*?['
 
@@ -1598,13 +1598,13 @@ def paths_from_path_patterns(path_patterns, files=True, dirs="never",
                                 filetype = "dir" if os.path.isdir(filepath) else "file"
 
                                 if yield_structure:
-                                    if filetype is "dir":
+                                    if filetype == "dir":
                                         _dirnames.append(filename)
                                     else:
                                         _filenames.append(filename)
                                 else:
                                     yield filepath
-                        except UnicodeDecodeError, ex:
+                        except UnicodeDecodeError as ex:
                             # This may happen with remote filesystems whose
                             # encoding does not match the current system's.
                             log.exception("Unable to search in `%s/%s' due to UTF-8 decoding error",

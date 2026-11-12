@@ -13,7 +13,7 @@ if os.path.normpath(distutils_path) == os.path.dirname(os.path.normpath(__file__
         "The virtualenv distutils package at %s appears to be in the same location as the system distutils?")
 else:
     __path__.insert(0, distutils_path)
-    exec open(os.path.join(distutils_path, '__init__.py')).read()
+    exec(open(os.path.join(distutils_path, '__init__.py')).read())
 
 import dist
 import sysconfig
@@ -28,7 +28,7 @@ if sys.platform == 'win32':
         def finalize_options (self):
             if self.library_dirs is None:
                 self.library_dirs = []
-            elif isinstance(self.library_dirs, basestring):
+            elif isinstance(self.library_dirs, str):
                 self.library_dirs = self.library_dirs.split(os.pathsep)
             
             self.library_dirs.insert(0, os.path.join(sys.real_prefix, "Libs"))

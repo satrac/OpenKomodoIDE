@@ -118,14 +118,14 @@ class _test_koIFileNotificationObserver:
 
     def __str__(self):
         msg = [ "_test_koIFileNotificationObserver notifications\n" ]
-        for path, change in self.notifications.items():
+        for path, change in list(self.notifications.items()):
             msg.append("  change: %x, path: %s\n" % (change, path))
         return ''.join(msg)
 
     def dump(self, only_this_path=None):
         if len(self.notifications) > 0:
             log.debug("_test_koIFileNotificationObserver notifications")
-        for path, change in self.notifications.items():
+        for path, change in list(self.notifications.items()):
             if not only_this_path or path == only_this_path:
                 log.debug("  change: %x, path: %s", change, path)
 
@@ -180,14 +180,14 @@ class test_monitoring_files(unittest.TestCase):
         self.tmpdirs = _get_temporary_dirs_for_testing(self.maintempdir, num_dirs=1, files_per_dir=4)
         self.action_list = {}
         for tmpdir in self.tmpdirs:
-            tmpfiles = self.tmpdirs[tmpdir].keys()
+            tmpfiles = list(self.tmpdirs[tmpdir].keys())
             self.action_list[tmpdir] = {}
             self.action_list.get(tmpdir)[ tmpfiles[0] ] = FS_FILE_MODIFIED
             self.action_list.get(tmpdir)[ tmpfiles[1] ] = FS_FILE_DELETED
             self.action_list.get(tmpdir)[ tmpfiles[2] ] = FS_FILE_CREATED
             self.action_list.get(tmpdir)[ tmpfiles[3] ] = FS_NOTIFY_ALL
             # Watch our four files in different ways
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 assert self.fws.addObserver( self.file_observer, filename, WATCH_FILE, watch_flags ) == True
         # Give chance for observers to initialize
         time.sleep(POLL_PERIOD + 0.2)
@@ -201,12 +201,12 @@ class test_monitoring_files(unittest.TestCase):
             tmpfiles = self.tmpdirs[tmpdir]
             # Open for reading, should not have any affect
             for filename in tmpfiles:
-                file(filename, "r").read()
+                open(filename, "r").read()
 
         self.file_observer.wait()
         for tmpdir in self.tmpdirs:
             tmpfiles = self.tmpdirs[tmpdir]
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 assert( not self.file_observer.wasNotifiedOn(filename, FS_NOTIFY_ALL) )
 
             # cleanup
@@ -225,7 +225,7 @@ class test_monitoring_files(unittest.TestCase):
             tmpfiles = self.tmpdirs[tmpdir]
             # Modify them all
             for filename in tmpfiles:
-                file(filename, "w").write("File updated now!\n")
+                open(filename, "w").write("File updated now!\n")
     
         self.file_observer.wait()
         time.sleep(POLL_PERIOD + 0.2)
@@ -233,7 +233,7 @@ class test_monitoring_files(unittest.TestCase):
         log.debug("%s", self.file_observer)
         for tmpdir in self.tmpdirs:
             tmpfiles = self.tmpdirs[tmpdir]
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 log.debug("Checking watch_flags: %x on %s", watch_flags, filename)
                 if watch_flags & FS_FILE_MODIFIED:
                     assert( self.file_observer.wasNotifiedOn(filename, FS_FILE_MODIFIED) )
@@ -261,7 +261,7 @@ class test_monitoring_files(unittest.TestCase):
         time.sleep(POLL_PERIOD + 0.2)
         for tmpdir in self.tmpdirs:
             tmpfiles = self.tmpdirs[tmpdir]
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 if watch_flags & FS_FILE_DELETED:
                     assert( self.file_observer.wasNotifiedOn(filename, FS_FILE_DELETED) )
                 else:
@@ -294,7 +294,7 @@ class test_monitoring_files(unittest.TestCase):
         #    # Create them all
         #    log.debug("TEST notification received on create")
         #    for filename in tmpfiles:
-        #        file(filename, "w").close()
+        #        open(filename, "w").close()
         #    self.file_observer.wait()
         #    for filename, watch_flags in self.action_list[tmpdir].items():
         #        if watch_flags & FS_FILE_CREATED:
@@ -323,21 +323,21 @@ class test_monitoring_files(unittest.TestCase):
         for tmpdir in self.tmpdirs:
             #print "tmpdir: ", tmpdir
             #print "before:"
-            #print os.popen("ls -la %s" % (tmpdir)).read()
+            #print subprocess.Popen("ls -la %s" % (tmpdir)).read()
             tmpfiles = self.tmpdirs[tmpdir]
             # Move them all (counts as deletion)
             log.debug("TEST notification received on move")
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 os.rename(filename, filename + ".moved")
             #print "after:"
-            #print os.popen("ls -la %s" % (tmpdir)).read()
+            #print subprocess.Popen("ls -la %s" % (tmpdir)).read()
 
         self.file_observer.wait()
         time.sleep(POLL_PERIOD + 0.2)
         log.debug("\n\n\n\n\n\n")
         log.debug("%s", self.file_observer)
         for tmpdir in self.tmpdirs:
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 #print "watch_flags:", watch_flags
                 mv_filename = filename + ".moved"
                 log.debug("Check watch_flags: %x, %s", watch_flags, mv_filename)
@@ -360,7 +360,7 @@ class test_monitoring_files(unittest.TestCase):
     #        # Create them all
     #        log.debug("TEST notification received on re-create")
     #        for filename in tmpfiles:
-    #            file(filename, "w").write("Howdy doody!")
+    #            open(filename, "w").write("Howdy doody!")
     #        self.file_observer.wait()
     #        for filename, watch_flags in self.action_list[tmpdir].items():
     #            if watch_flags & FS_FILE_CREATED:
@@ -388,7 +388,7 @@ class test_monitoring_files(unittest.TestCase):
             # Readonly
             chmod_value = 0
         else:
-            chmod_value = 0400
+            chmod_value = 0o400
         for tmpdir in self.tmpdirs:
             tmpfiles = self.tmpdirs[tmpdir]
             # Make readonly
@@ -399,7 +399,7 @@ class test_monitoring_files(unittest.TestCase):
         time.sleep(POLL_PERIOD + 0.2)
         for tmpdir in self.tmpdirs:
             tmpfiles = self.tmpdirs[tmpdir]
-            for filename, watch_flags in self.action_list[tmpdir].items():
+            for filename, watch_flags in list(self.action_list[tmpdir].items()):
                 if watch_flags & FS_FILE_MODIFIED:
                     assert( self.file_observer.wasNotifiedOn(filename, FS_FILE_MODIFIED) )
                 else:
@@ -426,7 +426,7 @@ class test_monitoring_files(unittest.TestCase):
                 # XXX - Removed for now
                 groups = os.getgroups()
                 chowned = False
-                for filename, watch_flags in self.action_list[tmpdir].items():
+                for filename, watch_flags in list(self.action_list[tmpdir].items()):
                     s = os.stat(filename)
                     for gid in os.getgroups():
                         if gid != s.st_gid:
@@ -439,7 +439,7 @@ class test_monitoring_files(unittest.TestCase):
                     chowned = True
                 if chowned:
                     self.file_observer.wait()
-                    for filename, watch_flags in self.action_list[tmpdir].items():
+                    for filename, watch_flags in list(self.action_list[tmpdir].items()):
                         if watch_flags & FS_FILE_MODIFIED:
                             assert( self.file_observer.wasNotifiedOn(filename, FS_FILE_MODIFIED) )
                         else:
@@ -448,7 +448,7 @@ class test_monitoring_files(unittest.TestCase):
                     self.file_observer.clear()
                     # Wait a few seconds to make sure we don't get extra notifications
                     time.sleep(2)
-                    for filename, watch_flags in self.action_list[tmpdir].items():
+                    for filename, watch_flags in list(self.action_list[tmpdir].items()):
                         assert( not self.file_observer.wasNotifiedOn(filename, FS_NOTIFY_ALL) )        
 
                 for filename in tmpfiles:
@@ -466,7 +466,7 @@ class test_monitoring_files(unittest.TestCase):
             tmpfiles = self.tmpdirs[tmpdir]
             # Modify them all
             for filename in tmpfiles:
-                file(filename, "w").write("File updated now!\n")
+                open(filename, "w").write("File updated now!\n")
 
         # no notifications should have been raised
         assert(self.fws.number_of_observed_locations == 0)   # Should not be watching anything now
@@ -585,7 +585,7 @@ class test_monitoring_directory(unittest.TestCase):
             tmpfiles = self.tmpdirs[tmpdir]
             # Open for reading, should not have any affect
             for filename in tmpfiles:
-                file(filename, "r").read()
+                open(filename, "r").read()
             dirObserver.wait()
             assert len(dirObserver.notifications) == 0
 
@@ -605,7 +605,7 @@ class test_monitoring_directory(unittest.TestCase):
             tmpfiles = self.tmpdirs[tmpdir]
             # Modify them all
             for filename in tmpfiles:
-                file(filename, "w").write("File updated now!\n")
+                open(filename, "w").write("File updated now!\n")
             dirObserver.wait()
             for filename in tmpfiles:
                 assert( dirObserver.wasNotifiedOn(filename, FS_FILE_MODIFIED) == ((watch_flags & FS_FILE_MODIFIED) > 0) )
@@ -779,7 +779,7 @@ class test_monitoring_directories_recursively(unittest.TestCase):
             for sub_dir in sub_dirs:
                 tmpfiles = sub_dirs[sub_dir]
                 for filename in tmpfiles:
-                    file(filename, "w").write("File updated now!\n")
+                    open(filename, "w").write("File updated now!\n")
 
         for tmpdir in self.tmpdirs:
             dirObserver = self.dir_observers[tmpdir]
@@ -1012,7 +1012,7 @@ class test_monitoring_directories_recursively(unittest.TestCase):
             # and the linked file path.
             for link_to_dir in separate_tmpdirs:
                 for filename in separate_tmpdirs[link_to_dir]:
-                    file(filename, "w").write("File updated now!\n")
+                    open(filename, "w").write("File updated now!\n")
                     #print "Modified: %s" % (filename)
             # We have to sleep in order to give enough time to get this change
             time.sleep(POLL_PERIOD + 0.2)
@@ -1058,8 +1058,8 @@ class test_monitoring_directories_recursively(unittest.TestCase):
                 for i in range(4, 0, -1):
                     #print "ln -s %s %s" % (link_template % (i + 1), link_template % i)
                     os.system( "ln -s %s %s" % (link_template % (i + 1), link_template % i) )
-                #print os.popen("ls -la %s" % (sub_dir)).read()
-            #print os.popen("ls -la %s" % (tmpdir)).read()
+                #print subprocess.Popen("ls -la %s" % (sub_dir)).read()
+            #print subprocess.Popen("ls -la %s" % (tmpdir)).read()
             time.sleep(POLL_PERIOD + 0.2)
             # Make sure we see the creation of the links
             dirObserver.wait()
@@ -1081,7 +1081,7 @@ class test_monitoring_directories_recursively(unittest.TestCase):
             # and the linked file path.
             for sub_dir in sub_dirs:
                 for filename in sub_dirs[sub_dir]:
-                    file(filename, "w").write("File updated now!\n")
+                    open(filename, "w").write("File updated now!\n")
                     #print "Modified: %s" % (filename)
             # We have to sleep in order to give enough time to get this change
             time.sleep(POLL_PERIOD + 0.2)
@@ -1129,8 +1129,8 @@ class test_monitoring_directories_recursively(unittest.TestCase):
                     os.system( "ln -s %s %s" % (link_template % (i + 1), link_template % i) )
                 # Create the circular link
                 os.system( "ln -s %s %slink_back" % (link_template % 1, sub_dir + os.sep) )
-            #print os.popen("ls -la %s" % (tmpdir)).read()
-            #print os.popen("ls -la %s" % (sub_dir)).read()
+            #print subprocess.Popen("ls -la %s" % (tmpdir)).read()
+            #print subprocess.Popen("ls -la %s" % (sub_dir)).read()
             time.sleep(POLL_PERIOD + 0.2)
 
             # Make sure we see the creation of the links
@@ -1153,7 +1153,7 @@ class test_monitoring_directories_recursively(unittest.TestCase):
             # and the linked file path.
             for sub_dir in sub_dirs:
                 for filename in sub_dirs[sub_dir]:
-                    file(filename, "w").write("File updated now!\n")
+                    open(filename, "w").write("File updated now!\n")
                 #print "Modified: %s" % (filename)
             # We have to sleep in order to give enough time to get this change
             time.sleep(POLL_PERIOD + 0.2)
@@ -1229,12 +1229,12 @@ class test_monitoring_files_and_directories(unittest.TestCase):
         for tmpdir in tmpdirs:
             assert self.fws.addObserver( dir_observer, tmpdir, WATCH_DIR, FS_NOTIFY_ALL ) == True
             assert self.fws.addObserver( dir_observer_recursive, tmpdir, WATCH_DIR_RECURSIVE, FS_NOTIFY_ALL ) == True
-            tmpfiles = tmpdirs[tmpdir].keys()
+            tmpfiles = list(tmpdirs[tmpdir].keys())
             tmpfile1 = tmpfiles[0]
             tmpfile2 = tmpfiles[1]
 
             time.sleep(POLL_PERIOD + 0.2)
-            file(tmpfile2, "w").write("File updated now!\n")
+            open(tmpfile2, "w").write("File updated now!\n")
 
             dir_observer.wait()
             assert( not dir_observer.wasNotifiedOn(tmpfile1, FS_NOTIFY_ALL) )
@@ -1266,7 +1266,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
             #print
             #print dir_observer_recursive
             #print "\n\n"
-            for new_sub_dir, new_sub_dir_files in sub_tmpdirs.items():
+            for new_sub_dir, new_sub_dir_files in list(sub_tmpdirs.items()):
                 assert( dir_observer.wasNotifiedOn(new_sub_dir, FS_DIR_CREATED) )
                 #dir_observer_recursive.dump()
                 assert( dir_observer_recursive.wasNotifiedOn(new_sub_dir, FS_DIR_CREATED) )
@@ -1302,7 +1302,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
         for loop_type in ("watch_file_using_same_observer", "watch_file_using_different_observer"):
             for tmpdir in tmpdirs:
                 assert self.fws.addObserver( dir_observer, tmpdir, WATCH_DIR, FS_NOTIFY_ALL ) == True
-                tmpfile = tmpdirs[tmpdir].keys()[0]
+                tmpfile = list(tmpdirs[tmpdir].keys())[0]
 
                 if loop_type == "watch_file_using_same_observer":
                     file_observer = dir_observer
@@ -1311,7 +1311,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
 
                 assert self.fws.addObserver( file_observer, tmpfile, WATCH_FILE, FS_NOTIFY_ALL ) == True
                 time.sleep(1)
-                file(tmpfile, "w").write("File updated now!\n")
+                open(tmpfile, "w").write("File updated now!\n")
         
                 file_observer.wait()
                 assert( file_observer.wasNotifiedOn(tmpfile, FS_FILE_MODIFIED) )
@@ -1336,13 +1336,13 @@ class test_monitoring_files_and_directories(unittest.TestCase):
         tmpdirs = _get_temporary_dirs_for_testing(self.maintempdir, num_dirs=1, files_per_dir=2)
         for tmpdir in tmpdirs:
             assert self.fws.addObserver( dir_observer, tmpdir, WATCH_DIR, FS_NOTIFY_ALL ) == True
-            tmpfiles = tmpdirs[tmpdir].keys()
+            tmpfiles = list(tmpdirs[tmpdir].keys())
             tmpfile1 = tmpfiles[0]
             tmpfile2 = tmpfiles[1]
             assert self.fws.addObserver( file_observer, tmpfile1, WATCH_FILE, FS_NOTIFY_ALL ) == True
 
             time.sleep(POLL_PERIOD + 0.2)
-            file(tmpfile2, "w").write("File updated now!\n")
+            open(tmpfile2, "w").write("File updated now!\n")
 
             dir_observer.wait()
             assert( not file_observer.wasNotifiedOn(tmpfile1, FS_NOTIFY_ALL) )
@@ -1367,7 +1367,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
         tmpdirs = _get_temporary_dirs_for_testing(self.maintempdir, num_dirs=1, files_per_dir=2)
         for tmpdir in tmpdirs:
             assert self.fws.addObserver( dir_observer, tmpdir, WATCH_DIR, FS_NOTIFY_ALL ) == True
-            tmpfiles = tmpdirs[tmpdir].keys()
+            tmpfiles = list(tmpdirs[tmpdir].keys())
             tmpfile1 = tmpfiles[0]
             tmpfile2 = tmpfiles[1]
             assert self.fws.addObserver( file_observer, tmpfile1, WATCH_FILE, FS_NOTIFY_ALL ) == True
@@ -1415,7 +1415,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
         tmpdirs = _get_temporary_dirs_for_testing(self.maintempdir, num_dirs=1, files_per_dir=2)
         for tmpdir in tmpdirs:
             assert self.fws.addObserver( dir_observer, tmpdir, WATCH_DIR, FS_NOTIFY_ALL ) == True
-            tmpfiles = tmpdirs[tmpdir].keys()
+            tmpfiles = list(tmpdirs[tmpdir].keys())
             tmpfile1 = tmpfiles[0]
             tmpfile2 = tmpfiles[1]
             assert self.fws.addObserver( file_observer1, tmpfile1, WATCH_FILE, FS_NOTIFY_ALL ) == True
@@ -1423,8 +1423,8 @@ class test_monitoring_files_and_directories(unittest.TestCase):
 
             try:
                 shutil.rmtree(tmpdir)
-            except Exception, e:
-                print "ERROR:", e
+            except Exception as e:
+                print("ERROR:", e)
                 return
 
             file_observer1.wait()
@@ -1503,7 +1503,7 @@ class test_loaded_monitoring(unittest.TestCase):
                 assert self.fws.addObserver( trip_observer, tmpdir, WATCH_DIR_RECURSIVE, FS_NOTIFY_ALL ) == True
                 dir_observers[tmpdir].append( trip_observer )
 
-            tmpfiles = tmpdirs[tmpdir].keys()
+            tmpfiles = list(tmpdirs[tmpdir].keys())
             file_count = 0
             for tmpfile in tmpfiles:
                 file_count += 1
@@ -1520,7 +1520,7 @@ class test_loaded_monitoring(unittest.TestCase):
                     file_observers[tmpfile].append( trip_observer )
 
         # Setup is done, now do some modifications and check the notifications
-        tmpdir_keys = tmpdirs.keys()
+        tmpdir_keys = list(tmpdirs.keys())
         random.shuffle(tmpdir_keys)
 
         for tmpdir in tmpdir_keys:
@@ -1562,7 +1562,7 @@ class test_loaded_monitoring(unittest.TestCase):
 
             # Modify some files
             for filename in tmpdirs[tmpdir]:
-                file(filename, "w").write("Modified ya!")
+                open(filename, "w").write("Modified ya!")
                 for file_observer in file_observers[filename]:
                     file_observer.wait()
                     assert( file_observer.wasNotifiedOn( filename, FS_FILE_MODIFIED) )
@@ -1607,7 +1607,7 @@ class test_loaded_monitoring(unittest.TestCase):
         modified_files = {}
 
         # Setup is done, now do some modifications and check the notifications
-        tmpdir_keys = tmpdirs.keys()
+        tmpdir_keys = list(tmpdirs.keys())
         random.shuffle(tmpdir_keys)
 
         time.sleep(10)   # Wait for file notification service to catch up
@@ -1630,7 +1630,7 @@ class test_loaded_monitoring(unittest.TestCase):
                     created_dirs[newdir] = dir_observer
 
             # 95 % chance of reaching here
-            tmpdir_files = tmpdirs[tmpdir].keys()
+            tmpdir_files = list(tmpdirs[tmpdir].keys())
             random.shuffle(tmpdir_files)
             for tmpfile in tmpdir_files:
                 randint = random.randint(1, 100)
@@ -1645,7 +1645,7 @@ class test_loaded_monitoring(unittest.TestCase):
                     created_files[newtmpfile] = dir_observer
                 # 45 % chance of modifying file
                 elif randint <= 90:
-                    file(tmpfile, "w").write("Update the file")
+                    open(tmpfile, "w").write("Update the file")
                     modified_files[tmpfile] = dir_observer
                 # 10 % chance of doing nothing
                 #else:
@@ -1655,28 +1655,28 @@ class test_loaded_monitoring(unittest.TestCase):
         time.sleep(10)   # Wait for file notification service to catch up
 
         # Removed directories
-        for tmpdir, dir_observer in deleted_dirs.items():
+        for tmpdir, dir_observer in list(deleted_dirs.items()):
             assert( dir_observer.wasNotifiedOn( tmpdir, FS_DIR_DELETED) )
         # Modified files
-        for tmpfile, dir_observer in modified_files.items():
+        for tmpfile, dir_observer in list(modified_files.items()):
             assert( dir_observer.wasNotifiedOn( tmpfile, FS_FILE_MODIFIED) )
         # Deleted files
-        for tmpfile, dir_observer in deleted_files.items():
+        for tmpfile, dir_observer in list(deleted_files.items()):
             assert( dir_observer.wasNotifiedOn( tmpfile, FS_FILE_DELETED) )
         # Created directories
         #print "created_dirs:"
         #for dirname in created_dirs:
         #    print " ", dirname
         #print dir_observer
-        for tmpdir, dir_observer in created_dirs.items():
+        for tmpdir, dir_observer in list(created_dirs.items()):
             #print "Checking dirname:", tmpdir
             assert( dir_observer.wasNotifiedOn( tmpdir, FS_DIR_CREATED) )
         # Created files
-        for tmpfile, dir_observer in created_files.items():
+        for tmpfile, dir_observer in list(created_files.items()):
             assert( dir_observer.wasNotifiedOn( tmpfile, FS_FILE_CREATED) )
 
         # Remove our observers
-        for tmpdir, dir_observer in dir_observers.items():
+        for tmpdir, dir_observer in list(dir_observers.items()):
             #print "\n\ndir_observer:", dir_observer
             if tmpdir not in deleted_dirs:
                 self.fws.removeObserver( dir_observer, tmpdir )

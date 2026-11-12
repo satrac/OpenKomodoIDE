@@ -15,7 +15,7 @@ class LanguageInfo:
         for pattern in self.extension_patterns:
             # pattern can either be a regular expression or a
             # string
-            if isinstance(pattern, types.StringTypes):
+            if isinstance(pattern, (str,)):
                 if extension.lower() == pattern.lower():
                     return 1
             elif pattern.match(extension):

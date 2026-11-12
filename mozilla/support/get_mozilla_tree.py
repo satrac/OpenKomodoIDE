@@ -3,11 +3,18 @@ Module to get the mozilla tree corresponding to a version number
 """
 
 import logging
-import urllib2, re, subprocess
+import urllib.request, urllib.error, re, subprocess
 import os.path
 import time
 from subprocess import check_call
-from distutils.version import LooseVersion, StrictVersion
+try:
+    from version_compat import LooseVersion, StrictVersion
+except ImportError:
+    import sys as _sys
+    _util_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "util"))
+    _sys.path.append(_util_dir)
+    from version_compat import LooseVersion, StrictVersion
+    _sys.path.pop()
 
 log = logging.getLogger("get_mozilla_tree")
 
@@ -31,16 +38,17 @@ def genTagsFromTrees(trees):
         # Hg isn't the most stable, so give it a few tries:
         for tries in range(5):
             try:
-                response = urllib2.urlopen(tags_url)
-            except urllib2.HTTPError:
+                response = urllib.request.urlopen(tags_url)
+            except urllib.error.HTTPError:
                 continue
             else:
                 break
         else:
-            raise urllib2.HTTPError("Couldn't reach url %r", tags_url)
-            
+            raise urllib.error.HTTPError("Couldn't reach url %r", tags_url)
+
+
         tags = []
-        for line in response.read().splitlines():
+        for line in response.read().decode('utf-8').splitlines():
             tag, _ = line.strip().rsplit("\t", 1)
             tags.append(tag)
             yield (tree, tag)
@@ -98,7 +106,7 @@ def getTreeFromVersion(version=None):
             if ver == wanted_version:
                 log.debug("Found exact match in %s: %s", tree, tag)
                 return (tree, tag)
-        except ValueError, ex:
+        except ValueError as ex:
             # Not a correctly formatter version.
             continue
         if tree == "mozilla-release":
@@ -113,7 +121,7 @@ def getTreeFromVersion(version=None):
     for branch_part in "mozilla-central", "releases/mozilla-aurora", "releases/mozilla-beta":
         mstone_url = "https://hg.mozilla.org/%s/raw-file/default/config/milestone.txt" % (branch_part,)
         branch = branch_part.split("/")[-1]
-        mstone_file = urllib2.urlopen(mstone_url)
+        mstone_file = urllib.request.urlopen(mstone_url)
         try:
             for line in mstone_file:
                 ver_str = line.strip()
@@ -180,7 +188,7 @@ def fixRemoteRepo(tree, repo):
     """
     url = getRepoFromTree(tree)
     filename = os.path.join(repo, ".hg", "hgrc")
-    from ConfigParser import RawConfigParser
+    from configparser import RawConfigParser
     config = RawConfigParser()
     config.read([filename])
     if not config.has_section("paths"):

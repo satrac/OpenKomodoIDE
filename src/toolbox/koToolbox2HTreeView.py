@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2010 ActiveState
 # See the file LICENSE.txt for licensing information.
 
@@ -25,6 +25,12 @@ import fileutils
 from koTreeView import TreeView
 
 import koToolbox2
+from functools import cmp_to_key
+
+def _cmp(a, b):
+    """Python 2-style three-way comparison (the builtin was removed in Py3)."""
+    return (a > b) - (a < b)
+
 
 
 
@@ -143,7 +149,7 @@ class _KoPrintdebugToolHView(_KoToolHView):
 
 
 _viewClassFromTypeName = {}
-for _obj in globals().values():
+for _obj in list(globals().values()):
     if (isinstance(_obj, type) and issubclass(_obj, _KoToolHView)
         and getattr(_obj, "typeName", None)):
         _viewClassFromTypeName[_obj.typeName] = _obj
@@ -838,7 +844,7 @@ class KoToolbox2HTreeView(TreeView):
         project_uri_ids = UnwrapObject(self.toolbox2Svc).getLoadedProjectIDs()
         ids_to_drop = []
         loaded_URIs = []
-        for p in self._loadedProjects.values():
+        for p in list(self._loadedProjects.values()):
             try:
                 loaded_URIs.append(p.getFile().URI)
             except KeyError:
@@ -927,7 +933,7 @@ class KoToolbox2HTreeView(TreeView):
                           len(self._nodeOpenStatusFromName), lim)
                 try:
                     import operator
-                    newDict = dict(sorted(self._nodeOpenStatusFromName.items(),
+                    newDict = dict(sorted(list(self._nodeOpenStatusFromName.items()),
                                           key=operator.itemgetter(1), reverse=True)[:lim])
                     self._nodeOpenStatusFromName = newDict
                 except:
@@ -1260,7 +1266,7 @@ class KoToolbox2HTreeView(TreeView):
     def _compareChildNode(self, item1, item2):
         # Nodes contain (id, name, type, isContainer)
         if self._sortDirection == self._SORT_BY_NATURAL_ORDER:
-            folderDiff = cmp(not item1[3], not item2[3])
+            folderDiff = _cmp(not item1[3], not item2[3])
             if folderDiff:
                 return folderDiff
         items = [item1, item2]
@@ -1270,13 +1276,13 @@ class KoToolbox2HTreeView(TreeView):
         else:
             lowerIndex = 0
             upperIndex = 1
-        return cmp(items[lowerIndex][1].lower(), items[upperIndex][1].lower())
+        return _cmp(items[lowerIndex][1].lower(), items[upperIndex][1].lower())
 
     def _sortAndExtractIDs(self, rowNode):
         if not hasattr(rowNode, 'unfilteredChildNodes'):
             rowNode.rebuildChildren()
         sortedNodes = sorted(rowNode.unfilteredChildNodes,
-                             cmp=self._compareChildNode)
+                             key=cmp_to_key(self._compareChildNode))
         return [x[0] for x in sortedNodes]
 
     def _doContainerOpenModel(self, rowNode, index):

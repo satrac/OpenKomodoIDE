@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import traceback
@@ -90,11 +90,11 @@ def evalPythonMacro(part, domdocument, window, scimoz, document, view, code,
     # Not sure if that will be made an *error* in future Python versions.
     code = wrapPythonMacro(code)
     try:
-        exec code in macroGlobals, macroGlobals
+        exec(code, macroGlobals, macroGlobals)
         retval = eval('_code()', macroGlobals, macroGlobals)
         _partSvc.runningMacro = None
         return retval
-    except Exception, e:
+    except Exception as e:
         log.exception("Failed to exec the macro %s", part.name)
         _partSvc.runningMacro = None
         err = ''.join(traceback.format_exception(*sys.exc_info()))

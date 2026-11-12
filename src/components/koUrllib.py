@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
@@ -6,7 +6,7 @@
 Exposes some of Python's urllib module to other languages.
 """
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from xpcom import components
 
 class koUrllib:
@@ -16,7 +16,7 @@ class koUrllib:
     _reg_desc_ = "Makes urlib routines available outside of Python"
 
     def quote(self, path, safe):
-        return urllib.quote(path, safe)
+        return urllib.parse.quote(path, safe)
 
     def unquote(self, path):
-        return urllib.unquote(path)
+        return urllib.parse.unquote(path)

@@ -74,7 +74,7 @@ class Win32Pipe(object):
 
     Usage:
         pipe = Win32Pipe() # Create a new pipe with a randomly generated name
-        pipe = Win32Pipe("name") # Create a new pipe, \\.\pipe\name
+        pipe = Win32Pipe("name") # Create a new pipe, \\.\\pipe\name
         pipe = Win32Pipe("name", client=True) # Connect to an existing pipe
     """
 
@@ -102,7 +102,7 @@ class Win32Pipe(object):
         if sys.getwindowsversion() >= (5, 2):
             mode |= PIPE_REJECT_REMOTE_CLIENTS
 
-        pipe_prefix = "\\\\.\\pipe\\"
+        pipe_prefix = "\\\\.\\\\pipe\\"
         if name is not None:
             if not name.lower().startswith(pipe_prefix):
                 name = pipe_prefix + name
@@ -118,7 +118,7 @@ class Win32Pipe(object):
             log.debug("Trying to create pipe with randomness %s",
                       hex(start))
             # Try a few variations on the name in case it's somehow taken
-            for i in xrange(1024):
+            for i in range(1024):
                 name = (pipe_prefix + (self.pipe_prefix or "") +
                         hex(start + i)[2:-1])
                 assert len(name) <= 256
@@ -139,7 +139,7 @@ class Win32Pipe(object):
 
     def _connect_to_existing(self, name):
         self._has_stream = False
-        pipe_prefix = "\\\\.\\pipe\\"
+        pipe_prefix = "\\\\.\\\\pipe\\"
         if not name.lower().startswith(pipe_prefix):
             name = pipe_prefix + name
         log.debug("Connecting to existing named pipe %s", name)

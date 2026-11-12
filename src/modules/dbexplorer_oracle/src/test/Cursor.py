@@ -200,12 +200,12 @@ class TestCursor(BaseTestCase):
         if sys.version_info[0] >= 3:
             value, = next(testIter)
         else:
-            value, = testIter.next()
+            value, = next(testIter)
         self.cursor.execute("insert into TestExecuteMany (IntCol) values (1)")
         if sys.version_info[0] >= 3:
             self.failUnlessRaises(cx_Oracle.InterfaceError, next, testIter) 
         else:
-            self.failUnlessRaises(cx_Oracle.InterfaceError, testIter.next) 
+            self.failUnlessRaises(cx_Oracle.InterfaceError, testIter.__next__) 
 
     def testBindNames(self):
         """test that bindnames() works correctly."""

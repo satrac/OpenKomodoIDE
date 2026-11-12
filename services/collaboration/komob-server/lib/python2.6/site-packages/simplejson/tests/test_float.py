@@ -9,11 +9,11 @@ class TestFloat(TestCase):
                     math.pi**-100, 3.1]:
             self.assertEquals(float(json.dumps(num)), num)
             self.assertEquals(json.loads(json.dumps(num)), num)
-            self.assertEquals(json.loads(unicode(json.dumps(num))), num)
+            self.assertEquals(json.loads(str(json.dumps(num))), num)
 
     def test_ints(self):
-        for num in [1, 1L, 1<<32, 1<<64]:
+        for num in [1, 1, 1<<32, 1<<64]:
             self.assertEquals(json.dumps(num), str(num))
             self.assertEquals(int(json.dumps(num)), num)
             self.assertEquals(json.loads(json.dumps(num)), num)
-            self.assertEquals(json.loads(unicode(json.dumps(num))), num)
+            self.assertEquals(json.loads(str(json.dumps(num))), num)

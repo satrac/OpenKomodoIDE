@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
     cvslib -- a somewhat Pythonic interface to 'cvs'
@@ -131,7 +131,7 @@ def _cvs_re_parse(root_in):
 
     # parse the optional params
     if root_data and \
-       root_data.has_key('params') and \
+       'params' in root_data and \
        root_data['params']:
 
         params = re.split(',|;',root_data['params'])
@@ -302,13 +302,13 @@ class CVS:
         #       Sticky Options:      (none)
 
         self.re_status = re.compile('''
-            .*?File:\s(.*?)\s*?                         # filename
-            Status:\s*(.*?)[\r\n]                       # status
-            \s+.*?:\s+([-|\d|\.]*)(.*?)[\r\n]           # local rev, date
-            \s+.*?:\s+([-|\d|\.]*)(.*?)[\r\n]           # cvs rev, repository path
-            \s+.*?:\s+(.*?)[\r\n]                       # sticky tag
-            \s+.*?:\s+(.*?)[\r\n]                       # sticky date
-            \s+.*?:\s+(.*?)[\r\n]                       # sticky options
+            .*?File:\\s(.*?)\\s*?                         # filename
+            Status:\\s*(.*?)[\r\n]                       # status
+            \\s+.*?:\\s+([-|\\d|\\.]*)(.*?)[\r\n]           # local rev, date
+            \\s+.*?:\\s+([-|\\d|\\.]*)(.*?)[\r\n]           # cvs rev, repository path
+            \\s+.*?:\\s+(.*?)[\r\n]                       # sticky tag
+            \\s+.*?:\\s+(.*?)[\r\n]                       # sticky date
+            \\s+.*?:\\s+(.*?)[\r\n]                       # sticky options
             ''',re.S|re.M|re.VERBOSE)
 
     def _parseCVSOptv(self, optv):   # XXX Not currently used.
@@ -397,7 +397,7 @@ class CVS:
                     error_msg += "\nStderr:\n%s" % (''.join(error), )
                 raise CVSLibError(error_msg)
 
-        except Exception, ex:
+        except Exception as ex:
             log.error("Error running %s - %r", argv, ex)
             raise
         finally:
@@ -459,7 +459,7 @@ class CVS:
                                       (root_contents, cwd))
             basedir = os.path.normpath(basedir)
             basedir = basedir.replace('\\','/')
-        except IOError, e:
+        except IOError as e:
             # not a cvs directory!
             raise CVSLibError("Error running status, '%s' not a CVS directory!" % cwd)
         return basedir
@@ -477,7 +477,7 @@ class CVS:
             f_root = open(root,'r')
             cvsroot = f_root.readline().strip()
             f_root.close()
-        except IOError, e:
+        except IOError as e:
             # not a cvs directory!
             raise CVSLibError("Error running status, '%s' not a CVS directory!" % basepath)
         return cvsroot
@@ -490,7 +490,7 @@ class CVS:
         else:
             path = basepath = os.getcwd()
         entries = self.getEntries(basepath)
-        return path in entries.keys()
+        return path in list(entries.keys())
     
     def getEntries(self, dir=None):
         """Get the CVS entries for a directory from the local Entries file.
@@ -522,18 +522,18 @@ class CVS:
         return files
         
     def add(self, files, mode=None, msg=None, cwd=None):
-        """Add a new file(s) to an existing project.
+        """Add a new open(s) to an existing project.
 
         "files" is a single file name or list of file names.
         "mode" (-k) specifies the keyword substitution mode of the new
-            file(s).
+            open(s).
         "msg" (-m) is recorded as the creation message of the file. This is
             NOT the same as a checkin message.
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
 
         optv = []
@@ -552,15 +552,15 @@ class CVS:
     def admin(self, files=[], descFile=None, descString=None,
               strictLocking=None, mode=None, msg=[], outdate=None,
               quiet=0, state=None, cwd=None):
-        """Add a new file(s) to an existing project.
+        """Add a new open(s) to an existing project.
 
         "files" is a single file name or list of file names.
-        "descFile" (-t) replaces the creation message of the file(s) with the
+        "descFile" (-t) replaces the creation message of the open(s) with the
             contents of the given filename.
-        "descString" (-t-) replaces the creation message of the file(s) with
+        "descString" (-t-) replaces the creation message of the open(s) with
             the given string.
         "strictLocking" (-L, -U) is either None, True or False.
-        "mode" (-k) sets keyword substitution mode of the file(s).
+        "mode" (-k) sets keyword substitution mode of the open(s).
         "msg" (-m) is a 2-tuple of (REV, MSG) pairs (or a list of these).
             This will change log message of that revision to the given
             message.
@@ -580,11 +580,11 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
-        if msg and not (isinstance(msg[0], types.TupleType)\
-                        or isinstance(msg[0], types.ListType)):
+        if msg and not (isinstance(msg[0], tuple)\
+                        or isinstance(msg[0], list)):
             msg = [msg]
 
         optv = []
@@ -625,8 +625,8 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
         if date and rev:
             raise CVSLibError("Cannot specify both a 'rev' and a 'date' "\
@@ -684,13 +684,13 @@ class CVS:
         """
         #TODO:
         #   - finish docstring
-        if not isinstance(modules, types.ListType)\
-           and not isinstance(modules, types.TupleType):
+        if not isinstance(modules, list)\
+           and not isinstance(modules, tuple):
             modules = [modules]
         if join is None:
             join = []
-        elif not isinstance(join, types.ListType)\
-           and not isinstance(join, types.TupleType):
+        elif not isinstance(join, list)\
+           and not isinstance(join, tuple):
             join = [join]
         if len(join) > 2:
             raise CVSLibError("Too many 'join' elements: join=%s." % join)
@@ -752,8 +752,8 @@ class CVS:
         #   - parse the output to provide some useful metadata in 'result'
         # XXX does a 'cvs ci' die if it looks like there are still conflict
         #     markers?
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
         if msg and msgFile:
             raise CVSLibError("Cannot specify both 'msg' and 'msgFie'.")
@@ -803,13 +803,13 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
         if revs is None:
             revs = []
-        elif not isinstance(revs, types.ListType)\
-           and not isinstance(revs, types.TupleType):
+        elif not isinstance(revs, list)\
+           and not isinstance(revs, tuple):
             revs = [revs]
         if len(revs) > 2:
             raise CVSLibError("Too many 'rev' elements: revs=%s." % revs)
@@ -908,26 +908,26 @@ class CVS:
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'.
         #   - test with no CVSROOT/history file in the repository.
-        if not isinstance(fileSubstrings, types.ListType)\
-           and not isinstance(fileSubstrings, types.TupleType):
+        if not isinstance(fileSubstrings, list)\
+           and not isinstance(fileSubstrings, tuple):
             fileSubstrings = [fileSubstrings]
-        if not isinstance(records, types.ListType)\
-           and not isinstance(records, types.TupleType):
+        if not isinstance(records, list)\
+           and not isinstance(records, tuple):
             records = [records]
-        if not isinstance(modulesMostRecent, types.ListType)\
-           and not isinstance(modulesMostRecent, types.TupleType):
+        if not isinstance(modulesMostRecent, list)\
+           and not isinstance(modulesMostRecent, tuple):
             modulesMostRecent = [modulesMostRecent]
-        if not isinstance(filesMostRecent, types.ListType)\
-           and not isinstance(filesMostRecent, types.TupleType):
+        if not isinstance(filesMostRecent, list)\
+           and not isinstance(filesMostRecent, tuple):
             filesMostRecent = [filesMostRecent]
-        if not isinstance(modules, types.ListType)\
-           and not isinstance(modules, types.TupleType):
+        if not isinstance(modules, list)\
+           and not isinstance(modules, tuple):
             modules = [modules]
-        if not isinstance(users, types.ListType)\
-           and not isinstance(users, types.TupleType):
+        if not isinstance(users, list)\
+           and not isinstance(users, tuple):
             users = [users]
-        if not isinstance(dirs, types.ListType)\
-           and not isinstance(dirs, types.TupleType):
+        if not isinstance(dirs, list)\
+           and not isinstance(dirs, tuple):
             dirs = [dirs]
 
         optv = []
@@ -984,20 +984,20 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
-        if not isinstance(dates, types.ListType)\
-           and not isinstance(dates, types.TupleType):
+        if not isinstance(dates, list)\
+           and not isinstance(dates, tuple):
             dates = [dates]
-        if not isinstance(revs, types.ListType)\
-           and not isinstance(revs, types.TupleType):
+        if not isinstance(revs, list)\
+           and not isinstance(revs, tuple):
             revs = [revs]
-        if not isinstance(states, types.ListType)\
-           and not isinstance(states, types.TupleType):
+        if not isinstance(states, list)\
+           and not isinstance(states, tuple):
             states = [states]
-        if not isinstance(users, types.ListType)\
-           and not isinstance(users, types.TupleType):
+        if not isinstance(users, list)\
+           and not isinstance(users, tuple):
             users = [users]
 
         optv = []
@@ -1064,13 +1064,13 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
         if revs is None:
             revs = []
-        elif not isinstance(revs, types.ListType)\
-           and not isinstance(revs, types.TupleType):
+        elif not isinstance(revs, list)\
+           and not isinstance(revs, tuple):
             revs = [revs]
         if len(revs) > 2:
             raise CVSLibError("Too many 'rev' elements: revs=%s." % revs)
@@ -1118,8 +1118,8 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
 
         optv = []
@@ -1160,8 +1160,8 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(modules, types.ListType)\
-           and not isinstance(modules, types.TupleType):
+        if not isinstance(modules, list)\
+           and not isinstance(modules, tuple):
             modules = [modules]
 
         optv = []
@@ -1193,12 +1193,12 @@ class CVS:
 
         "files" is a single file name or list of file names.
         "recursive" can be one of None [default], True (-R) or False (-l).
-        "showTags" (-v) will show tag information for the file(s).
+        "showTags" (-v) will show tag information for the open(s).
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
 
         optv = []
@@ -1325,8 +1325,8 @@ class CVS:
         """
         #TODO:
         #   - parse the output to provide some useful metadata in 'result'
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
 
         optv = []
@@ -1385,21 +1385,21 @@ class CVS:
             {'status': <U|P|A|R|C|M|?>,
              'file': <the filename>}
         """
-        if not isinstance(files, types.ListType)\
-           and not isinstance(files, types.TupleType):
+        if not isinstance(files, list)\
+           and not isinstance(files, tuple):
             files = [files]
         if join is None:
             join = []
-        elif not isinstance(join, types.ListType)\
-           and not isinstance(join, types.TupleType):
+        elif not isinstance(join, list)\
+           and not isinstance(join, tuple):
             join = [join]
         if len(join) > 2:
             raise CVSLibError("Too many 'join' elements: join=%s." % join)
         if date and rev:
             raise CVSLibError("Cannot specify both a 'rev' and a 'date' "\
                               "for checkout.")
-        if not isinstance(wrappers, types.ListType)\
-           and not isinstance(wrappers, types.TupleType):
+        if not isinstance(wrappers, list)\
+           and not isinstance(wrappers, tuple):
             wrappers = [wrappers]
 
         optv = []
@@ -1441,7 +1441,7 @@ class CVS:
         -a: Specify what actions for temporary watch, one of
             edit,unedit,commit,all,none
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         
@@ -1472,7 +1472,7 @@ class CVS:
         -a: Specify what actions for temporary watch, one of
             edit,unedit,commit,all,none
         """
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         
@@ -1506,7 +1506,7 @@ class CVS:
         """
         if not self._re_editors:
             self._re_editors = re.compile(r'^(?P<file>.*?)\s+(?P<user>.*?)\s+(?P<date>(?:\w+\s\w+\s\d+\s\d+:\d+:\d+\s\d+\s\w+))\s+(?P<server>.*?)\s+(?P<path>.*?)$')
-        if type(files) in types.StringTypes:
+        if type(files) in (str,):
             files = [files]
         optv = []
         
@@ -1617,7 +1617,7 @@ class CVS:
              and *note cvsignore::).
         """
         results = []
-        lineRe = re.compile('^(?P<status>[UPARMC\?]) (?P<file>.*)$')
+        lineRe = re.compile(r'^(?P<status>[UPARMC\?]) (?P<file>.*)$')
         for line in output.splitlines(0):
             if not line: continue # skip empty lines
             match = lineRe.search(line)
@@ -1684,21 +1684,21 @@ def _test_root_parser():
         # Bug 93569.
         r'my-server:/repos/cvs-repo': {'path': r'/repos/cvs-repo'},
     }
-    for line in lines.keys():
+    for line in list(lines.keys()):
         root = _cvs_root_parser(line)
         #print "%s = %r" %(line, root)
-        for key, value in lines[line].items():
+        for key, value in list(lines[line].items()):
             if key in root:
                 assert(root[key] == value)
             else:
-                print "Failed: missing field %r in %r" % (key, line)
-                print root
+                print("Failed: missing field %r in %r" % (key, line))
+                print(root)
                 assert(False)
                 
-        for key, value in root.items():
+        for key, value in list(root.items()):
             if key in lines[line]:
                 assert(root[key] == value)
-    print "\nAll %d tests passed" % (len(lines))
+    print("\nAll %d tests passed" % (len(lines)))
 
 #if __name__ == '__main__':
 #    _test_root_parser()

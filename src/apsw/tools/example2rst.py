@@ -6,7 +6,7 @@
 # the the text of the example code
 
 # Imports
-import string, sys, cStringIO, os, re
+import string, sys, io, os, re
 
 def indentof(l):
     return l[:len(l)-len(l.lstrip())]
@@ -26,7 +26,7 @@ def docapture(filename):
             code.append(line)
     code="\n".join(code)
     # open("xx.py", "wt").write(code)
-    exec code in {}
+    exec(code, {})
 
 outputredirector="""
 import sys

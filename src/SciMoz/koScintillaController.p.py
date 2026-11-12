@@ -298,7 +298,7 @@ class koScintillaController:
             attr()
         # and hopefully this will never happen!
         else:
-            raise TypeError, "The command map entry '%s' yielded a '%r' - dunno what to do with it" % (command_name, attr)
+            raise TypeError("The command map entry '%s' yielded a '%r' - dunno what to do with it" % (command_name, attr))
         # We only need to send a command update when the selection changes _shape_, not location
         # (ie, only when it changes from no selection to selection, or vice-versa.
         if command_name not in ('cmd_redo', 'cmd_killLine'):
@@ -865,7 +865,7 @@ class koScintillaController:
         lineno = sm.lineFromPosition(sm.currentPos)
         lineStartPos = sm.positionFromLine(lineno)
         line = sm.getTextRange(lineStartPos, sm.currentPos)
-        matches = re.finditer("\\s+\\S", line)
+        matches = re.finditer("\\\\s+\\\\S", line)
         # XXX - Byte lengths?? Do we need to get character lengths??
         findPos = -1
         for m in matches:
@@ -879,7 +879,7 @@ class koScintillaController:
             lineStartPos = sm.positionFromLine(lineno)
             lineEndPos = sm.getLineEndPosition(lineno)
             line = sm.getTextRange(lineStartPos, lineEndPos)
-            matches = re.finditer("\\s+\\S", line)
+            matches = re.finditer("\\\\s+\\\\S", line)
             findPos = -1
             for m in matches:
                 findPos = m.start()
@@ -904,7 +904,7 @@ class koScintillaController:
         nextPos = sm.positionAfter(sm.currentPos)
         if nextPos < lineEndPos:
             line = sm.getTextRange(nextPos, lineEndPos)
-            searchMatch = re.search("\\s", line)
+            searchMatch = re.search("\\\\s", line)
             if searchMatch:
                 sm.gotoPos(sm.currentPos + searchMatch.start() + 1)
                 sm.wordRight()
@@ -924,7 +924,7 @@ class koScintillaController:
             lineEndPos = sm.getLineEndPosition(lineno)
         # XXX - Byte lengths?? Do we need to get character lengths??
         line = sm.getTextRange(sm.positionAfter(sm.currentPos), lineEndPos)
-        searchMatch = re.search("\\S\\s", line)
+        searchMatch = re.search("\\\\S\\\\s", line)
         if searchMatch:
             sm.gotoPos(sm.currentPos + searchMatch.start() + 1)
         else:
@@ -1343,7 +1343,7 @@ class koScintillaController:
             end_line = sm.lineFromPosition(sm.selectionEnd)
             end_col = sm.getColumn(sm.selectionEnd)
         sm.beginUndoAction()
-        for i in xrange(start_line, end_line + 1):
+        for i in range(start_line, end_line + 1):
             sm.targetStart = sm.positionFromLine(i)
             sm.targetEnd = sm.getLineEndPosition(i)
             line = sm.getTargetText()[1].rstrip()
@@ -1355,7 +1355,7 @@ class koScintillaController:
 
 
 charClass = {}
-for x in string.letters + string.digits + '_':
+for x in string.ascii_letters + string.digits + '_':
     charClass[x] = 'alpha'
 WHITESPACE = '\t\n\x0b\x0c\r '  # don't use string.whitespace (bug 81316)
 for x in WHITESPACE:
@@ -1376,7 +1376,7 @@ def _sendStatusMessage(msg, highlight=False, timeout=3000):
     sm.highlight = highlight
     try:
         observerSvc.notifyObservers(sm, "status_message", None)
-    except COMException, ex:
+    except COMException as ex:
         pass
 
 import sciutils

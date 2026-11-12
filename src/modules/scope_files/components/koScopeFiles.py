@@ -48,7 +48,7 @@ class koScopeFiles:
         return self._history
 
     def stopExpiredSearches(self):
-        for uuid in self.searches.keys():
+        for uuid in list(self.searches.keys()):
             if uuid is not self.activeUuid:
                 self.searches[uuid].stop()
                 del self.searches[uuid]
@@ -194,7 +194,7 @@ class Searcher:
         if not soft:
             self._stop = True
 
-        for walker in self.walkers.itervalues():
+        for walker in self.walkers.values():
             walker.stop()
 
     def start(self, query, paths):
@@ -239,7 +239,7 @@ class Searcher:
         if getShortcuts:
             shortcuts = getShortcuts()
             log.debug("%d shortcuts loaded", len(shortcuts))
-            for name, path in shortcuts.items():
+            for name, path in list(shortcuts.items()):
                 if not name.startswith(word):
                     continue
                 log.debug("shortcut name matched: %r - %r", name, path)
@@ -482,9 +482,9 @@ class Walker:
             for subPath, dirnames, filenames in walker: # recursive=false means we only get 1 result
                 return [dirnames, filenames]
             
-        except OSError, e:
+        except OSError as e:
             log.error("OSError while walking path: " + path)
-        except Exception, e:
+        except Exception as e:
             log.warn("Exception occurred while walking path: " + path + ", returning empty list")
             
         return [[],[]]

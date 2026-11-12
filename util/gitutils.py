@@ -71,8 +71,8 @@ if __name__ == '__main__':
     revision = sys.argv[1]
     if len(revision) > 10:
         # Git sha1
-        print("buildnum: %s" % (buildnum_from_revision(revision)))
+        print(("buildnum: %s" % (buildnum_from_revision(revision))))
     else:
         gitrev = revision_from_buildnum(revision)
-        print("git rev: %s" % (gitrev, ))
-        print("https://github.com/Komodo/KomodoIDE/commit/%s" % (gitrev, ))
+        print(("git rev: %s" % (gitrev, )))
+        print(("https://github.com/Komodo/KomodoIDE/commit/%s" % (gitrev, )))

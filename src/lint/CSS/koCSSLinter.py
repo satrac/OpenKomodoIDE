@@ -77,9 +77,9 @@ class KoCSSLinter:
         cwd = request.cwd or None
         fn = tempfile.mktemp()
         try:
-            file(fn, 'wb').write(text)
+            open(fn, 'wb').write(text)
             return self.parse(fn, cwd=cwd, text=text)
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
         finally:
             os.unlink(fn)
@@ -110,7 +110,7 @@ class KoCSSLinter:
             column_start = entry.get('columnStart', 0)
             column_end = entry.get('columnEnd', 0)
             if column_start + 1 == column_end:
-                word = re.search('\\w+$', lines[line_start - 1][0:column_end - 1])
+                word = re.search('\\\\w+$', lines[line_start - 1][0:column_end - 1])
                 if word:
                     column_start = word.start() + 1
             results.addResult(KoLintResult(description=entry.get('description', ''),

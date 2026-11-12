@@ -63,8 +63,8 @@ def runGenericLinter(text, extension, cmd_start, err_ptns, warn_ptns, cwd, useSt
     finally:
         os.unlink(tmpfilename)
     results = koLintResults()
-    all_ptns = (zip(err_ptns, [SEV_ERROR] * len(err_ptns))
-                + zip(warn_ptns, [SEV_WARNING] * len(warn_ptns)))
+    all_ptns = (list(zip(err_ptns, [SEV_ERROR] * len(err_ptns)))
+                + list(zip(warn_ptns, [SEV_WARNING] * len(warn_ptns))))
     for line in errLines:
         for ptn, sev in all_ptns:
             m = ptn.match(line)
@@ -81,7 +81,7 @@ def runGenericLinter(text, extension, cmd_start, err_ptns, warn_ptns, cwd, useSt
 def encodeRequestText(request, text=None):
     if text is None:
         text = request.text
-    if type(text) == unicode:
+    if type(text) == str:
         try:
             return text.encode(request.encoding.python_encoding_name)
         except (UnicodeEncodeError, UnicodeDecodeError):
@@ -146,6 +146,6 @@ class KoLintResult:
                 unicodebuffer, encoding, bom = _gEncodingServices.\
                                                  getUnicodeEncodedStringUsingOSDefault(self.description)
                 self.encodedDescription  = self._encode_string(unicodebuffer)
-            except Exception, e:
+            except Exception as e:
                 self.encodedDescription  = repr(self.description)[1:-1] # remove quotes
         return self.encodedDescription

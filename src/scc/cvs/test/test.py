@@ -64,8 +64,8 @@ def _getAllTests(testDir):
 
 
 def _setUp():
-    print "="*40
-    print "Setting up cvslib.py test workspace..."
+    print("="*40)
+    print("Setting up cvslib.py test workspace...")
 
     # Steps to setup repository:
     # We will create a repository with a "supper" project. The admin user is
@@ -86,7 +86,7 @@ def _setUp():
 
     # Create the repository dir and initialize the repository:
     #     > cvs init
-    print "Creating a CVS repository at CVSROOT=%s" % testsupport.cvsroot
+    print("Creating a CVS repository at CVSROOT=%s" % testsupport.cvsroot)
     if os.system('cvs -d %s init' % testsupport.cvsroot):
         raise TestError("Problem initializing test CVS repository.")
 
@@ -118,22 +118,22 @@ def _setUp():
     #     have to do for this (for testing authentication stuff.
     #     > mkdir <tmp>/andrew
     #     > mkdir <tmp>/bertha
-    for username, user in testsupport.users.items():
+    for username, user in list(testsupport.users.items()):
         os.makedirs(user['home'])
 
     # Put cvslib.py on sys.path.
     sys.path.insert(0, os.path.abspath(os.pardir))
 
-    print "="*40
+    print("="*40)
 
 
 def _tearDown():
-    print "="*40
-    print "Tearing down cvslib.py test workspace..."
+    print("="*40)
+    print("Tearing down cvslib.py test workspace...")
     if os.path.exists(testsupport.rootDir):
-        print "Removing '%s'." % testsupport.rootDir
+        print("Removing '%s'." % testsupport.rootDir)
         testsupport._rmtree(testsupport.rootDir)
-    print "="*40
+    print("="*40)
 
 
 def test(testModules, testDir=os.curdir, exclude=[]):
@@ -152,8 +152,8 @@ def test(testModules, testDir=os.curdir, exclude=[]):
             allSuites.append(suite())
         else:
             if gVerbosity >= 2:
-                print "warning: module '%s' did not have a suite() method."\
-                      % moduleFile
+                print("warning: module '%s' did not have a suite() method."\
+                      % moduleFile)
     suite = unittest.TestSuite(allSuites)
 
     # Run the suite.
@@ -171,16 +171,16 @@ def main(argv):
     try:
         opts, testModules = getopt.getopt(sys.argv[1:], 'hvqx:cn',
             ['help', 'verbose', 'quiet', 'exclude=', 'clean', 'no-clean'])
-    except getopt.error, ex:
-        print "%s: error: %s" % (argv[0], ex)
-        print __doc__
+    except getopt.error as ex:
+        print("%s: error: %s" % (argv[0], ex))
+        print(__doc__)
         sys.exit(2)  
     exclude = []
     justClean = 0
     clean = 1
     for opt, optarg in opts:
         if opt in ("-h", "--help"):
-            print __doc__
+            print(__doc__)
             sys.exit(0)
         elif opt in ("-v", "--verbose"):
             gVerbosity += 1

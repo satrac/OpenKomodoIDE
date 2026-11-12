@@ -114,7 +114,7 @@ elif 'riscos' in _names:
     del riscos
 
 else:
-    raise ImportError, 'no os specific module found'
+    raise ImportError('no os specific module found')
 
 sys.modules['os.path'] = path
 from os.path import (curdir, pardir, sep, pathsep, defpath, extsep, altsep,
@@ -133,7 +133,7 @@ SEEK_END = 2
 # Super directory utilities.
 # (Inspired by Eric Raymond; the doc strings are mostly his)
 
-def makedirs(name, mode=0777):
+def makedirs(name, mode=0o777):
     """makedirs(path [, mode=0777])
 
     Super-mkdir; create a leaf directory and all intermediate ones.
@@ -148,7 +148,7 @@ def makedirs(name, mode=0777):
     if head and tail and not path.exists(head):
         try:
             makedirs(head, mode)
-        except OSError, e:
+        except OSError as e:
             # be happy if someone already created the path
             if e.errno != errno.EEXIST:
                 raise
@@ -274,7 +274,7 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
         # Note that listdir and error are globals in this module due
         # to earlier import-*.
         names = listdir(top)
-    except error, err:
+    except error as err:
         if onerror is not None:
             onerror(err)
         return
@@ -378,15 +378,15 @@ def _execvpe(file, args, env=None):
         fullname = path.join(dir, file)
         try:
             func(fullname, *argrest)
-        except error, e:
+        except error as e:
             tb = sys.exc_info()[2]
             if (e.errno != errno.ENOENT and e.errno != errno.ENOTDIR
                 and saved_exc is None):
                 saved_exc = e
                 saved_tb = tb
     if saved_exc:
-        raise error, saved_exc, saved_tb
-    raise error, e, tb
+        raise error(saved_exc).with_traceback(saved_tb)
+    raise error(e).with_traceback(tb)
 
 # Change environ to automatically call putenv() if it exists
 try:
@@ -414,7 +414,7 @@ else:
             def __init__(self, environ):
                 UserDict.UserDict.__init__(self)
                 data = self.data
-                for k, v in environ.items():
+                for k, v in list(environ.items()):
                     data[k.upper()] = v
             def __setitem__(self, key, item):
                 putenv(key, item)
@@ -431,7 +431,7 @@ else:
                     unsetenv(key)
                     del self.data[key.upper()]
                 def clear(self):
-                    for key in self.data.keys():
+                    for key in list(self.data.keys()):
                         unsetenv(key)
                         del self.data[key]
                 def pop(self, key, *args):
@@ -446,7 +446,7 @@ else:
             def update(self, dict=None, **kwargs):
                 if dict:
                     try:
-                        keys = dict.keys()
+                        keys = list(dict.keys())
                     except AttributeError:
                         # List of (key, value)
                         for k, v in dict:
@@ -473,7 +473,7 @@ else:
             def update(self,  dict=None, **kwargs):
                 if dict:
                     try:
-                        keys = dict.keys()
+                        keys = list(dict.keys())
                     except AttributeError:
                         # List of (key, value)
                         for k, v in dict:
@@ -495,7 +495,7 @@ else:
                     unsetenv(key)
                     del self.data[key]
                 def clear(self):
-                    for key in self.data.keys():
+                    for key in list(self.data.keys()):
                         unsetenv(key)
                         del self.data[key]
                 def pop(self, key, *args):
@@ -555,7 +555,7 @@ if _exists("fork") and not _exists("spawnv") and _exists("execv"):
                 elif WIFEXITED(sts):
                     return WEXITSTATUS(sts)
                 else:
-                    raise error, "Not stopped, signaled or exited???"
+                    raise error("Not stopped, signaled or exited???")
 
     def spawnv(mode, file, args):
         """spawnv(mode, file, args) -> integer
@@ -670,7 +670,7 @@ if _exists("fork"):
 
             import subprocess
             PIPE = subprocess.PIPE
-            p = subprocess.Popen(cmd, shell=isinstance(cmd, basestring),
+            p = subprocess.Popen(cmd, shell=isinstance(cmd, str),
                                  bufsize=bufsize, stdin=PIPE, stdout=PIPE,
                                  close_fds=True)
             return p.stdin, p.stdout
@@ -690,7 +690,7 @@ if _exists("fork"):
 
             import subprocess
             PIPE = subprocess.PIPE
-            p = subprocess.Popen(cmd, shell=isinstance(cmd, basestring),
+            p = subprocess.Popen(cmd, shell=isinstance(cmd, str),
                                  bufsize=bufsize, stdin=PIPE, stdout=PIPE,
                                  stderr=PIPE, close_fds=True)
             return p.stdin, p.stdout, p.stderr
@@ -710,13 +710,13 @@ if _exists("fork"):
 
             import subprocess
             PIPE = subprocess.PIPE
-            p = subprocess.Popen(cmd, shell=isinstance(cmd, basestring),
+            p = subprocess.Popen(cmd, shell=isinstance(cmd, str),
                                  bufsize=bufsize, stdin=PIPE, stdout=PIPE,
                                  stderr=subprocess.STDOUT, close_fds=True)
             return p.stdin, p.stdout
         __all__.append("popen4")
 
-import copy_reg as _copy_reg
+import copyreg as _copy_reg
 
 def _make_stat_result(tup, dict):
     return stat_result(tup, dict)

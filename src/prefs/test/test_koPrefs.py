@@ -36,7 +36,7 @@ def _serializePrefToString(prefset):
     os.close(fd)
     try:
         prefset.serializeToFile(path)
-        return file(path).read()
+        return open(path).read()
     finally:
         os.remove(path)
 
@@ -81,7 +81,7 @@ class PrefsCloneTestCase(unittest.TestCase):
                          "%s deleted on clone" % (desc,))
 
     def test_unordered_simple(self):
-        for typ, val in self._children.items():
+        for typ, val in list(self._children.items()):
             old = Cc["@activestate.com/koPreferenceSet;1"].createInstance()
             getattr(old, "set%sPref" % (typ.title()))("test_pref", val)
             getter = lambda pref: getattr(pref, "get%sPref" % (typ.title()))("test_pref")
@@ -107,7 +107,7 @@ class PrefsCloneTestCase(unittest.TestCase):
         self._run_test(old, getter, deleter, 42, "unordered/ordered")
 
     def test_ordered_simple(self):
-        for typ, val in self._children.items():
+        for typ, val in list(self._children.items()):
             old = Cc["@activestate.com/koOrderedPreference;1"].createInstance()
             getattr(old, "append%sPref" % (typ.title()))(val)
             getter = lambda pref: getattr(pref, "get%sPref" % (typ.title()))(0)
@@ -121,9 +121,9 @@ class PrefsCloneTestCase(unittest.TestCase):
         base.setPref("child", child)
         prefset = Cc["@activestate.com/koPreferenceRoot;1"].createInstance()
         prefset.inheritFrom = base
-        self.assertEquals(prefset.getPref("child").length, 1)
+        self.assertEqual(prefset.getPref("child").length, 1)
         clone = prefset.clone()
-        self.assertEquals(clone.getPref("child").length, 1)
+        self.assertEqual(clone.getPref("child").length, 1)
 
     def test_ordered_unordered(self):
         old = Cc["@activestate.com/koOrderedPreference;1"].createInstance()
@@ -148,10 +148,10 @@ class PrefsCloneTestCase(unittest.TestCase):
         ordered = Cc["@activestate.com/koOrderedPreference;1"].createInstance()
         with self.assertRaises(COMException) as cm:
             prefset.update(ordered)
-        self.assertEquals(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG)
+        self.assertEqual(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG)
         with self.assertRaises(COMException) as cm:
             ordered.update(prefset)
-        self.assertEquals(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG)
+        self.assertEqual(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG)
 
 class PrefSetTestCase(unittest.TestCase):
     """Testing preference set behaviour"""
@@ -167,7 +167,7 @@ class PrefSetTestCase(unittest.TestCase):
         prefset.setLong("long", 1)
         with self.assertRaises(COMException) as cm:
             prefset.getPref("child").getLongPref("long")
-        self.assertEquals(cm.exception.errno, Cr.NS_ERROR_UNEXPECTED)
+        self.assertEqual(cm.exception.errno, Cr.NS_ERROR_UNEXPECTED)
         self.assertFalse(prefset.getPref("child").hasLongPref("long"))
         self.assertTrue(prefset.hasLongPref("long"))
 
@@ -200,7 +200,7 @@ class PrefSetTestCase(unittest.TestCase):
                     self.fail("Unserialized from file but not a root")
                 raise
             def check_for_shadow_prefs(pref):
-                for name, (child, typ) in pref.prefs.items():
+                for name, (child, typ) in list(pref.prefs.items()):
                     if typ != "object":
                         continue
                     child = UnwrapObject(child)
@@ -214,7 +214,7 @@ class PrefSetTestCase(unittest.TestCase):
         base.setPref("child", child)
 
         base.getPref("child").setLong("long", 68)
-        self.assertEquals(root.getPref("child").getLong("long"),
+        self.assertEqual(root.getPref("child").getLong("long"),
                           base.getPref("child").getLong("long"))
         uroot = UnwrapObject(root)
         self.assertTrue(uroot.getPref("child")._is_shadow)
@@ -230,12 +230,12 @@ class PrefSetTestCase(unittest.TestCase):
         root.inheritFrom = base  # reset inheritFrom after serialization
 
         self.assertTrue(root.hasPrefHere("child"))
-        self.assertAlmostEquals(root.getPref("child").getDouble("double"),
+        self.assertAlmostEqual(root.getPref("child").getDouble("double"),
                                 1.23456)
         base.getPref("child").setLong("long", 42)
         self.assertTrue(root.hasPrefHere("child"))
         long_value = root.getPref("child").getLong("long")
-        self.assertEquals(long_value, 68,
+        self.assertEqual(long_value, 68,
                           "child pref lost its base pref, expected 42, got %r"
                           % (long_value,))
 
@@ -253,22 +253,22 @@ class PrefSetTestCase(unittest.TestCase):
         self.assertTrue(base.hasPrefHere("child"))
         self.assertFalse(root.hasPrefHere("child"))
 
-        self.assertEquals(base.getPrefIds(), ["child"])
-        self.assertEquals(base.getAllPrefIds(), ["child"])
-        self.assertEquals(root.getPrefIds(), ["string"])
-        self.assertEquals(root.getAllPrefIds(), ["child", "string"]) # sorted
+        self.assertEqual(base.getPrefIds(), ["child"])
+        self.assertEqual(base.getAllPrefIds(), ["child"])
+        self.assertEqual(root.getPrefIds(), ["string"])
+        self.assertEqual(root.getAllPrefIds(), ["child", "string"]) # sorted
 
-        self.assertEquals(root.getPref("child").container, root)
+        self.assertEqual(root.getPref("child").container, root)
 
         self.assertFalse(root.getPref("child").hasPrefHere("long"))
         self.assertFalse(root.hasPrefHere("child"))
         root.getPref("child").setLong("long", 54321)
         self.assertTrue(root.hasPrefHere("child"))
         self.assertTrue(root.getPref("child").hasPrefHere("long"))
-        self.assertEquals(base.getPref("child").getLong("long"), 12345)
+        self.assertEqual(base.getPref("child").getLong("long"), 12345)
 
         root.reset()
-        self.assertEquals(base.getAllPrefIds(), root.getAllPrefIds())
+        self.assertEqual(base.getAllPrefIds(), root.getAllPrefIds())
 
         self.assertTrue(base.hasPrefHere("child"))
         self.assertFalse(root.hasPrefHere("child"))
@@ -283,47 +283,47 @@ class PrefSetTestCase(unittest.TestCase):
         root.inheritFrom = base
 
         root.getPref("ordered").QueryInterface(Ci.koIOrderedPreference)
-        self.assertEquals(base.getPref("ordered").getLong(0), 1)
-        self.assertEquals(root.getPref("ordered").getLong(0), 1)
-        self.assertEquals(base.getPref("ordered").length, 1)
-        self.assertEquals(root.getPref("ordered").length, 1)
+        self.assertEqual(base.getPref("ordered").getLong(0), 1)
+        self.assertEqual(root.getPref("ordered").getLong(0), 1)
+        self.assertEqual(base.getPref("ordered").length, 1)
+        self.assertEqual(root.getPref("ordered").length, 1)
 
         base.getPref("ordered").appendLong(2)
-        self.assertEquals(base.getPref("ordered").length, 2)
-        self.assertEquals(root.getPref("ordered").length, 2)
-        self.assertEquals(base.getPref("ordered").getLong(0), 1)
-        self.assertEquals(base.getPref("ordered").getLong(1), 2)
-        self.assertEquals(root.getPref("ordered").getLong(0), 1)
-        self.assertEquals(root.getPref("ordered").getLong(1), 2)
+        self.assertEqual(base.getPref("ordered").length, 2)
+        self.assertEqual(root.getPref("ordered").length, 2)
+        self.assertEqual(base.getPref("ordered").getLong(0), 1)
+        self.assertEqual(base.getPref("ordered").getLong(1), 2)
+        self.assertEqual(root.getPref("ordered").getLong(0), 1)
+        self.assertEqual(root.getPref("ordered").getLong(1), 2)
 
         root.getPref("ordered").appendLong(3) # detaches
-        self.assertEquals(base.getPref("ordered").length, 2)
-        self.assertEquals(root.getPref("ordered").length, 3)
-        self.assertEquals(root.getPref("ordered").getLong(0), 1)
-        self.assertEquals(root.getPref("ordered").getLong(1), 2)
-        self.assertEquals(root.getPref("ordered").getLong(2), 3)
+        self.assertEqual(base.getPref("ordered").length, 2)
+        self.assertEqual(root.getPref("ordered").length, 3)
+        self.assertEqual(root.getPref("ordered").getLong(0), 1)
+        self.assertEqual(root.getPref("ordered").getLong(1), 2)
+        self.assertEqual(root.getPref("ordered").getLong(2), 3)
         with self.assertRaises(COMException) as cm:
             # The base should not have the appnded pref
             base.getPref("ordered").getPrefType(2)
-        self.assertEquals(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG,
+        self.assertEqual(cm.exception.errno, Cr.NS_ERROR_INVALID_ARG,
                           "Unexpected exception %s" % (cm.exception,))
 
         # ordered pref reset just clears it...
         o = root.getPref("ordered")
         o.reset()
         self.assertTrue(root.hasPrefHere("ordered"))
-        self.assertEquals(o.length, 0)
-        self.assertEquals(root.getPref("ordered").length, 0)
+        self.assertEqual(o.length, 0)
+        self.assertEqual(root.getPref("ordered").length, 0)
 
         # Add new ordered prefs and check again.
         o.appendLong(9)
-        self.assertEquals(base.getPref("ordered").length, 2)
-        self.assertEquals(base.getPref("ordered").getLong(0), 1)
-        self.assertEquals(base.getPref("ordered").getLong(1), 2)
-        self.assertEquals(root.getPref("ordered").length, 1)
-        self.assertEquals(root.getPref("ordered").getLong(0), 9)
-        self.assertEquals(o.length, 1)
-        self.assertEquals(o.getLong(0), 9)
+        self.assertEqual(base.getPref("ordered").length, 2)
+        self.assertEqual(base.getPref("ordered").getLong(0), 1)
+        self.assertEqual(base.getPref("ordered").getLong(1), 2)
+        self.assertEqual(root.getPref("ordered").length, 1)
+        self.assertEqual(root.getPref("ordered").getLong(0), 9)
+        self.assertEqual(o.length, 1)
+        self.assertEqual(o.getLong(0), 9)
 
     def test_ordered_reset(self):
         base = Cc["@activestate.com/koPreferenceRoot;1"].createInstance()
@@ -339,19 +339,19 @@ class PrefSetTestCase(unittest.TestCase):
         o = root.getPref("ordered")
         o.reset()
         self.assertTrue(root.hasPrefHere("ordered"))
-        self.assertEquals(o.length, 0)
-        self.assertEquals(root.getPref("ordered").length, 0)
-        self.assertEquals(base.getPref("ordered").length, 2)
+        self.assertEqual(o.length, 0)
+        self.assertEqual(root.getPref("ordered").length, 0)
+        self.assertEqual(base.getPref("ordered").length, 2)
 
         # Add new ordered prefs and check again.
         o.appendLong(9)
-        self.assertEquals(base.getPref("ordered").length, 2)
-        self.assertEquals(base.getPref("ordered").getLong(0), 1)
-        self.assertEquals(base.getPref("ordered").getLong(1), 2)
-        self.assertEquals(root.getPref("ordered").length, 1)
-        self.assertEquals(root.getPref("ordered").getLong(0), 9)
-        self.assertEquals(o.length, 1)
-        self.assertEquals(o.getLong(0), 9)
+        self.assertEqual(base.getPref("ordered").length, 2)
+        self.assertEqual(base.getPref("ordered").getLong(0), 1)
+        self.assertEqual(base.getPref("ordered").getLong(1), 2)
+        self.assertEqual(root.getPref("ordered").length, 1)
+        self.assertEqual(root.getPref("ordered").getLong(0), 9)
+        self.assertEqual(o.length, 1)
+        self.assertEqual(o.getLong(0), 9)
 
     @tag("bug106386")
     def test_preference_cache(self):
@@ -455,7 +455,7 @@ class PrefSerializeTestCase(unittest.TestCase):
         child.setBoolean("bool", True)
         base.setLong("long", 987654321)
         root.setLong("long", 123456789)
-        self.assertEquals(base.getPref("child").getBoolean("bool"),
+        self.assertEqual(base.getPref("child").getBoolean("bool"),
                           root.getPref("child").getBoolean("bool"))
 
         self.assertSerializesTo(root, """
@@ -484,7 +484,7 @@ class PrefSerializeTestCase(unittest.TestCase):
         root.inheritFrom = base
 
         o = root.getPref("test_ordered_inheritance_shadowing")
-        self.failIf(root.hasPrefHere("test_ordered_inheritance_shadowing"),
+        self.assertFalse(root.hasPrefHere("test_ordered_inheritance_shadowing"),
                     "Root gained an ordered preference after getting from global")
 
         self.assertSerializesTo(root, """
@@ -514,7 +514,7 @@ class PrefSerializeTestCase(unittest.TestCase):
         root.inheritFrom = base
 
         o = root.getPref("test_ordered_inheritance_shadowing")
-        self.failIf(root.hasPrefHere("test_ordered_inheritance_shadowing"),
+        self.assertFalse(root.hasPrefHere("test_ordered_inheritance_shadowing"),
                     "Root gained an ordered preference after getting from parent")
 
         self.assertSerializesTo(root, """

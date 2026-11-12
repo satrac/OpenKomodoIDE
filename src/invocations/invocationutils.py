@@ -49,9 +49,9 @@ def environmentStringsToDict(existing):
     return ret
 
 def environmentDictToStrings(env_dict):
-    return ["%s=%s"  % (item[0], item[1]) for item in env_dict.items()]
+    return ["%s=%s"  % (item[0], item[1]) for item in list(env_dict.items())]
 
-_short_ver_re = re.compile("(\d+)(\.\d+)*([a-z](\d+)?)?")
+_short_ver_re = re.compile(r"(\d+)(\.\d+)*([a-z](\d+)?)?")
 def split_short_ver(ver_str, intify=False, pad_zeros=None):
     """Parse the given version into a tuple of "significant" parts.
 
@@ -95,7 +95,7 @@ def split_short_ver(ver_str, intify=False, pad_zeros=None):
 
     hit_quality_bit = False
     bits = []
-    for bit in re.split("(\.|[a-z])", ver_str):
+    for bit in re.split(r"(\.|[a-z])", ver_str):
         if len(bit) == 0 or bit == '.':
             continue
         if intify:
