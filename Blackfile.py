@@ -1026,6 +1026,9 @@ def ImageKomodo(cfg, argv):
     from os.path import join, isdir, exists, dirname, basename
     print(("creating install image in '%s'..." % cfg.installRelDir))
 
+    iconStyle = os.environ.get("KOMODO_ICON_STYLE", "classic")
+    classicIcons = iconStyle == "classic"
+
     # Start from a clean image.  Copying over an existing image leaves stale
     # files behind (for example a previous Python silo with the full system
     # site-packages), which makes the resulting image much larger than the
@@ -1214,32 +1217,20 @@ def ImageKomodo(cfg, argv):
 
     # - Un*x share bits
     if sys.platform not in ("win32", "darwin"):
-        ibits += [
-            ("cp", join("src", "main", "komodo16.%s.png" % cfg.productType),
-                   iicorepath("share", "icons", "komodo16.png")),
-            ("cp", join("src", "main", "komodo32.%s.png" % cfg.productType),
-                   iicorepath("share", "icons", "komodo32.png")),
-            ("cp", join("src", "main", "komodo48.%s.png" % cfg.productType),
-                   iicorepath("share", "icons", "komodo48.png")),
-            ("cp", join("src", "main", "komodo128.%s.png" % cfg.productType),
-                   iicorepath("share", "icons", "komodo128.png")),
-            ("cp", join("src", "main", "komodo256.%s.png" % cfg.productType),
-                   iicorepath("share", "icons", "komodo256.png")),
-            ("cp", join("src", "main", "komodo16.%s.xpm" % cfg.productType),
-                   iicorepath("share", "icons", "komodo16.xpm")),
-            ("cp", join("src", "main", "komodo32.%s.xpm" % cfg.productType),
-                   iicorepath("share", "icons", "komodo32.xpm")),
-            ("cp", join("src", "main", "komodo48.%s.xpm" % cfg.productType),
-                   iicorepath("share", "icons", "komodo48.xpm")),
-            ("cp", join("src", "main", "komodo128.%s.xpm" % cfg.productType),
-                   iicorepath("share", "icons", "komodo128.xpm")),
-            ("cp", join("src", "main", "komodo256.%s.xpm" % cfg.productType),
-                   iicorepath("share", "icons", "komodo256.xpm")),
-            # Classic Komodo 9 icon set, installed alongside the current
-            # icons so users can select it in a desktop shortcut.
-            ("cp", join("src", "main", "classic"),
-                   iicorepath("share", "icons", "classic")),
-        ]
+        for size in (16, 32, 48, 128, 256):
+            for ext in ("png", "xpm"):
+                if classicIcons:
+                    src = join("src", "main", "classic",
+                               "komodo%d.%s" % (size, ext))
+                else:
+                    src = join("src", "main",
+                               "komodo%d.%s.%s" % (size, cfg.productType, ext))
+                ibits.append(("cp", src,
+                              iicorepath("share", "icons",
+                                         "komodo%d.%s" % (size, ext))))
+        # Keep the classic set available even when the modern icon is selected.
+        ibits.append(("cp", join("src", "main", "classic"),
+                      iicorepath("share", "icons", "classic")))
 
     # - Trim some stuff.
     ibits += [

@@ -56,6 +56,13 @@ if ($buildType eq 'debug') {
     $suffix = "_d";
 }
 
+# Application icon style.  "classic" is the Komodo 9 icon set; "modern" is
+# the current Komodo icon.  The classic set is the default because that is
+# what this build uses.
+my $iconStyle = $ENV{KOMODO_ICON_STYLE} || "classic";
+my $iconPrefix = ($iconStyle eq "classic") ? "classic/" : "";
+my $iconTag = ($iconStyle eq "classic") ? "" : ".$productType";
+
 my $currYear = (localtime(time))[5] + 1900;
 
 
@@ -64,33 +71,33 @@ my $currYear = (localtime(time))[5] + 1900;
 #       $mozSrc/komodo/Makefile.in build as is done for mozilla/browser.
 if ($platform ne "win" && $platform ne "darwin") { # i.e. GTK
     $cons->InstallAs("$mozBin/chrome/icons/default/default16.png",
-                     "komodo16.$productType.png");
+                     "${iconPrefix}komodo16${iconTag}.png");
     $cons->InstallAs("$mozBin/chrome/icons/default/default32.png",
-                     "komodo32.$productType.png");
+                     "${iconPrefix}komodo32${iconTag}.png");
     $cons->InstallAs("$mozBin/chrome/icons/default/default48.png",
-                     "komodo48.$productType.png");
+                     "${iconPrefix}komodo48${iconTag}.png");
     $cons->InstallAs("$mozBin/chrome/icons/default/default.png",
-                     "komodo128.$productType.png");
+                     "${iconPrefix}komodo128${iconTag}.png");
 }
 
 # Install these images into the Komodo chrome, so the application UI can make
 # use of them as well.
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_16x16.png",
-                 "komodo16.$productType.png");
+                 "${iconPrefix}komodo16${iconTag}.png");
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_32x32.png",
-                 "komodo32.$productType.png");
+                 "${iconPrefix}komodo32${iconTag}.png");
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_48x48.png",
-                 "komodo48.$productType.png");
+                 "${iconPrefix}komodo48${iconTag}.png");
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_64x64.png",
-                 "komodo64.$productType.png");
+                 "${iconPrefix}komodo64${iconTag}.png");
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_128x128.png",
-                 "komodo128.$productType.png");
+                 "${iconPrefix}komodo128${iconTag}.png");
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_256x256.png",
-                 "komodo256.$productType.png");
+                 "${iconPrefix}komodo256${iconTag}.png");
 
 # Install the classic Komodo 9 application icons as an alternative set.  They
-# are kept in a separate directory so the current icon remains the default.
-foreach my $size (16, 32, 48, 128, 256) {
+# remain available even when KOMODO_ICON_STYLE=modern selects the current icon.
+foreach my $size (16, 32, 48, 64, 128, 256) {
     $cons->InstallAs("$mozBin/chrome/icons/classic/komodo$size.png",
                      "classic/komodo$size.png");
     $cons->InstallAs("$mozBin/chrome/icons/classic/komodo$size.xpm",
@@ -231,7 +238,7 @@ my @xreFiles = (
     ["cp",               "app/komodo.$productType.ico", "app/komodo.ico"],
     ["cp",               "app/macbuild/$macKoIconName.icns",
                          "app/macbuild/komodo.icns"],
-    ["cp",               "../komodo16.$productType.xpm", "app/default.xpm"],
+    ["cp",               "../${iconPrefix}komodo16${iconTag}.xpm", "app/default.xpm"],
 );
 
 if ($platform eq "darwin" && $mozVersionNumber >= 3500) {

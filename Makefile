@@ -74,6 +74,12 @@ DESTDIR ?=
 INSTALL_NAME ?= komodo-12.10
 PACKAGE ?= std
 CIX_DIR ?=
+# Application icon style: "classic" (Komodo 9) or "modern" (current Komodo).
+ICON_STYLE ?= classic
+export KOMODO_ICON_STYLE := $(ICON_STYLE)
+ifneq ($(filter $(ICON_STYLE),classic modern),$(ICON_STYLE))
+$(error ICON_STYLE must be 'classic' or 'modern')
+endif
 
 .PHONY: help all doctor prebuilt-python modules configure register-mozbuild \
         build app run test \
@@ -155,6 +161,7 @@ help:
 > @echo "  IMAGE_DIR=$(IMAGE_DIR)"
 > @echo "  PREFIX=$(PREFIX)  LOCAL_PREFIX=$(LOCAL_PREFIX)"
 > @echo "  PACKAGE=$(PACKAGE)  CIX_DIR=$(CIX_DIR)"
+> @echo "  ICON_STYLE=$(ICON_STYLE)  (classic or modern)"
 > @echo "  CCACHE=$(CCACHE)      (set CCACHE=1 for clean-rebuild caching)"
 
 all: build
@@ -516,3 +523,4 @@ status:
 > @echo "PREFIX            = $(PREFIX)"
 > @echo "LOCAL_PREFIX      = $(LOCAL_PREFIX)"
 > @echo "INSTALL_NAME      = $(INSTALL_NAME)"
+> @echo "ICON_STYLE        = $(ICON_STYLE)"

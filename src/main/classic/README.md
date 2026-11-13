@@ -1,14 +1,22 @@
 # Classic Komodo 9 icons
 
-These are the application icons from Komodo IDE 9 (`share/icons`).  They are
-installed as an alternative set next to the current icons:
+These are the application icons from Komodo IDE 9 (`share/icons`).  On
+GTK/Linux they are the default application icons in this build; set
+`ICON_STYLE=modern` to use the current Komodo icon instead.  Windows and
+macOS keep their platform-specific icon formats (ICO/ICNS).
 
-- development tree: `dist/bin/chrome/icons/classic/`
-- install image: `INSTALLDIR/share/icons/classic/`
+The active set is installed in:
 
-The current Komodo icon remains the default application icon.  To use the
-classic icon in a desktop shortcut, point its `Icon=` entry at the installed
-classic icon, for example:
+- development tree: `dist/bin/chrome/icons/default/` and
+  `dist/bin/chrome/komodo/skin/images/`
+- install image: `INSTALLDIR/share/icons/`
+
+The classic set is also always installed as an alternative:
+
+- `dist/bin/chrome/icons/classic/`
+- `INSTALLDIR/share/icons/classic/`
+
+To select the classic icon explicitly for a desktop shortcut:
 
 ```ini
 [Desktop Entry]
@@ -19,4 +27,5 @@ Terminal=false
 Type=Application
 ```
 
-Sizes provided: 16, 32, 48, 128, and 256 pixels, in both PNG and XPM formats.
+Sizes provided: 16, 32, 48, 64, 128, and 256 pixels, in both PNG and XPM
+formats.  The 64-pixel icon was generated from the 128-pixel original.
