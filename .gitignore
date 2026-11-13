@@ -30,3 +30,10 @@ packages/
 /src/xdebug2/build
 /src/xdebug2/tmp
 src/modules/codeintel/tools
+# Python build artifacts from local C-extension builds
+/contrib/sgmlop/build/
+/contrib/sgmlop/*.egg-info/
+/src/silvercity/build/
+/src/silvercity/*.egg-info/
+/src/apsw/build/
+/src/apsw/*.egg-info/

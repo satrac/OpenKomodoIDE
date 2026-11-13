@@ -2112,6 +2112,17 @@ def target_pyxpcom(argv=["pyxpcom"]):
     return argv[1:]
 
 
+def target_python3_deps(argv=["python3_deps"]):
+    """Install Python 3 runtime libraries into the Komodo dist."""
+    log.info("target: python3_deps")
+    config = _importConfig()
+    distDir = join(config.buildDir, config.srcTreeName, "mozilla",
+                   config.mozObjDir, "dist")
+    script = join(dirname(__file__), "support", "install-py3-python-deps.py")
+    _run("%s %s --app-dir %s" % (sys.executable, script, distDir), log.info)
+    return argv[1:]
+
+
 def target_update(argv=["update"]):
     """update mozilla source from mercurial"""
     config = _importConfig()
@@ -2622,6 +2633,7 @@ def target_all(argv):
     target_mozilla()
     target_pyxpcom()
     target_silo_python()
+    target_python3_deps()
     target_regmozbuild()
     return argv[1:]
 
