@@ -91,8 +91,8 @@ def _get_dbgp_client_pythonlib_path():
     except NameError:
         this_dir = dirname(abspath(sys.argv[0]))
     candidate_paths = [
-        dirname(this_dir), # Komodo source tree layout
         join(dirname(this_dir), pythonlib),
+        dirname(this_dir), # Komodo source tree layout
     ]
     for candidate_path in candidate_paths:
         landmark = join(candidate_path, "dbgp", "__init__.py")

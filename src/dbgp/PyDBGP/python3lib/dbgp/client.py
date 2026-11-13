@@ -64,17 +64,14 @@ else:
     minor = (sys.hexversion & 0x00ff0000) >> 16
     modname = "_client%s%s" % (major, minor)
     try:
-        # Try importing our fast C module.
-        import imp
-        import dbgp
-        info = imp.find_module(modname, dbgp.__path__)
-        _client = imp.load_module(modname, *info)
+        # Try importing our fast C module.  On modern Python versions the
+        # C accelerator is normally absent, so fall back to pure Python.
+        import importlib
+        _client = importlib.import_module("dbgp." + modname)
         sys.modules["_client"] = _client
         from _client import *
-        del sys.modules["_client"], info, _client
-    except ImportError as ex:
-        #configureLogging(log, logging.INFO)
-        #log.exception(ex)
+        del sys.modules["_client"], _client
+    except ImportError:
         # Fallback to pure Python support module.
         from dbgp._pyclient import *
     del major, minor, modname
@@ -521,7 +518,7 @@ except ImportError:
         def modules_dict(self): return sys.modules
         pass
 
-import imp
+import types
 
 class h_main:
     """
@@ -532,7 +529,7 @@ class h_main:
     def __init__(self, main_name='__main__'):
         import __main__
         self.name = main_name
-        self.module = imp.new_module(main_name)
+        self.module = types.ModuleType(main_name)
         if hasattr(__main__, '__builtins__'): # not Jython
             self.module.__builtins__ = __main__.__builtins__
         self.locals = self.globals = self.module.__dict__
