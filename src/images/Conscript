@@ -220,7 +220,7 @@ my %images = (
     "famfamfam_derived/page_white_go.png" => "$imagesDir/famfamfam/page_white_go.png",
     "famfamfam_derived/information.png" => "$imagesDir/famfamfam/information.png",
 );
-foreach my $src (keys %images) {
+foreach my $src (sort keys %images) {
     my $dst = $images{$src};
     $cons->InstallAs($dst, $src);
 }

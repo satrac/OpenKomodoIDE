@@ -953,7 +953,11 @@ sub cons::Preprocess {
     my $substStr = "";
     if ($subsref && %$subsref) {
         $substStr .= "-s";
-        foreach my $subkey (keys %$subsref) {
+        # Sort the substitution keys so the generated command line (and thus
+        # Cons' command signature) is deterministic.  Perl hash iteration
+        # order is randomized per process, which previously caused every
+        # preprocessed file to be rebuilt on every invocation.
+        foreach my $subkey (sort keys %$subsref) {
             my $value = $$subsref{$subkey};
             # Quote arguments with spaces or shell meta chars.
             if ($value =~ /[ ;]/) {
