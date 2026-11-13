@@ -1106,20 +1106,23 @@ sub cons::BuildAndInstallXpt {
 
     my $sourcePath = SourcePath($idlFileName);
     my $installPath = "$mozComponentsDir/$xptFileName";
+    my $needsBuild = 1;
     if (-e $installPath)
     {
         my $source_ts = (stat($sourcePath))[9];
         my $target_ts = (stat($installPath))[9];
-        return if $target_ts >= $source_ts;
+        $needsBuild = 0 if $target_ts >= $source_ts;
     }
 
-    # install the .xpt file
-    $env->BuildXpt($idlFileName);
-
-    defined($xptFileName) or
-        die "*** BuildXpt failed for $idlFileName\n";
     my $xptBaseName = basename($xptFileName);
-    $env->Install($mozComponentsDir, $xptFileName);
+    if ($needsBuild) {
+        # install the .xpt file
+        $env->BuildXpt($idlFileName);
+
+        defined($xptFileName) or
+            die "*** BuildXpt failed for $idlFileName\n";
+        $env->Install($mozComponentsDir, $xptFileName);
+    }
 
     my $idlBaseName = basename($idlFileName);
     $env->Install("$sdkDir/idl", $idlFileName);

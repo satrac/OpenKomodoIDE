@@ -300,6 +300,161 @@ def main(argv):
                      "  STL_FLAGS=''",
                      "configure.in STL wrappers")
 
+    # ---- GCC 16 removes the zeroing memset in old Mozilla classes -------
+    # NS_DECL_AND_IMPL_ZEROING_OPERATOR_NEW relies on the compiler keeping
+    # memset(rv, 0, sz).  GCC 16 can delete it when it can see that the
+    # constructor initializes only part of the object, leaving pointers such
+    # as nsViewManager::mPresShell uninitialized (jemalloc fills them with
+    # 0x5a, causing a startup SIGSEGV).
+    replace_once(
+        root, "xpcom/ds/nsCRT.h",
+        "// This macro can be used in a class declaration for classes that want\n"
+        "// to ensure that their instance memory is zeroed.\n"
+        "#define NS_DECL_AND_IMPL_ZEROING_OPERATOR_NEW   \\\n"
+        "  void* operator new(size_t sz) CPP_THROW_NEW { \\\n"
+        "    void* rv = ::operator new(sz);              \\\n"
+        "    if (rv) {                                   \\\n"
+        "      memset(rv, 0, sz);                         \\\n"
+        "    }                                           \\\n"
+        "    return rv;                                  \\\n"
+        "  }                                             \\\n"
+        "  void operator delete(void* ptr) {             \\\n"
+        "    ::operator delete(ptr);                     \\\n"
+        "  }\n",
+        "// GCC 16 can eliminate the memset in the zeroing operator new below\n"
+        "// when it can see that the constructor only initializes part of the\n"
+        "// object.  Old Mozilla code relies on the remaining members being\n"
+        "// zeroed, so keep an empty asm barrier after the store.\n"
+        "#if defined(__GNUC__)\n"
+        "#  define NS_KEEP_ZEROING_STORES(ptr) \\\n"
+        "     __asm__ __volatile__(\"\" : : \"r\"(ptr) : \"memory\")\n"
+        "#else\n"
+        "#  define NS_KEEP_ZEROING_STORES(ptr) do { } while (0)\n"
+        "#endif\n"
+        "\n"
+        "// This macro can be used in a class declaration for classes that want\n"
+        "// to ensure that their instance memory is zeroed.\n"
+        "#define NS_DECL_AND_IMPL_ZEROING_OPERATOR_NEW   \\\n"
+        "  void* operator new(size_t sz) CPP_THROW_NEW { \\\n"
+        "    void* rv = ::operator new(sz);              \\\n"
+        "    if (rv) {                                   \\\n"
+        "      memset(rv, 0, sz);                        \\\n"
+        "      NS_KEEP_ZEROING_STORES(rv);               \\\n"
+        "    }                                           \\\n"
+        "    return rv;                                  \\\n"
+        "  }                                             \\\n"
+        "  void operator delete(void* ptr) {             \\\n"
+        "    ::operator delete(ptr);                     \\\n"
+        "  }\n",
+        "nsCRT zeroing operator new")
+    replace_once(
+        root, "xpcom/ds/nsCRT.h",
+        "#define NS_IMPL_ZEROING_OPERATOR_NEW(_class)            \\\n"
+        "  void* _class::operator new(size_t sz) CPP_THROW_NEW { \\\n"
+        "    void* rv = ::operator new(sz);                      \\\n"
+        "    if (rv) {                                           \\\n"
+        "      memset(rv, 0, sz);                                \\\n"
+        "    }                                                   \\\n"
+        "    return rv;                                          \\\n"
+        "  }                                                     \\\n"
+        "  void _class::operator delete(void* ptr) {             \\\n"
+        "    ::operator delete(ptr);                             \\\n"
+        "  }\n",
+        "#define NS_IMPL_ZEROING_OPERATOR_NEW(_class)            \\\n"
+        "  void* _class::operator new(size_t sz) CPP_THROW_NEW { \\\n"
+        "    void* rv = ::operator new(sz);                      \\\n"
+        "    if (rv) {                                           \\\n"
+        "      memset(rv, 0, sz);                                \\\n"
+        "      NS_KEEP_ZEROING_STORES(rv);                       \\\n"
+        "    }                                                   \\\n"
+        "    return rv;                                          \\\n"
+        "  }                                                     \\\n"
+        "  void _class::operator delete(void* ptr) {             \\\n"
+        "    ::operator delete(ptr);                             \\\n"
+        "  }\n",
+        "nsCRT zeroing operator new (out-of-line)")
+
+    # Explicitly initialize the view manager's pointer fields as well; this
+    # does not depend on the compiler preserving the zeroing operator new.
+    replace_once(
+        root, "view/nsViewManager.cpp",
+        "nsViewManager::nsViewManager()\n"
+        "  : mDelayedResize(NSCOORD_NONE, NSCOORD_NONE)\n"
+        "{\n"
+        "  mRootViewManager = this;\n",
+        "nsViewManager::nsViewManager()\n"
+        "  : mPresShell(nullptr)\n"
+        "  , mDelayedResize(NSCOORD_NONE, NSCOORD_NONE)\n"
+        "  , mRootView(nullptr)\n"
+        "  , mRootViewManager(this)\n"
+        "  , mRefreshDisableCount(0)\n"
+        "  , mPainting(false)\n"
+        "  , mRecursiveRefreshPending(false)\n"
+        "  , mHasPendingWidgetGeometryChanges(false)\n"
+        "  , mInScroll(false)\n"
+        "{\n",
+        "nsViewManager constructor initialization")
+    replace_once(
+        root, "view/nsViewManager.cpp",
+        "\n"
+        "  // NOTE:  we use a zeroing operator new, so all data members are\n"
+        "  // assumed to be cleared here.\n"
+        "  mHasPendingWidgetGeometryChanges = false;\n"
+        "  mRecursiveRefreshPending = false;\n"
+        "}\n",
+        "\n"
+        "  // All data members are explicitly initialized above.  Do not rely on\n"
+        "  // the zeroing operator new here: some GCC versions optimize its\n"
+        "  // memset away.\n"
+        "}\n",
+        "nsViewManager constructor body")
+
+    # ---- HarfBuzz assumes a null C++ this pointer is harmless -----------
+    # hb_buffer_t::reset() destroys a null unicode funcs pointer on a newly
+    # calloc'd buffer.  GCC 16 removes the null-"this" check in the inlined
+    # hb_object_destroy, so make the null case explicit.
+    replace_once(
+        root, "gfx/harfbuzz/src/hb-unicode.cc",
+        "void\n"
+        "hb_unicode_funcs_destroy (hb_unicode_funcs_t *ufuncs)\n"
+        "{\n"
+        "  if (!hb_object_destroy (ufuncs)) return;\n",
+        "void\n"
+        "hb_unicode_funcs_destroy (hb_unicode_funcs_t *ufuncs)\n"
+        "{\n"
+        "  /* GCC assumes a C++ \"this\" pointer is never null and can remove\n"
+        "   * the null check in hb_object_destroy when inlined. */\n"
+        "  if (!ufuncs) return;\n"
+        "\n"
+        "  if (!hb_object_destroy (ufuncs)) return;\n",
+        "HarfBuzz null unicode funcs")
+    replace_once(
+        root, "gfx/harfbuzz/src/hb-buffer.cc",
+        "    return;\n"
+        "\n"
+        "  hb_unicode_funcs_destroy (unicode);\n"
+        "  unicode = hb_unicode_funcs_get_default ();\n",
+        "    return;\n"
+        "\n"
+        "  if (unicode)\n"
+        "    hb_unicode_funcs_destroy (unicode);\n"
+        "  unicode = hb_unicode_funcs_get_default ();\n",
+        "HarfBuzz buffer reset unicode")
+    replace_once(
+        root, "gfx/harfbuzz/src/hb-buffer.cc",
+        "  if (!hb_object_destroy (buffer)) return;\n"
+        "\n"
+        "  hb_unicode_funcs_destroy (buffer->unicode);\n"
+        "\n"
+        "  free (buffer->info);\n",
+        "  if (!hb_object_destroy (buffer)) return;\n"
+        "\n"
+        "  if (buffer->unicode)\n"
+        "    hb_unicode_funcs_destroy (buffer->unicode);\n"
+        "\n"
+        "  free (buffer->info);\n",
+        "HarfBuzz buffer destroy unicode")
+
     print("modern-gcc: done")
     return 0
 

@@ -2735,6 +2735,18 @@ class SetLdLibraryPath(black.configure.SetPathEnvVar):
                 pythonLibPath = join(dirname(dirname(pythonExecutable)), "lib")
                 if not self.Contains(pythonLibPath):
                     self.value.append(pythonLibPath)
+
+            # Mozilla's bundled virtualenv and other build tools are Python
+            # 2.7 programs; make the prebuilt interpreter's libpython
+            # discoverable when `bk build` drives the Mozilla makefiles.
+            try:
+                python27Executable = black.configure.items["unsiloedPythonExe"].Get()
+            except Exception:
+                python27Executable = None
+            if python27Executable:
+                python27LibPath = join(dirname(dirname(python27Executable)), "lib")
+                if not self.Contains(python27LibPath):
+                    self.value.append(python27LibPath)
         else:
             self.applicable = 0
         self.determined = 1
@@ -2961,7 +2973,7 @@ class MozObjDir(black.configure.Datum):
                                  "pybin")
             if os.path.isdir(pybin):
                 env["PATH"] = pybin + os.pathsep + env.get("PATH", "")
-        cmd = make + ' -s -f client.mk echo-variable-OBJDIR'
+        cmd = make + ' -s --no-print-directory -f client.mk echo-variable-OBJDIR'
         p = subprocess.Popen(cmd, cwd=srcdir, shell=True, env=env,
                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                              text=True)
@@ -5054,7 +5066,7 @@ class MozCFlags(black.configure.Datum):
     def _Determine_Do(self):
         self.applicable = 1
         mozObjDir = black.configure.items['mozObjDir'].Get()
-        cmd = black.configure.items['mozMake'].Get() + ["echo-variable-CFLAGS"]
+        cmd = black.configure.items['mozMake'].Get() + ["--no-print-directory", "echo-variable-CFLAGS"]
         self.value = _capture_stdout(cmd, cwd=mozObjDir).strip()
         self.value = stripConflictingCFlags(self.value)
         self.determined = 1
@@ -5079,7 +5091,7 @@ class MozCxxFlags(black.configure.Datum):
     def _Determine_Do(self):
         self.applicable = 1
         mozObjDir = black.configure.items['mozObjDir'].Get()
-        cmd = black.configure.items['mozMake'].Get() + ["echo-variable-CXXFLAGS"]
+        cmd = black.configure.items['mozMake'].Get() + ["--no-print-directory", "echo-variable-CXXFLAGS"]
         self.value = _capture_stdout(cmd, cwd=mozObjDir).strip()
         self.value = stripConflictingCxxFlags(self.value)
         self.determined = 1
@@ -5093,7 +5105,7 @@ class MozLdFlags(black.configure.Datum):
     def _Determine_Do(self):
         self.applicable = 1
         mozObjDir = black.configure.items['mozObjDir'].Get()
-        cmd = black.configure.items['mozMake'].Get() + ["echo-variable-LDFLAGS"]
+        cmd = black.configure.items['mozMake'].Get() + ["--no-print-directory", "echo-variable-LDFLAGS"]
         self.value = _capture_stdout(cmd, cwd=mozObjDir).strip()
         self.determined = 1
 

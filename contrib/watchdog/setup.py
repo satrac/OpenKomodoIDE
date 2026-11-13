@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import sys
-import imp
+import importlib.util
 import os.path
 
 from distutils.core import setup, Extension
@@ -25,8 +25,13 @@ from distutils.util import get_platform
 SRC_DIR = 'src'
 WATCHDOG_PKG_DIR = os.path.join(SRC_DIR, 'watchdog')
 
-version = imp.load_source('version',
-                          os.path.join(WATCHDOG_PKG_DIR, 'version.py'))
+def _load_version(path):
+    spec = importlib.util.spec_from_file_location('version', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+version = _load_version(os.path.join(WATCHDOG_PKG_DIR, 'version.py'))
 
 PLATFORM_LINUX = 'linux'
 PLATFORM_WINDOWS = 'windows'
@@ -105,9 +110,6 @@ def read_file(filename):
         The file to open and read contents from.
     """
     return open(os.path.join(os.path.dirname(__file__), filename)).read()
-
-if not sys.version_info < (3,):
-    extra_args.update(dict(use_2to3=True))
 
 setup(name="watchdog",
       version=version.VERSION_STRING,

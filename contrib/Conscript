@@ -450,15 +450,18 @@ $consLocal->Command($landmark,
                ));
 $consLocal->DependsRecursive($landmark, "zope/cachedescriptors", ("build", '\.svn', '\.consign'));
 
-#----  Scandir - a fast replacement for os.walk
-my $landmark = "$komodoPythonUtilsDir/scandir.py";
-$consLocal->Command($landmark,
-               "scandir/setup.py",
-               qq(
-                cd %1:d && $siloedPython %1:f build $debugFlags
-                cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
-               ));
-$consLocal->DependsRecursive($landmark, "scandir", ("build"));
+#----  Scandir - a fast replacement for os.walk.  Python 3 has os.scandir,
+#      and the vendored backport is Python 2-only.
+if ($siloedPythonVersion !~ /^3\./) {
+    my $landmark = "$komodoPythonUtilsDir/scandir.py";
+    $consLocal->Command($landmark,
+                   "scandir/setup.py",
+                   qq(
+                    cd %1:d && $siloedPython %1:f build $debugFlags
+                    cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
+                   ));
+    $consLocal->DependsRecursive($landmark, "scandir", ("build"));
+}
 
 #----  Markdown2.
 $consLocal->InstallPythonUtility('smallstuff/markdown2.py');
@@ -478,8 +481,9 @@ if (0 && $buildFlavour ne "full") {
     $consLocal->InstallAs("$mozChromeDir/komodo/content/contrib/jquery.js", "smallstuff/jquery.js");
 }
 
-if ($platform ne "win") {
-    #---- Newer subprocess module back-ported from Python 3.2.
+if ($platform ne "win" && $siloedPythonVersion !~ /^3\./) {
+    #---- Newer subprocess module back-ported from Python 3.2.  Python 3
+    #      already has the modern subprocess implementation.
     # http://code.google.com/p/python-subprocess32/
     $landmark = "$komodoPythonUtilsDir/subprocess32.py";
     $consLocal->Command($landmark,
