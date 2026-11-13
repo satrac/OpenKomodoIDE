@@ -12,6 +12,7 @@ Import(
     'mozExe',
     'mozSrc',
     'unsiloedPythonExe',
+    'buildPythonExe',
     'productType',
     'jarring',
     'buildFlavour',
@@ -35,7 +36,7 @@ $cons->Command("komodo.manifest.landmark",
                "$sdkDir/pylib/chromereg.py",
                "$mozExe",
                qq(
-                 $unsiloedPythonExe %3 %2 %1 "chrome"
+                 $buildPythonExe %3 %2 %1 "chrome"
                  touch %>
                ));
 

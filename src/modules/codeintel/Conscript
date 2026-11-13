@@ -25,6 +25,14 @@ Import(
 
 my $baseDir = "$buildAbsDir/modules/codeintel";
 my $targetDir = "$mozExtensionDir/codeintel\@activestate.com";
+
+# The CodeIntel server used to be a git submodule (Komodo/codeintel) that is
+# no longer available upstream. Skip this module when its source is absent.
+my $srcRoot = dirname(__FILE__);
+if (! -f "$srcRoot/server/setup.py") {
+    warn "Skipping codeintel module: server/setup.py is missing\n";
+    return;
+}
 my $koextPy = "$sdkDir/bin/koext";
 
 if ($platform eq "win") {

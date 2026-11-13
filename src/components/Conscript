@@ -29,6 +29,7 @@ Import(
     'buildASCTime',
     'buildPlatform',
     'unsiloedPythonExe',
+    'buildPythonExe',
     'mozVersion',
     'withSCC',
     'withDebugging',
@@ -361,8 +362,8 @@ $cons->Command("$mozComponentsDir/komodo.manifest",
                "$mozResourcesDir/chrome.manifest",
                "$mozExe",
                qq(
-                 $unsiloedPythonExe %1 %0 "$mozComponentsDir/$dllName"
-                 $unsiloedPythonExe %1 %2 %0 "components"
+                 $buildPythonExe %1 %0 "$mozComponentsDir/$dllName"
+                 $buildPythonExe %1 %2 %0 "components"
                ));
 $cons->Precious("$mozComponentsDir/komodo.manifest");
 $cons->Precious("$mozBin/chrome.manifest");

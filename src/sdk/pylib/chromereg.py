@@ -11,13 +11,39 @@ Also suppports registering XPTypeLib files.
 
 import re
 import sys
-import urllib.request, urllib.parse, urllib.error
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
 from os.path import exists, basename, splitext
 try:
     import ast
 except ImportError:
     # Support Python 2.5
     from compiler import ast
+
+# Python 3.12 removed the deprecated ast.Str/ast.Num aliases.
+_AST_CONSTANT = getattr(ast, "Constant", None)
+
+
+def _is_ast_str(node):
+    if _AST_CONSTANT is not None:
+        return isinstance(node, _AST_CONSTANT) and isinstance(node.value, str)
+    return isinstance(node, ast.Str)
+
+
+def _is_ast_num(node):
+    if _AST_CONSTANT is not None:
+        return isinstance(node, _AST_CONSTANT) and \
+            isinstance(node.value, (int, float, complex))
+    return isinstance(node, ast.Num)
+
+
+def _ast_literal_value(node):
+    # Python 3.8+ uses Constant.value; older ASTs use .s / .n.
+    if _AST_CONSTANT is not None:
+        return node.value
+    return node.s if hasattr(node, "s") else node.n
 
 def _dump_ast(node, indent="", stream=sys.stdout):
     """Pretty-print the AST in a somewhat readable manner.
@@ -70,7 +96,7 @@ class ChromeReg(object):
         if not exists(self.manifest_name):
             # nothing to read
             return
-        inputfile = open(self.manifest_name, "rU")
+        inputfile = open(self.manifest_name, "r")
         for line in inputfile.readlines():
             # normalize whitespace - strip leading/trailing, collapse inner
             line = " ".join(line.split())
@@ -153,17 +179,21 @@ class ChromeReg(object):
             # variable or keyword
             return lookup(expr.id)
     
-        if isinstance(expr, ast.Num):
-            # number literal
-            return expr.n
+        if _AST_CONSTANT is not None and isinstance(expr, _AST_CONSTANT):
+            # Python 3.8+ literals: None, True, False, numbers, strings.
+            return expr.value
 
-        if isinstance(expr, ast.Str):
+        if _is_ast_num(expr):
+            # number literal
+            return _ast_literal_value(expr)
+
+        if _is_ast_str(expr):
             # string literal
-            return expr.s
+            return _ast_literal_value(expr)
     
-        if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod) and isinstance(expr.left, ast.Str):
+        if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mod) and _is_ast_str(expr.left):
             # expression is a formatted string: "foo %s" % bar
-            if isinstance(expr.right, ast.Str) or isinstance(expr.right, ast.Name):
+            if _is_ast_str(expr.right) or isinstance(expr.right, ast.Name):
                 # a single value; wrap it in a list
                 values = [self.get(expr.right, scope)]
             elif isinstance(expr.right, ast.Tuple) or isinstance(expr.right, ast.List):
@@ -180,7 +210,7 @@ class ChromeReg(object):
                         type(expr.right).__name__, ast.dump(expr.right),
                         self.source_file, stmt.lineno)
             # value lookup done, do the formatting
-            return expr.left.s % tuple(values)
+            return _ast_literal_value(expr.left) % tuple(values)
 
         if isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Add):
             # x + y: hopefully these things are strings...
@@ -203,14 +233,14 @@ class ChromeReg(object):
                 # we only care about assignments (to the magic props)
                 continue
     
-            if isinstance(stmt.value, ast.Num):
+            if _is_ast_num(stmt.value):
                 # assignment from a string; we might need this later.
                 for target in stmt.targets:
                     if not isinstance(target, ast.Name):
                         continue
                     self.set(clazz.name, target.id, self.get(stmt.value))
 
-            if isinstance(stmt.value, ast.Str):
+            if _is_ast_str(stmt.value):
                 # assignment from a string; we might need this later.
                 for target in stmt.targets:
                     if not isinstance(target, ast.Name):
@@ -236,7 +266,7 @@ class ChromeReg(object):
                 # this is an assignment to _reg_desc_
                 value = self.get(stmt.value, clazz.name)
                 if value is not None:
-                    componentData["desc"] = urllib.parse.quote(value)
+                    componentData["desc"] = quote(value)
 
             if [n for n in stmt.targets if hasattr(n, "id") and n.id == "_reg_categories_"]:
                 # this is a category registration
@@ -294,10 +324,10 @@ class ChromeReg(object):
                     assert isinstance(stmt.value, ast.Tuple) or isinstance(stmt.value, ast.List), \
                         "%s line %i: %s assignment must be a list, got %s" % (
                         self.source_file, stmt.value.lineno, lang_attr, ast.dump(stmt.value))
-                    assert all(isinstance(x, ast.Str) for x in stmt.value.elts), \
+                    assert all(_is_ast_str(x) for x in stmt.value.elts), \
                         "%s line %i: %s assignment must be a list of strings, got %s" % (
                         self.source_file, stmt.value.lineno, lang_attr, ast.dump(stmt.value))
-                    self.set(clazz.name, lang_attr, [x.s for x in stmt.value.elts])
+                    self.set(clazz.name, lang_attr, [_ast_literal_value(x) for x in stmt.value.elts])
 
         if "contractid" in componentData and "clsid" in componentData:
             self.new_lines.add("component {clsid} {file}".format(**componentData))
@@ -305,7 +335,7 @@ class ChromeReg(object):
             if "category" in componentData:
                 for entry in componentData["category"]:
                     category = entry[0]
-                    entryname = urllib.parse.quote(entry[1])
+                    entryname = quote(entry[1])
                     if len(entry) == 3:
                         entryvalue = entry[2]
                     else:
@@ -329,8 +359,8 @@ class ChromeReg(object):
                     entrydict[lang_attr] = entryvalue
                     continue
                 import json
-                entryname = urllib.parse.quote(language_name)
-                entryvalue = urllib.parse.quote(json.dumps(entrydict))
+                entryname = quote(language_name)
+                entryvalue = quote(json.dumps(entrydict))
                 self.new_lines.add("category komodo-language-info {entryname} {entryvalue}".format(**locals()))
 
     def register(self):
@@ -359,11 +389,11 @@ class ChromeReg(object):
         for node in ast.iter_child_nodes(tree):
             if isinstance(node, ast.Assign):
                 # simple assignment of globals, hopefully into a string
-                if not isinstance(node.value, ast.Str):
+                if not _is_ast_str(node.value):
                     continue
                 for target in node.targets:
                     if isinstance(target, ast.Name):
-                        self.set("", target.id, node.value.s)
+                        self.set("", target.id, _ast_literal_value(node.value))
             elif isinstance(node, ast.ClassDef):
                 # we have a class; try to register it
                 self._parse_class(node)

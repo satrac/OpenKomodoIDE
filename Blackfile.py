@@ -663,6 +663,7 @@ configuration = {
     "unsiloedPerlExe": UnsiloedPerlExe(),
     "unsiloedPythonBinDir": UnsiloedPythonBinDir(),
     "unsiloedPythonExe": UnsiloedPythonExe(),
+    "buildPythonExe": BuildPythonExe(),
     "consInstallDir": ConsInstallDir(),
     "consVersion": ConsVersion(),
 
@@ -2625,7 +2626,7 @@ def _BuildKomodo(cfg, argv):
         return DumpQuickBuildDB(cfg, argv)
     if "quick" in argv:
         out.write("*** Doing quick build -- not everything will be rebuilt! ***\n")
-        return QuickBuild(cfg, argv, pickle.load(open('qbtable.pik', 'r')))
+        return QuickBuild(cfg, argv, pickle.load(open('qbtable.pik', 'rb')))
     if "xdebug" in argv:
         return BuildXdebug(cfg, argv)
     if "xsltdbgp" in argv:
@@ -3128,14 +3129,14 @@ def BuildQuickBuildDB(cfg, argv):
               extensions=['css', 'less', 'png'],
               preserveSubtrees=1)
 
-    pickle.dump(_table, open('qbtable.pik', 'w'))
+    pickle.dump(_table, open('qbtable.pik', 'wb'))
     endtime = time.time()
     duration = endtime - starttime
     print(("Cache created - %s" % (humantime(duration))))
 
 def DumpQuickBuildDB(cfg, argv):
     sys.stderr.write("Dumping quick build cache...\n");
-    cache = pickle.load(open('qbtable.pik', 'r'))
+    cache = pickle.load(open('qbtable.pik', 'rb'))
     for source, (target, checksum) in list(cache.items()):
         print(("%s (%s): %s" % (source, checksum, target)))
 
@@ -3197,7 +3198,7 @@ def QuickBuild(cfg, argv, _table):
         retval = JarChrome("komodo", cfg, argv)
 
     # save the new state of affairs
-    pickle.dump(_table, open('qbtable.pik', 'w'))
+    pickle.dump(_table, open('qbtable.pik', 'wb'))
     print("quick build: done")
 
 def BuildCrashReportSymbols(cfg):

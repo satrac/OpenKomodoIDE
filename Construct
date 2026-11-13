@@ -14,8 +14,13 @@ use File::Spec;
 use File::Spec::Functions;
 use File::Copy;
 use Cwd;
+use lib ".";
 
 use bkconfig;   # Komodo configuration Perl module created by "bk configure"
+
+# Fallback for older generated bkconfig.pm files.
+$buildPythonExe = "python3"
+    unless defined($buildPythonExe) and $buildPythonExe;
 
 #---- all the variables that the Komodo Conscripts need to know about
 my @toExport = (
@@ -107,6 +112,7 @@ my @toExport = (
     'siloedDistutilsLibDirName',  # e.g. "lib.win32-2.4"
     'havePy2to3',
     'unsiloedPythonExe',
+    'buildPythonExe',
     # for building PyDBGP binary bits for all supported Python's
     'python24', 'python25', 'python26', 'python27',
     'python31', 'python32', 'python33',
@@ -1085,6 +1091,8 @@ sub cons::BuildXpt {
 
 sub cons::BuildAndInstallXpt {
     my ($env, $idlFileName) = (shift, shift);
+    my $py3 = $buildPythonExe;
+    $py3 = "python3" unless $py3;
 
     # Die if required elements are not defined.
     defined($sdkDir) or die "*** sdkDir is not defined for $idlFileName\n";
@@ -1126,7 +1134,7 @@ sub cons::BuildAndInstallXpt {
 		  "$mozComponentsDir/komodo.manifest",
 		  "$sdkDir/pylib/chromereg.py",
 		  qq(
-		    $unsiloedPythonExe %3 %2 %1
+		    $py3 %3 %2 %1
 		    touch %>
 		  ));
 
@@ -1542,6 +1550,9 @@ sub cons::AddComponentManifestLines {
 sub cons::InstallXpcomComponent {
     # Install the component in the proper components directory and register it.
     my ($env, $fileName, $contracts) = (shift, shift, shift);
+    # chromereg.py runs on Python 3; fall back to python3 if bkconfig is old.
+    my $py3 = $buildPythonExe;
+    $py3 = "python3" unless $py3;
     # die if required elements are not defined
     defined($mozComponentsDir) or
         die "*** mozComponentsDir is not defined for $fileName\n";
@@ -1620,7 +1631,7 @@ sub cons::InstallXpcomComponent {
                       "$mozComponentsDir/komodo.manifest",
                       "$sdkDir/pylib/chromereg.py",
                       qq(
-                        $unsiloedPythonExe %3 %2 %1
+                        $py3 %3 %2 %1
                         touch %>
                       ));
         # just mark this as "required" :(
@@ -1636,7 +1647,7 @@ sub cons::InstallXpcomComponent {
                       "$mozComponentsDir/komodo.manifest",
                       "$sdkDir/pylib/chromereg.py",
                       qq(
-                        $unsiloedPythonExe %3 %2 %1
+                        $py3 %3 %2 %1
                         touch %>
                       ));
         # just mark this as "required" :(

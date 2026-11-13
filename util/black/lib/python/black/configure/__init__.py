@@ -461,13 +461,9 @@ class Items(UserDict):
             elif isinstance(item, (int, float, str, tuple, list, dict)):
                 # this is a simple Datum()
                 self.data[name] = Datum(name, value=item)
-            elif type(item) == types.InstanceType:
+            elif isinstance(item, Item):
                 # this had better be an instance subclassed from class Item
-                if isinstance(item, Item):
-                    self.data[name] = item
-                else:
-                    raise ConfigureError("The configuration item '%s' does "\
-                        "not derive from class %s.\n" % (name, Item))
+                self.data[name] = item
             else:
                 raise ConfigureError("Don't know how to massage a "\
                     "configuration item of type %s: %s" % (type(item), item))
@@ -525,14 +521,14 @@ def _main():
             elif substring_lower in var_name.lower():
                 matches[var_name] = (getattr(m, var_name), False)
 
-    if len(matches) == 1 and matches.values()[0][1]:
+    if len(matches) == 1 and list(matches.values())[0][1]:
         # If there is only one result and it was named exactly, then
         # don't give the prefix. This enables doing things like:
         #   cd `./bkconfig.py mozBin`
-        print matches.values()[0][0]
+        print(list(matches.values())[0][0])
     else:
         for name, (value, is_exact_match) in sorted(matches.items()):
-            print "%s: %s" % (name, value)
+            print("%s: %s" % (name, value))
 
 if __name__ == "__main__":
     _main()

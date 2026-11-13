@@ -69,6 +69,23 @@ import re, types, sys, io, os.path
 from hashlib import md5
 from functools import cmp_to_key
 
+if sys.version_info[0] < 3:
+    from StringIO import StringIO
+else:
+    from io import StringIO
+
+
+def _raise_with_traceback(exc, tb):
+    import os, traceback
+    if os.environ.get("KOMODO_DEBUG_YACC"):
+        if isinstance(tb, BaseException):
+            traceback.print_exception(type(tb), tb, getattr(tb, "__traceback__", None))
+        else:
+            traceback.print_exc()
+    if hasattr(exc, "with_traceback"):
+        raise exc.with_traceback(tb)
+    raise exc
+
 def _cmp(a, b):
     """Python 2-style three-way comparison (the builtin was removed in Py3)."""
     return (a > b) - (a < b)
@@ -514,8 +531,8 @@ def initialize_vars():
 
     # File objects used when creating the parser.out debugging file
     global _vf, _vfc
-    _vf           = io.StringIO()
-    _vfc          = io.StringIO()
+    _vf           = StringIO()
+    _vfc          = StringIO()
 
 # -----------------------------------------------------------------------------
 # class Production:
@@ -1426,7 +1443,7 @@ def slr_parse_table():
                                 actionp[st,a] = p
                                 
             except Exception as e:
-                raise YaccError("Hosed in slr_parse_table").with_traceback(e)
+                _raise_with_traceback(YaccError("Hosed in slr_parse_table"), e)
 
         # Print the actions associated with each terminal
         if yaccdebug:
@@ -1983,7 +2000,7 @@ def lalr_parse_table():
                                     actionp[st,a] = p
                     
             except Exception as e:
-                raise YaccError("Hosed in lalr_parse_table").with_traceback(e)
+                _raise_with_traceback(YaccError("Hosed in lalr_parse_table"), e)
 
         # Print the actions associated with each terminal
         if yaccdebug:

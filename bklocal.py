@@ -81,9 +81,10 @@ def P4Where(fileName):
     # Perforce may not be on the path, so see if we can
     # find a Perforce installation we can use.
     p4path = tmShUtil.Which("p4") # default is assume on the path.
-    o = subprocess.Popen('"%s" where %s' % (p4path, fileName) )
-    threeFiles = o.read()
-    if o.close() is not None:
+    p = subprocess.Popen('"%s" where %s' % (p4path, fileName),
+                         shell=True, stdout=subprocess.PIPE, text=True)
+    threeFiles, _ = p.communicate()
+    if p.returncode:
         raise black.configure.ConfigureError(\
             "**** p4.exe failed: it does not appear to be "\
             "installed ***\n")
@@ -128,9 +129,10 @@ def _getPrettyVersion(version):
 
 def _capture_stdout(argv, ignore_retval=False, cwd=None, env=None):
     # Only available on python 2.4 and above
-    p = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE, env=env)
-    stdout = p.stdout.read()
-    retval = p.wait()
+    p = subprocess.Popen(argv, cwd=cwd, stdout=subprocess.PIPE, env=env,
+                         text=True)
+    stdout, _ = p.communicate()
+    retval = p.returncode
     if retval and not ignore_retval:
         raise RuntimeError("error running '%s' in %s" % (' '.join(argv), cwd))
     return stdout
@@ -215,9 +217,11 @@ def _getDefaultPlatform(linuxDistro=False, macUniversal=True):
 
 def _getRubyVersion(ruby):
     cmd = '"%s" --version' % ruby
-    o = subprocess.Popen(cmd)
-    output = o.read().strip()
-    retval = o.close()
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, text=True)
+    output, _ = p.communicate()
+    output = output.strip()
+    retval = p.returncode
     pattern = re.compile(r"^ruby (\d+\.\d+\.\d+)")
     match = pattern.search(output)
     if retval or not match:
@@ -237,6 +241,13 @@ def _getMozDefinesAndSubsts(mozObjDir):
         mozconfig = join(mozObjDir, "config.status")
         cfg_globals = {"__file__": mozconfig}
         cfg_locals = {}
+        # config.status is a generated Python 2 script; provide the removed
+        # types aliases it relies on.
+        import types as _types
+        if not hasattr(_types, "StringTypes"):
+            _types.StringTypes = (str,)
+        if not hasattr(_types, "StringType"):
+            _types.StringType = str
         exec(compile(open(mozconfig, "rb").read(), mozconfig, 'exec'), cfg_globals, cfg_locals)
         gMozDefines = dict(cfg_locals.get("defines"))
         gMozSubsts = dict(cfg_locals.get("substs"))
@@ -427,8 +438,7 @@ class SiloedPythonVersion(black.configure.std.Datum):
             env = "LD_LIBRARY_PATH=%s/lib" % siloedPythonInstallDir
         cmd = '%s %s -c "import sys; sys.stdout.write(\'.\'.join(map(str, sys.version_info[:3])))"'\
               % (env, pythonExe)
-        o = subprocess.Popen(cmd)
-        self.value = o.read()
+        self.value = subprocess.getoutput(cmd)
         self.determined = 1
 
 
@@ -473,9 +483,10 @@ class SiloedDistutilsLibDirName(black.configure.Datum):
             if 'LD_LIBRARY_PATH' in env:
                 ld_path_list.append(env['LD_LIBRARY_PATH'])
             env["LD_LIBRARY_PATH"] = os.path.pathsep.join(ld_path_list)
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env)
-        status = p.wait()
-        platname = p.stdout.read().strip()
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env, text=True)
+        platname, _ = p.communicate()
+        platname = platname.strip()
+        status = p.returncode
         assert status == 0 and platname, \
             "empty distutils platname: running the cmd must have failed: %s" % cmd
 
@@ -493,7 +504,8 @@ class HavePy2to3(black.configure.Datum):
         argv = [siloedPython, "-c", "from lib2to3.main import main"]
         p = subprocess.Popen(argv, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        status = p.wait()
+        p.communicate()
+        status = p.returncode
         if status:
             self.value = False
         else:
@@ -520,9 +532,7 @@ class SetMozTools(black.configure.SetEnvVar):
                 "MOZ_TOOLS is bogus, there is no gmake "\
                 "executable (%s) there.\n" % gmakeExe)
         cmd = '"%s" --version' % gmakeExe
-        o = subprocess.Popen(cmd)
-        outputLines = o.readlines()
-        o.close()
+        outputLines = subprocess.getoutput(cmd).splitlines()
         versionRe = re.compile("^GNU Make version (?P<version>[0-9.]+)")
         minVersion = "3.79.1"
         versionMatch = versionRe.search(outputLines[0])
@@ -1067,9 +1077,11 @@ class PythonExe(black.configure.Datum):
 
     def _getVersion(self, python):
         cmd = '%s -c "import sys; print(hex(sys.hexversion))"' % python
-        o = subprocess.Popen(cmd)
-        hexverstr = o.read().strip()
-        retval = o.close()
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT, text=True)
+        hexverstr, _ = p.communicate()
+        hexverstr = hexverstr.strip()
+        retval = p.returncode
         if not hexverstr:
             raise ValueError("no output from running '%s'" % cmd)
         if retval:
@@ -1454,6 +1466,22 @@ class PHPsBaseDir(black.configure.Datum):
         self.determined = 1
 
 
+class BuildPythonExe(black.configure.Datum):
+    """Python 3 interpreter used by the build system itself.
+
+    The legacy Mozilla tools (xpidl.py, header.py, ...) still need Python
+    2.7, but the converted Komodo sources and chromereg.py are Python 3.
+    """
+    def __init__(self):
+        black.configure.Datum.__init__(self, "buildPythonExe",
+            desc="the Python 3 interpreter used by the build system")
+
+    def _Determine_Do(self):
+        self.applicable = 1
+        self.value = sys.executable
+        self.determined = 1
+
+
 class UnsiloedPythonExe(black.configure.Datum):
     # See discussion for "UnsiloedPythonBinDir".
     def __init__(self):
@@ -1469,8 +1497,16 @@ class UnsiloedPythonExe(black.configure.Datum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        # We are already running python; it's perfectly clear which one we want
-        self.value = sys.executable
+        # The build system itself runs under Python 3, but the legacy
+        # Mozilla build tools (xpidl.py, header.py, buildlist.py, ...) are
+        # Python 2.7 code.  Prefer the siloed Python 2.7 when available.
+        try:
+            self.value = black.configure.items["siloedPython"].Get()
+        except Exception:
+            self.value = None
+        if not self.value:
+            # We are already running python; it's the best fallback we have.
+            self.value = sys.executable
         self.determined = 1
 
 
@@ -1625,8 +1661,8 @@ class ConsVersion(black.configure.Datum):
         consExeName = os.path.join(installDir, "cons.pl")
         #XXX I am relying on .pl->Perl.exe association on windows here
         #    I should not.
-        o = subprocess.Popen('%s %s -V' % (perlExe, consExeName))
-        consVersionLine = o.read()
+        consVersionLine = subprocess.getoutput(
+            '%s %s -V' % (perlExe, consExeName))
         consVersionMatch = re.compile(r'This is Cons ([0-9\.]+) ').\
             search(consVersionLine)
         if consVersionMatch:
@@ -1650,9 +1686,10 @@ class MD5PerlModuleInstalled(black.configure.BooleanDatum):
     def _Determine_Do(self):
         self.applicable = 1
         unsiloedPerlBinDir = black.configure.items["unsiloedPerlBinDir"].Get()
-        o = subprocess.Popen('%s -mMD5 -e "print \'madeit\';"' %\
+        output = subprocess.getoutput(
+            '%s -mMD5 -e "print \'madeit\';"' %\
             os.path.join(unsiloedPerlBinDir, "perl"))
-        if o.read() == 'madeit':
+        if output == 'madeit':
             self.value = 1
         else:
             self.value = 0
@@ -2896,9 +2933,19 @@ class MozObjDir(black.configure.Datum):
             # Windows mozmake requires setting MSYSTEM environ variable.
             env = os.environ.copy()
             env['MSYSTEM'] = 'MINGW32'
+        else:
+            env = os.environ.copy()
+            # `mach` needs a working python2.7.  The modern-GCC build wrapper
+            # created by mozilla/build.py provides one with the right
+            # LD_LIBRARY_PATH and absolute-path invocation.
+            pybin = os.path.join(os.path.dirname(os.path.abspath(mozsrc)),
+                                 "pybin")
+            if os.path.isdir(pybin):
+                env["PATH"] = pybin + os.pathsep + env.get("PATH", "")
         cmd = make + ' -s -f client.mk echo-variable-OBJDIR'
         p = subprocess.Popen(cmd, cwd=srcdir, shell=True, env=env,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             text=True)
         stdout, stderr = p.communicate()
         objdir = stdout.splitlines()[-1].strip()
         if p.returncode != 0:
@@ -3366,9 +3413,10 @@ class BuildNum(black.configure.Datum):
     def _get_hg_changeset(self):
         changeset_re = re.compile(r"changeset:\s+(\d+):")
         cmd = "hg tip"
-        o = subprocess.Popen(cmd)
-        stdout = o.read()
-        retval = o.close()
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT, text=True)
+        stdout, _ = p.communicate()
+        retval = p.returncode
         if retval:
             raise black.configure.ConfigureError(
                 "error running '%s'" % cmd)

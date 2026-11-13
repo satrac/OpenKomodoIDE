@@ -1482,8 +1482,12 @@ def _cp(src, dest, logstream=None):
     if dest_parent:
         _mkdir(dest_parent)
     if isdir(src):
-        #shutil.copytree(src, dest)
-        shutil.copytree(src, dest, dirs_exist_ok=True)
+        try:
+            shutil.copytree(src, dest, dirs_exist_ok=True)
+        except TypeError:
+            # Python 2 / Python < 3.8: copytree has no dirs_exist_ok.
+            from distutils.dir_util import copy_tree
+            copy_tree(src, dest)
     else:
         shutil.copy(src, dest)
 
