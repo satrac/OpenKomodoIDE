@@ -109,6 +109,12 @@ $cons->InstallXpcomComponent('koEnviron.py');
 $cons->Install($idlExportDir, 'koIEnviron.idl');
 $cons->BuildAndInstallXpt('koIEnviron.idl');
 
+# koIDBGP / DBGP debugger manager
+$cons->InstallXpcomComponent('koDBGP.py');
+$cons->InstallXpcomComponent('koDBGPProtocolHandler.py');
+$cons->Install($idlExportDir, 'koIDBGP.idl');
+$cons->BuildAndInstallXpt('koIDBGP.idl');
+
 # koIWebbrowser
 $cons->InstallXpcomComponent('koWebbrowser.py');
 $cons->Install($idlExportDir, 'koIWebbrowser.idl');

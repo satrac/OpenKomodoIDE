@@ -270,7 +270,7 @@ diff -ruN a/xpcom/components/pyabout.py b/xpcom/components/pyabout.py
  <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 diff -ruN a/xpcom/components.py b/xpcom/components.py
 --- a/xpcom/components.py	2026-11-13 00:39:17.032390780 -0500
-+++ b/xpcom/components.py	2026-11-13 00:35:06.287424176 -0500
++++ b/xpcom/components.py	2026-11-13 01:39:21.873193942 -0500
 @@ -36,36 +36,21 @@
  # ***** END LICENSE BLOCK *****
  
@@ -496,7 +496,7 @@ diff -ruN a/xpcom/components.py b/xpcom/components.py
              for item in items:
                  name = str(item.data)
                  ret[name] = _Class(name)
-@@ -218,8 +245,12 @@
+@@ -218,14 +245,18 @@
  
  del _ComponentCollection
  
@@ -511,8 +511,33 @@ diff -ruN a/xpcom/components.py b/xpcom/components.py
  
  
  # Internal runnable class.
-@@ -271,11 +302,37 @@
- def ProxyToMainThreadAsync(fn, dispatch_flags=interfaces.nsIThread.DISPATCH_NORMAL):
+ class _Runnable(object):
+     """Used to run a method call on the main thread."""
+-    _com_interfaces_ = [interfaces.nsIRunnable]
++    _com_interfaces_ = ["nsIRunnable"]
+ 
+     def __init__(self, fn, *args, **kwargs):
+         self.fn = fn
+@@ -252,8 +283,10 @@
+ #       ensures that every call made to 'fn' is proxied no matter what
+ #       thread is calling the function.
+ #
+-def ProxyToMainThread(fn, dispatch_flags=interfaces.nsIThread.DISPATCH_SYNC):
++def ProxyToMainThread(fn, dispatch_flags=None):
+     """Synchronously call fn on the main thread and return the result."""
++    if dispatch_flags is None:
++        dispatch_flags = interfaces.nsIThread.DISPATCH_SYNC
+     import threading
+     def wrapperFn(*args, **kwargs):
+         threadMgr = classes["@mozilla.org/thread-manager;1"]\
+@@ -268,14 +301,42 @@
+             return fn(*args, **kwargs)
+     return wrapperFn
+ 
+-def ProxyToMainThreadAsync(fn, dispatch_flags=interfaces.nsIThread.DISPATCH_NORMAL):
++def ProxyToMainThreadAsync(fn, dispatch_flags=None):
++    if dispatch_flags is None:
++        dispatch_flags = interfaces.nsIThread.DISPATCH_NORMAL
      return ProxyToMainThread(fn, dispatch_flags)
  
 +# Import the extensions after the interface collection has been created.
@@ -550,7 +575,7 @@ diff -ruN a/xpcom/components.py b/xpcom/components.py
  _xpcom.getProxyForObject = _getProxyForObject
  
  def _on_shutdown():
-@@ -286,7 +343,7 @@
+@@ -286,7 +347,7 @@
      xpcom.server._shutdown()
  
  # import xpcom.shutdown late as it depends on us!

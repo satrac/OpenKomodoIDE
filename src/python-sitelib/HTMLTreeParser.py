@@ -2,10 +2,10 @@
 # See the file LICENSE.txt for licensing information.
 
 #import htmlentitydefs
-import re, string, sys
+import re, sys
 import io
 from email.message import Message
-from elementtree import ElementTree
+import xml.etree.ElementTree as ElementTree
 
 # Lazily load the collecter on demand, rather than at import time.
 g_collector = None
@@ -271,10 +271,11 @@ class Parser:
         if self._lastloc:
             pos = self._lastloc
             last_lines = self.locator[pos][0]
-        lines = last_lines + self.data.count("\n",pos,loc)
+        newline = b"\n" if isinstance(self.data, bytes) else "\n"
+        lines = last_lines + self.data.count(newline, pos, loc)
         col =  0
         if lines > last_lines:
-            col = loc - self.data.rfind("\n",pos,loc) - 1
+            col = loc - self.data.rfind(newline, pos, loc) - 1
         elif pos in self.locator:
             col = loc - pos + self.locator[pos][1]
         self.locator[loc] = [lines, col]

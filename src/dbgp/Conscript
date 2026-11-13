@@ -1,0 +1,13 @@
+#!/usr/local/bin/perl
+# Install the IDE-side DBGP server package.
+
+Import(
+    'cons',
+    'komodoPythonUtilsDir',
+);
+
+$cons->InstallPythonUtilityPackage('__init__.py', 'dbgp');
+$cons->InstallPythonUtilityPackage('common.py', 'dbgp');
+$cons->InstallPythonUtilityPackage('listcmd.py', 'dbgp');
+$cons->InstallPythonUtilityPackage('server.py', 'dbgp');
+$cons->InstallPythonUtilityPackage('serverBase.py', 'dbgp');

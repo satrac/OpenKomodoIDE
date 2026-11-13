@@ -25,7 +25,6 @@ nohup.out
 packages/
 /test
 /src/codeintel/test2
-/src/dbgp
 /src/releasetime*
 /vc110.pdb
 /src/xdebug2/build

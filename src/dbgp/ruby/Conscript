@@ -1,0 +1,5 @@
+#!/usr/local/bin/perl
+# Files in this directory are installed by the Blackfile image/packaging
+# step.  This Conscript is intentionally a no-op so the dev build can still
+# run without requiring the target-language debugger binaries.
+return;

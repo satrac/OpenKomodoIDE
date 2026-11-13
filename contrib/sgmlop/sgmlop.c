@@ -178,7 +178,7 @@ typedef struct {
 
 } FastParserObject;
 
-staticforward PyTypeObject FastParser_Type;
+static PyTypeObject FastParser_Type;
 
 /* forward declarations */
 static int fastfeed(
@@ -224,7 +224,7 @@ join(PyObject* list)
     switch (PyList_GET_SIZE(list)) {
     case 0:
         Py_DECREF(list);
-        return PyString_FromString("");
+        return PyUnicode_FromString("");
     case 1:
         result = PyList_GET_ITEM(list, 0);
         Py_INCREF(result);
@@ -433,11 +433,11 @@ _sgmlop_register(FastParserObject* self, PyObject* args)
    possible, and keeps the rest in a local buffer. */
 
 static PyObject*
-feed(FastParserObject* self, char* string, int stringlen, int last)
+feed(FastParserObject* self, char* string, Py_ssize_t stringlen, int last)
 {
     /* common subroutine for SGMLParser.feed and SGMLParser.close */
 
-    int length;
+    Py_ssize_t length;
 
     if (self->feed) {
         /* dealing with recursive feeds isn's exactly trivial, so
@@ -505,8 +505,8 @@ _sgmlop_feed(FastParserObject* self, PyObject* args)
     /* feed a chunk of data to the parser */
 
     char* string;
-    int stringlen;
-    if (!PyArg_ParseTuple(args, "t#", &string, &stringlen))
+    Py_ssize_t stringlen;
+    if (!PyArg_ParseTuple(args, "y#", &string, &stringlen))
         return NULL;
 
     return feed(self, string, stringlen, 0);
@@ -529,8 +529,8 @@ _sgmlop_parse(FastParserObject* self, PyObject* args)
     /* feed a single chunk of data to the parser */
 
     char* string;
-    int stringlen;
-    if (!PyArg_ParseTuple(args, "t#", &string, &stringlen))
+    Py_ssize_t stringlen;
+    if (!PyArg_ParseTuple(args, "y#", &string, &stringlen))
         return NULL;
 
     return feed(self, string, stringlen, 1);
@@ -551,24 +551,8 @@ static PyMethodDef _sgmlop_methods[] = {
     {NULL, NULL}
 };
 
-static PyObject*  
-_sgmlop_getattr(FastParserObject* self, char* name)
-{
-    return Py_FindMethod(_sgmlop_methods, (PyObject*) self, name);
-}
+static PyTypeObject FastParser_Type = {};
 
-statichere PyTypeObject FastParser_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0, /* ob_size */
-    "FastParser", /* tp_name */
-    sizeof(FastParserObject), /* tp_size */
-    0, /* tp_itemsize */
-    /* methods */
-    (destructor)_sgmlop_dealloc, /* tp_dealloc */
-    0, /* tp_print */
-    (getattrfunc)_sgmlop_getattr, /* tp_getattr */
-    0, /* tp_setattr */
-};
 
 /* ==================================================================== */
 /* python module interface */
@@ -579,24 +563,38 @@ static PyMethodDef _functions[] = {
     {NULL, NULL}
 };
 
-void
-#ifdef WIN32
-__declspec(dllexport)
-#endif
-initsgmlop(void)
+static struct PyModuleDef sgmlop_module = {
+    PyModuleDef_HEAD_INIT,
+    "sgmlop",
+    NULL,
+    -1,
+    _functions,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+PyMODINIT_FUNC
+PyInit_sgmlop(void)
 {
-    /* Patch object type */
-    FastParser_Type.ob_type = &PyType_Type;
+    PyObject *m;
 
-#if defined (SGMLOP_GC)
-    /* enable garbage collection for the parser object */
-    FastParser_Type.tp_basicsize += PyGC_HEAD_SIZE;
-    FastParser_Type.tp_flags = Py_TPFLAGS_HAVE_GC;
-    FastParser_Type.tp_traverse = (traverseproc) _sgmlop_traverse;
-    FastParser_Type.tp_clear = (inquiry) _sgmlop_clear;
-#endif
+    memset(&FastParser_Type, 0, sizeof(FastParser_Type));
+    PyObject_Init((PyObject *)&FastParser_Type, &PyType_Type);
+    FastParser_Type.tp_name = "FastParser";
+    FastParser_Type.tp_basicsize = sizeof(FastParserObject);
+    FastParser_Type.tp_itemsize = 0;
+    FastParser_Type.tp_dealloc = (destructor)_sgmlop_dealloc;
+    FastParser_Type.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC;
+    FastParser_Type.tp_traverse = (traverseproc)_sgmlop_traverse;
+    FastParser_Type.tp_clear = (inquiry)_sgmlop_clear;
+    FastParser_Type.tp_methods = _sgmlop_methods;
+    if (PyType_Ready(&FastParser_Type) < 0)
+        return NULL;
 
-    Py_InitModule("sgmlop", _functions);
+    m = PyModule_Create(&sgmlop_module);
+    return m;
 }
 
 /* -------------------------------------------------------------------- */
@@ -1231,7 +1229,7 @@ attrparse(FastParserObject* self, const CHAR_T* p, const CHAR_T* end)
         while (p < end && *p != '=' && !ISSPACE(*p))
             p++;
 
-        key = PyString_FromStringAndSize(q, p-q);
+        key = PyUnicode_DecodeUTF8((const char *)q, (Py_ssize_t)(p-q), NULL);
         if (key == NULL)
             goto err;
 
@@ -1282,7 +1280,7 @@ attrparse(FastParserObject* self, const CHAR_T* p, const CHAR_T* end)
                     self, value_start, value_start + value_length
                     );
             } else
-                value = PyString_FromStringAndSize(value_start, value_length);
+                value = PyUnicode_DecodeUTF8((const char *)value_start, (Py_ssize_t)value_length, NULL);
 
             if (!value)
                 goto err;
@@ -1353,7 +1351,7 @@ attrexpand(FastParserObject* self, const CHAR_T* p, const CHAR_T* e)
         while (p < e && *p != '&')
             p++;
 
-        item = PyString_FromStringAndSize(q, p-q);
+        item = PyUnicode_DecodeUTF8((const char *)q, (Py_ssize_t)(p-q), NULL);
         if (!item)
             goto err;
             
@@ -1395,7 +1393,7 @@ attrexpand(FastParserObject* self, const CHAR_T* p, const CHAR_T* e)
                 }
             } else {
                 CHAR_T ch = (CHAR_T) charref;
-                item = PyString_FromStringAndSize(&ch, sizeof(CHAR_T));
+                item = PyUnicode_FromStringAndSize((const char *)&ch, 1);
             }
         } else if (self->resolve_entityref) {
             /* non-standard; use resolver */

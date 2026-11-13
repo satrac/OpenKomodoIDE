@@ -1,0 +1,3 @@
+# Runtime dependencies for the recovered CodeIntel server.
+# peewee 4.x removed playhouse.sqlite_ext.ClosureTable used by this code.
+peewee<4
