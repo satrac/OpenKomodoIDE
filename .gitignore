@@ -35,6 +35,8 @@ src/modules/codeintel/tools
 /contrib/sgmlop/*.egg-info/
 /src/silvercity/build/
 /src/silvercity/*.egg-info/
+/src/silvercity/*/*.egg-info/
+/src/silvercity/bitbucket/
 /src/apsw/build/
 /src/apsw/*.egg-info/
 
