@@ -88,6 +88,15 @@ $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_128x128.png",
 $cons->InstallAs("$mozBin/chrome/komodo/skin/images/komodo_256x256.png",
                  "komodo256.$productType.png");
 
+# Install the classic Komodo 9 application icons as an alternative set.  They
+# are kept in a separate directory so the current icon remains the default.
+foreach my $size (16, 32, 48, 128, 256) {
+    $cons->InstallAs("$mozBin/chrome/icons/classic/komodo$size.png",
+                     "classic/komodo$size.png");
+    $cons->InstallAs("$mozBin/chrome/icons/classic/komodo$size.xpm",
+                     "classic/komodo$size.xpm");
+}
+
 
 # XRE-based Komodo startup:
 # With the move to Firefox and the XRE, there is no longer a

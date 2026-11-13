@@ -1235,6 +1235,10 @@ def ImageKomodo(cfg, argv):
                    iicorepath("share", "icons", "komodo128.xpm")),
             ("cp", join("src", "main", "komodo256.%s.xpm" % cfg.productType),
                    iicorepath("share", "icons", "komodo256.xpm")),
+            # Classic Komodo 9 icon set, installed alongside the current
+            # icons so users can select it in a desktop shortcut.
+            ("cp", join("src", "main", "classic"),
+                   iicorepath("share", "icons", "classic")),
         ]
 
     # - Trim some stuff.
