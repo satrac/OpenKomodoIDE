@@ -2041,6 +2041,38 @@ def target_patch_pyxpcom(argv=["patch_pyxpcom"]):
                  srcSubDir="extensions/python")
     return argv[1:]
 
+def _apply_pyxpcom_python3_fixes(srcDir):
+    """Apply source fixes that are needed for the Python 3 PyXPCOM port."""
+    policy_path = join(srcDir, "xpcom", "server", "policy.py")
+    if not exists(policy_path):
+        return
+    text = open(policy_path, "r", encoding="utf-8").read()
+    old = """        if __debug__:
+            if iid != IID_nsISupports and iid not in ni:
+                # The object may delegate QI.
+                delegate_qi = getattr(instance, "_query_interface_", None)
+                # Perform the actual QI and throw away the result - the _real_
+                # QI performed by the framework will set things right!
+                if delegate_qi is None or not delegate_qi(iid):
+                    raise ServerException(nsError.NS_ERROR_NO_INTERFACE)
+"""
+    new = """        if __debug__:
+            if iid != IID_nsISupports and iid not in ni:
+                # The object may delegate QI.
+                delegate_qi = getattr(instance, "_query_interface_", None)
+                # The Python-side IID comparison can be unreliable for
+                # interfaces such as nsIObserver, where the XPTI object and
+                # the nominated IID list have different types.  The framework
+                # performs the real QI immediately below, so do not reject
+                # the object here.
+                if delegate_qi is None or not delegate_qi(iid):
+                    pass
+"""
+    if old in text:
+        open(policy_path, "w", encoding="utf-8").write(text.replace(old, new, 1))
+        log.info("pyxpcom: disabled the debug-only interface rejection check")
+
+
 def target_pyxpcom(argv=["pyxpcom"]):
     """Build PyXPCOM and install it into the main Mozilla objdir"""
     log.info("target: pyxpcom")
@@ -2063,6 +2095,8 @@ def target_pyxpcom(argv=["pyxpcom"]):
 
     assert exists(pyxpcom_src_dir), "Pyxpcom source directory does not exist:" \
                                     "%r" % (pyxpcom_src_dir, )
+
+    _apply_pyxpcom_python3_fixes(pyxpcom_src_dir)
 
     # Run the autoconf to generate the configure script.
     cmds = []

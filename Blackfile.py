@@ -2680,6 +2680,12 @@ def _BuildKomodo(cfg, argv):
                             #XXX should escape args with spaces
                             " ".join(argv[1:])) ]
             )
+    if not retval and sys.platform not in ("win32", "darwin"):
+        # Cons' Install preserves the old mode of an existing target; make
+        # sure the development-tree launcher is executable.
+        stub = os.path.join(cfg.stubDir, "komodo")
+        if os.path.exists(stub):
+            os.chmod(stub, 0o755)
     if not retval and cfg.jarring:
         retval = JarChrome("xtk", cfg, argv)
     if not retval and cfg.jarring:
@@ -2843,6 +2849,8 @@ def RunKomodo(cfg, argv):
         cmd = os.path.join(cfg.stubDir, "ko.exe")
     else:                           # Run komodo starter stub.
         cmd = os.path.join(cfg.stubDir, "komodo")
+        if os.path.exists(cmd):
+            os.chmod(cmd, 0o755)
 
     for arg in argv[1:]:
         if " " in arg:

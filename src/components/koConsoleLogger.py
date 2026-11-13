@@ -115,13 +115,10 @@ class KoConsoleLogger:
             log = self.log.warn
         else:
             log = self.log.error
-            frame = Namespace(f_code=Namespace(co_filename=sourceName,
-                                               co_name=""),
-                              f_globals=None)
-            tb = Namespace(tb_frame=frame,
-                           tb_lineno=error.lineNumber,
-                           tb_next=None)
-            exc_info = ("", None, tb)
+        # Do not fabricate a traceback object here.  Python 3.14's traceback
+        # formatter requires fields (tb_lasti, code positions, ...) that the
+        # old Namespace-based shim did not provide, which turned every script
+        # error into a logging error.
         log("%s (%x) in %s:%r", errorMessage, error.flags, sourceName,
             error.lineNumber, exc_info=exc_info)
         return True

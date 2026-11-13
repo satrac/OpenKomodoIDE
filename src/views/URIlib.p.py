@@ -902,8 +902,14 @@ class xpURIHandler(FileHandlerBase):
 
     def read(self, nBytes):
         bufptr = FileHandlerBase.read(self, nBytes)
-        # A bufptr is Mozilla file buffer (array) - we want the contents.
-        return ''.join(bufptr)
+        # A bufptr is a Mozilla file buffer.  On Python 3 it is a bytes
+        # object (or an array of byte values), not a sequence of characters.
+        if isinstance(bufptr, (bytes, bytearray)):
+            return bytes(bufptr).decode('utf-8', 'replace')
+        try:
+            return ''.join(bufptr)
+        except TypeError:
+            return bytes(bufptr).decode('utf-8', 'replace')
 
     def __get_stats(self):
         # exists must be true for an open file attempt to be made
