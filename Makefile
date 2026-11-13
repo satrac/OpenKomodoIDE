@@ -80,6 +80,9 @@ export KOMODO_ICON_STYLE := $(ICON_STYLE)
 ifneq ($(filter $(ICON_STYLE),classic modern),$(ICON_STYLE))
 $(error ICON_STYLE must be 'classic' or 'modern')
 endif
+ifneq ($(filter --edit,$(CONFIGURE_ARGS)),)
+$(error This fork supports Komodo IDE only; use CONFIGURE_ARGS=--ide)
+endif
 
 .PHONY: help all doctor prebuilt-python modules configure register-mozbuild \
         build app run test \
@@ -99,7 +102,7 @@ help:
 > @echo "Komodo IDE build helper"
 > @echo ""
 > @echo "Core:"
-> @echo "  make configure        Configure the Black/Komodo build"
+> @echo "  make configure        Configure the Black/Komodo build (IDE only)"
 > @echo "  make build            Incremental build of the Komodo app bits"
 > @echo "  make run              Run the built IDE"
 > @echo "  make test             Run the Komodo self-test target"

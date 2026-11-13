@@ -2,6 +2,15 @@
 
 # Komodo IDE
 
+> **Experimental fork — no user support.**
+>
+> This is a community, experimental continuation of Komodo IDE. It is provided
+> as-is, with no warranty and no user support. It is not affiliated with or
+> supported by ActiveState. Komodo Edit is out of scope.
+>
+> Pull requests are welcome. See [SUPPORT.md](SUPPORT.md) and
+> [CONTRIBUTING.md](CONTRIBUTING.md).
+
 As we retire Komodo IDE, ActiveState has a renewed focus on being the go-to service for securing the open source software supply chain. Check out our [Platform](https://www.activestate.com/products/platform/) to find out more.
 
 This readme explains how to get started building, using and developing with
@@ -17,7 +26,7 @@ the entire project.
 
 - [Screenshot](#screenshot)
 - [Download](#download)
-- [Help](#help)
+- [Support and contributions](#support-and-contributions)
 - [Services](#services)
 - [Building Komodo](#building-komodo)
   - [Building on Windows](#building-on-windows)
@@ -34,19 +43,16 @@ the entire project.
 
 You can [download Komodo IDE installer here](installers/).
 
-## Help
+## Support and contributions
 
-There are several ways to get in contact with the Komodo devs:
+This fork is experimental and does **not** provide user support. The old
+Komodo Gitter, forums, IRC channel and ActiveState support channels are not
+maintenance channels for this fork.
 
-Github: <https://github.com/ActiveState/OpenKomodoIDE>
-
-Gitter: <https://gitter.im/ActiveState/Komodo>
-
-Forums: <http://community.komodoide.com/>
-
-Bug Tracker: <https://github.com/ActiveState/OpenKomodoIDE/issues>
-
-IRC: <irc://irc.mozilla.org/#komodo>
+- Pull requests are welcome: <https://github.com/satrac/OpenKomodoIDE/pulls>
+- Bug reports and build notes: <https://github.com/satrac/OpenKomodoIDE/issues>
+- Support policy: [SUPPORT.md](SUPPORT.md)
+- Contribution notes: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Services
 
