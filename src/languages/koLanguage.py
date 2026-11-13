@@ -208,7 +208,7 @@ class KoLanguageRegistryService:
                     elif action == '-':
                         self._removeOneFileAssociation(pattern, languageName)
                     else:
-                        log.warn("unexpected action in 'fileAssociationDiffs' "
+                        log.warning("unexpected action in 'fileAssociationDiffs' "
                                  "entry (skipping): %r",
                                  (action, pattern, languageName))
             except (SyntaxError, ValueError) as ex:
@@ -315,7 +315,7 @@ class KoLanguageRegistryService:
                     self._addonsEnabled[id] = default
             addonMgr.getAddonByID(id, addonCallback)
         except COMException:
-            log.warn("addonIsEnabled:: unable to obtain Addon Manager")
+            log.warning("addonIsEnabled:: unable to obtain Addon Manager")
             # Not available in the test environment.
             self._addonsEnabled[id] = default
         return default
@@ -403,7 +403,7 @@ class KoLanguageRegistryService:
             defaultExtension = data["defaultExtension"]
             existingLang = self._defaultLanguageExtensions.get(defaultExtension)
             if not defaultExtension.startswith('.'):
-                log.warn("'%s': skipping unexpected defaultExtension for "
+                log.warning("'%s': skipping unexpected defaultExtension for "
                          "language '%s': it must begin with '.'",
                          defaultExtension, lang)
             else:
@@ -412,7 +412,7 @@ class KoLanguageRegistryService:
             existingLang = self._defaultFileAssociations.get(ext)
             if existingLang:
                 if existingLang != lang:
-                    log.warn("ext pattern %r, lang %s - already "
+                    log.warning("ext pattern %r, lang %s - already "
                              "registered to lang %s", ext, lang,
                              existingLang)
             else:
@@ -490,7 +490,7 @@ class KoLanguageRegistryService:
         if not language: language=self.defaultLanguage
         
         if language not in self.__languageFromLanguageName:
-            log.warn("Asked for unknown language: %r", language)
+            log.warning("Asked for unknown language: %r", language)
             if language != self.defaultLanguage:
                 return self.getLanguage(self.defaultLanguage)
             # Trouble if we can't load the default language.
@@ -760,7 +760,7 @@ class KoLanguageRegistryService:
                     try:
                         langName = self._modeName2LanguageName[mode.lower()]
                     except KeyError:
-                        log.warn("unknown emacs mode: '%s'", mode)
+                        log.warning("unknown emacs mode: '%s'", mode)
                     else:
                         langs = [langName]
                         modelineLangs = [langName]

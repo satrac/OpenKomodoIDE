@@ -111,7 +111,7 @@ PyLexState_tokenize_by_style(PyLexState* self, PyObject * args)
     char * style = NULL;
     char * buf = NULL;
     AutoReleasePool pool;
-    int bufSize;
+    Py_ssize_t bufSize;
     int i;
     int startIndex;
     int startLine;
@@ -128,17 +128,17 @@ PyLexState_tokenize_by_style(PyLexState* self, PyObject * args)
 
     if (!PyPropSet_Check(pyPropSet)) {
         fprintf(stderr, "expected PropertySet, %.200s found",
-                pyPropSet->ob_type->tp_name);
+                Py_TYPE(pyPropSet)->tp_name);
         PyErr_Format(PyExc_TypeError, "expected PropertySet, %.200s found",
-            pyPropSet->ob_type->tp_name);
+            Py_TYPE(pyPropSet)->tp_name);
         return NULL;
     }
 
     if ((pyCallback != NULL) && !PyCallable_Check(pyCallback)) {
         fprintf(stderr, "expected callable object, %.200s found",
-            pyCallback->ob_type->tp_name);
+            Py_TYPE(pyCallback)->tp_name);
         PyErr_Format(PyExc_TypeError, "expected callable object, %.200s found",
-            pyCallback->ob_type->tp_name);
+            Py_TYPE(pyCallback)->tp_name);
         return NULL;        
     }
 
@@ -175,9 +175,9 @@ PyLexState_tokenize_by_style(PyLexState* self, PyObject * args)
     
     if (!PyPropSet_Check(pyPropSet)) {
         fprintf(stderr, "expected PropertySet, %.200s found",
-                pyPropSet->ob_type->tp_name);
+                Py_TYPE(pyPropSet)->tp_name);
         PyErr_Format(PyExc_TypeError, "expected PropertySet, %.200s found",
-            pyPropSet->ob_type->tp_name);
+            Py_TYPE(pyPropSet)->tp_name);
         return NULL;
     }
 
@@ -323,7 +323,7 @@ getWordList(PyObject * pyWordLists, AutoReleasePool & pool)
         pyWordList = PySequence_GetItem(pyWordLists, i);
         if (!PyWordList_Check(pyWordList)) {
             PyErr_Format(PyExc_TypeError, "expected list of \"WordList\", %.200s found",
-                pyWordList->ob_type->tp_name);
+                Py_TYPE(pyWordList)->tp_name);
             
             goto onError;
         }
@@ -331,7 +331,7 @@ getWordList(PyObject * pyWordLists, AutoReleasePool & pool)
         if (actualWordList->wordListAsString) {
             if (!PyString_Check(actualWordList->wordListAsString)) {
                 PyErr_Format(PyExc_TypeError, "expected a wrapped String, %.200s found",
-                             actualWordList->wordListAsString->ob_type->tp_name);
+                             Py_TYPE(actualWordList->wordListAsString)->tp_name);
             
                 goto onError;
             }
@@ -380,7 +380,7 @@ getWordList(PyObject * pyWordLists, LexState * lexState, AutoReleasePool & pool)
 
     if (!PySequence_Check(pyWordLists)) {
         PyErr_Format(PyExc_TypeError, "expected list of %d WordLists, %.200s found",
-           nWordLists, pyWordLists->ob_type->tp_name);
+           nWordLists, Py_TYPE(pyWordLists)->tp_name);
         return NULL;
     }
 
@@ -401,7 +401,7 @@ getWordList(PyObject * pyWordLists, LexState * lexState, AutoReleasePool & pool)
         pyWordList = PySequence_GetItem(pyWordLists, i);
         if (!PyWordList_Check(pyWordList)) {
             PyErr_Format(PyExc_TypeError, "expected list of WordLists, %.200s found",
-                pyWordList->ob_type->tp_name);
+                Py_TYPE(pyWordList)->tp_name);
             
             goto onError;
         }
@@ -473,12 +473,6 @@ static PyMethodDef PyLexState_methods[] =
 };
 
 
-static PyObject *
-PyLexState_getattr(PyLexState *self, char *name)
-{
-    return Py_FindMethod(PyLexState_methods, (PyObject *) self, name);
-}
-
 static PyObject * 
 PyLexState_repr(PyLexState *self)
 {
@@ -488,49 +482,40 @@ PyLexState_repr(PyLexState *self)
     const char *languageName = self->lexer->lexCurrent->languageName;
     if (languageName) {
         return PyString_FromFormat("<%s object for \"%s\" at %p>", 
-                                    self->ob_type->tp_name, languageName, self);
+                                    Py_TYPE(self)->tp_name, languageName, self);
     } else {
         return PyString_FromFormat("<%s object at %p>",
-                                    self->ob_type->tp_name, self);
+                                    Py_TYPE(self)->tp_name, self);
     }
 #else
 
     char buf[1024];
     if (languageName) {
         sprintf(buf, "<%s object for \"%s\" at %p>", 
-                self->ob_type->tp_name, languageName, self);
+                Py_TYPE(self)->tp_name, languageName, self);
     } else {
         sprintf(buf, "<%s object at %p>",
-                self->ob_type->tp_name, self);
+                Py_TYPE(self)->tp_name, self);
     }
 
     return PyString_FromString(buf);
 #endif
 }
 
-PyTypeObject PyLexStateType = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "LexerModule",
-    sizeof(PyLexState),
-    0,
-    (destructor) PyLexState_dealloc,     /*tp_dealloc*/
-    0,                                      /*tp_print*/
-    (getattrfunc) PyLexState_getattr,    /*tp_getattr*/
-    0,                                      /*tp_setattr*/
-    0,                                      /*tp_compare*/
-    (reprfunc) PyLexState_repr,          /*tp_repr*/
-    0,                                      /*tp_as_number*/
-    0,                                      /*tp_as_sequence*/
-    0,                                      /*tp_as_mapping*/
-    0,                                      /*tp_hash */
-    0,                                      /*tp_call*/
-    0,                                      /*tp_str */
-};
-
+PyTypeObject PyLexStateType = {};
 
 void
 initPyLexState(void)
 {
-    PyLexStateType.ob_type = &PyType_Type;
+    PyTypeObject *t = &PyLexStateType;
+    memset(t, 0, sizeof(*t));
+    PyObject_Init((PyObject *)t, &PyType_Type);
+    t->tp_name = "LexerModule";
+    t->tp_basicsize = sizeof(PyLexState);
+    t->tp_dealloc = (destructor) PyLexState_dealloc;
+    t->tp_flags = Py_TPFLAGS_DEFAULT;
+    t->tp_methods = PyLexState_methods;
+    t->tp_repr = (reprfunc) PyLexState_repr;
+    if (PyType_Ready(t) < 0)
+        PyErr_Clear();
 }

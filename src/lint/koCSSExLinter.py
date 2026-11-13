@@ -48,7 +48,7 @@ class KoSCSSCommonLinter(KoCSSLinter):
                 except which.WhichError:
                     pass
             if not scssPath or not os.path.exists(scssPath):
-                log.warn("Setting %sLinterType to 'default': %s not found", self.cmd, self.cmd)
+                log.warning("Setting %sLinterType to 'default': %s not found", self.cmd, self.cmd)
                 prefset.setStringPref(linterPrefName, "builtin")
                 return KoCSSLinter().lint_with_text(request, text)
             else:
@@ -60,7 +60,7 @@ class KoSCSSCommonLinter(KoCSSLinter):
                 except which.WhichError:
                     pass
                 if (not rubyPath) or not os.path.exists(rubyPath):
-                    log.warn("Setting %s to 'default': no ruby found to drive %s", linterPrefName, self.cmd)
+                    log.warning("Setting %s to 'default': no ruby found to drive %s", linterPrefName, self.cmd)
                     prefset.setStringPref(linterPrefName, "builtin")
                     return KoCSSLinter.lint_with_text(self, request, text)
                 else:
@@ -168,7 +168,7 @@ class KoLessLinter(KoCSSLinter):
                 except which.WhichError:
                     pass
                 if (not lessPath) or not os.path.exists(lessPath):
-                    log.warn("Setting lessLinterType to 'default': less not found")
+                    log.warning("Setting lessLinterType to 'default': less not found")
                     prefset.setStringPref("lessLinterType", "builtin")
                     return KoCSSLinter.lint_with_text(self, request, text)
                 else:
@@ -180,7 +180,7 @@ class KoLessLinter(KoCSSLinter):
                 except which.WhichError:
                     pass
                 if (not nodePath) or not os.path.exists(nodePath):
-                    log.warn("Setting lessLinterType to 'default': no node found to drive less")
+                    log.warning("Setting lessLinterType to 'default': no node found to drive less")
                     prefset.setStringPref("lessLinterType", "builtin")
                     return KoCSSLinter.lint_with_text(self, request, text)
                 else:

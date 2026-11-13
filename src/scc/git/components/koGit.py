@@ -319,8 +319,8 @@ class KoGIT(KoSCCBase):
         return result.get('stderr', '') + result.get('stdout', '')
     
     def _do_stage(self, files, scc_handler=None):
-        log.warn("Staging")
-        log.warn(files)
+        log.warning("Staging")
+        log.warning(files)
         return self.__generic_command(scc_handler.add, files)
         pass
     

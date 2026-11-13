@@ -53,7 +53,7 @@ class Config:
                         break
                 else:
                     curr_dir = dirname(__file__) or '.'
-                    log.warn(r"""
+                    log.warning(r"""
 Couldn't find a mount point for crimper.  You'll need to copy the
 necessary source packages from '\\crimper\apps\Komodo\support\ruby' to
 '%s/pkg_cache' manually. Running the following should do it:

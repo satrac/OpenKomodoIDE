@@ -956,7 +956,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
         stdout_lines = stdout.splitlines(0)
         retval = p.returncode
         if retval:
-            log.warn("failed to determine PHP info:\n"
+            log.warning("failed to determine PHP info:\n"
                      "  path: %s\n"
                      "  retval: %s\n"
                      "  stdout:\n%s\n"
@@ -1037,7 +1037,7 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
             if not php or not exists(php):
                 php = self._php_from_env(env)
             if not php:
-                log.warn("no PHP was found from which to determine the "
+                log.warning("no PHP was found from which to determine the "
                          "import path")
                 php_ver, include_path = None, []
             else:
@@ -3003,7 +3003,7 @@ class PHPParser:
 
         # Can only be defined on a trait or a class.
         if not self.currentClass:
-            log.warn("_handleTraitResolution:: not in a class|trait definition")
+            log.warning("_handleTraitResolution:: not in a class|trait definition")
             return
 
         # Look for the identifier first.
@@ -3012,7 +3012,7 @@ class PHPParser:
                                                   self.PHP_IDENTIFIER)
         log.debug("namelist:%r, p:%d", namelist, p)
         if not namelist or p+2 >= len(text):
-            log.warn("Not enough arguments in trait use statement: %r", text)
+            log.warning("Not enough arguments in trait use statement: %r", text)
             return
 
         # Get the keyword "as", "insteadof"
@@ -3035,7 +3035,7 @@ class PHPParser:
             if names:
                 alias = names[0]
                 if len(names) > 1:
-                    log.warn("Ignoring multiple alias identifiers in text: %r",
+                    log.warning("Ignoring multiple alias identifiers in text: %r",
                              text)
         if alias or visibility:
             # Set override.

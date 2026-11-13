@@ -120,7 +120,7 @@ def PerlWarnsToLintResults(warns, perlfilename, actualFileName, perlcode):
 #        
 #        else:
 #            if not (successRe.search(warn) or failureRe.search(warn)):
-#                log.warn("Skipping Perl warning: %r", warn)
+#                log.warning("Skipping Perl warning: %r", warn)
 
 
     # under some conditions, Perl will spit out messages after the

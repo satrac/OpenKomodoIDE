@@ -23,16 +23,7 @@ import koToolbox2
 log = logging.getLogger("koMigrateV5Toolboxes")
 #log.setLevel(logging.DEBUG)
 
-try:
-    import cElementTree as ET # effbot's C module
-except ImportError:
-    logging.basicConfig()
-    log.setLevel(logging.INFO)
-    log.error("using element tree and not cElementTree, performace will suffer")
-    if sys.version_info[:2] < (2, 5):
-        import elementtree.ElementTree as ET # effbot's pure Python module
-    else:
-        import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 #---- global data
 
@@ -75,7 +66,7 @@ def expand_toolbox(toolboxFile, outdir, toolboxDirName=None, force=0):
     TreeWalker(obsoleteItems, force).expandTree(dirTree)
     #todo: Write out the misc parts
     if obsoleteItems:
-        log.warn("The following items weren't converted: %s\n", obsoleteItems)
+        log.warning("The following items weren't converted: %s\n", obsoleteItems)
                   # "\n".join(["%s: %s" % (x[0], x[1]) for x in obsoleteItems]))
     return 0
     

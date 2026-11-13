@@ -159,7 +159,7 @@ class koFileService(object):
                 msg = "TempFile: File still exists after deleting '%s' - '%s'" % (fname,error_message)
                 if remove_fname:
                     msg += " - flagging for cleanup at shutdown"
-                log.warn(msg)
+                log.warning(msg)
                 remove_fname = 0
         if remove_fname:
             self._tmpfiles.pop(fname, None)

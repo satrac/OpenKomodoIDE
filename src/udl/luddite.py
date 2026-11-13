@@ -154,7 +154,7 @@ class Shell(cmdln.Cmdln):
         must be of the form (one entry per line):
             <lang> <guid>
         """
-        log.warn("the 'skel' generation facilities of 'luddite compile' "
+        log.warning("the 'skel' generation facilities of 'luddite compile' "
                  "have been deprecated in favour of (a) the simpler "
                  "'luddite just_compile' and (b) the more generic support "
                  "of the 'koext' tool")

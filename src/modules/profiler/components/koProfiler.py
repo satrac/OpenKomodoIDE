@@ -640,7 +640,7 @@ class koCallgrindProfiler(object):
                         #if len(sp) >= 2:
                         #    caller_line = sp[1]
                     except ValueError:
-                        log.warn("Could not parse line: %r, %s#%d",
+                        log.warning("Could not parse line: %r, %s#%d",
                                  line, self.name, lineno)
 
                 # Ignoring these items.
@@ -833,7 +833,7 @@ class koProfilerService:
                 prof = fn(*args)
                 result = components.interfaces.koIAsyncCallback.RESULT_SUCCESSFUL
             except Exception as ex:
-                log.warn("LoadProfileDataThread fn %r failed: %r", fn, str(ex))
+                log.warning("LoadProfileDataThread fn %r failed: %r", fn, str(ex))
 
             class CallbackRunnable(object):
                 """Used to fire callback on the original thread."""
@@ -850,7 +850,7 @@ class koProfilerService:
             try:
                 starting_thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
             except Exception as e:
-                log.warn("LoadProfileDataThread: callback failed: %s", str(e))
+                log.warning("LoadProfileDataThread: callback failed: %s", str(e))
 
         # Start the thread.
         t = threading.Thread(target=LoadProfileDataThread,

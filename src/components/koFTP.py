@@ -421,7 +421,7 @@ class koFTPConnection(remotefilelib.koRFConnection):
                 return self._homedirectory
             except self._FTPExceptions as e:
                 self._setLastError(e.args and e.args[-1] or "Setting home directory failed")
-                self.log.warn("FTP HOMEDIR ERROR: %s", self._lasterror)
+                self.log.warning("FTP HOMEDIR ERROR: %s", self._lasterror)
         finally:
             if pwd:
                 self.do_changeDirectory(pwd)
@@ -685,7 +685,7 @@ class koFTPS(koFTP):
             conn._sock.shutdown(2)
             del conn
         except Exception as e:
-            self.log.warn(e)
+            self.log.warning(e)
         #-- Hack end
         #print "Closed conn"
         return self.voidresp()
@@ -720,7 +720,7 @@ class koFTPS(koFTP):
             conn._sock.shutdown(2)
             del conn
         except Exception as e:
-            self.log.warn(e)
+            self.log.warning(e)
         #-- Hack end
         return self.voidresp()
 
@@ -744,7 +744,7 @@ class koFTPS(koFTP):
             conn._sock.shutdown(2)
             del conn
         except Exception as e:
-            self.log.warn(e)
+            self.log.warning(e)
         #-- Hack end
         #print "Closed conn"
         return self.voidresp()
@@ -788,7 +788,7 @@ class koFTPSConnection(koFTPConnection):
             self._connection.prot_p()
             self.log.debug("TLS data encryption setting was successful.")
         except self._FTPExceptions as e:
-            self.log.warn("TLS data encryption failed, data will be sent and received in clear text.")
+            self.log.warning("TLS data encryption failed, data will be sent and received in clear text.")
             # Fall back to clear text transfer of data
             self._connection.prot_c()
 
@@ -879,13 +879,13 @@ class FTPFile:
     def get_isReadable(self):
         #if self.ftpfile:
         #    return self.ftpfile.isReadable()
-        #self.log.warn("no ftpfile available for reading!")
+        #self.log.warning("no ftpfile available for reading!")
         #return 0
         return 1
 
     def get_isWritable(self):
         #if self.ftpfile:
         #    return self.ftpfile.isWritable()
-        #self.log.warn("no ftpfile was available for writing!")
+        #self.log.warning("no ftpfile was available for writing!")
         #return 0
         return 1

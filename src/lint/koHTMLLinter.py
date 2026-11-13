@@ -886,7 +886,7 @@ class CommonTidyLinter(object):
                 line = str(line,'utf-8')
             resultMatch = resultRe.search(line)
             if not resultMatch:
-                log.warn("Could not parse tidy output line: %r", line)
+                log.warning("Could not parse tidy output line: %r", line)
                 continue
 
             #print "KoHTMLLinter: %r -> %r" % (line, resultMatch.groupdict())
@@ -1190,7 +1190,7 @@ class KoHTML5_html5libLinter:
                     while lineNo >= 0 and len(textLines[lineNo]) == 0:
                         lineNo -= 1
                     if lineNo < 0:
-                        log.warn("No text to display for bug %s", errorName)
+                        log.warning("No text to display for bug %s", errorName)
                         continue
                 result = KoLintResult()
                 result.lineStart = result.lineEnd = lineNo + 1

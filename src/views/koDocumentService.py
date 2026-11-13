@@ -472,6 +472,6 @@ class KoDocumentService:
         else:
             fullfname = fname
         if not os.path.exists(fullfname):
-            log.warn("parseHotspotLine(line=%r, ...): filename %r "
+            log.warning("parseHotspotLine(line=%r, ...): filename %r "
                      "does not exist", line, fullfname)
         return [fullfname, lineNo]

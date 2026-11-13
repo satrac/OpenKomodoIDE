@@ -299,7 +299,7 @@ class Guru:
             for c in tree.findall("//{%s}Component" % ns):
                 id = c.get("Id")
                 if "$(" in id:
-                    log.warn("cannot guarantee no 'Id' collision with "
+                    log.warning("cannot guarantee no 'Id' collision with "
                              "<Component Id='%s'> "
                              "because of preprocessor variable", id)
                 else:
@@ -310,7 +310,7 @@ class Guru:
                     raise Error("there is no 'Id' attribute on "
                                 "'Directory' element %r" % d)
                 elif "$(" in id:
-                    log.warn("cannot guarantee no 'Id' collision with "
+                    log.warning("cannot guarantee no 'Id' collision with "
                              "<Directory Id='%s' Name='%s'> "
                              "because of preprocessor variable", id, name)
                 else:
@@ -318,7 +318,7 @@ class Guru:
                 if name is None:
                     pass
                 elif "$(" in name:
-                    log.warn("cannot guarantee no 'Name' collision with "
+                    log.warning("cannot guarantee no 'Name' collision with "
                              "<Directory Id='%s' Name='%s'> "
                              "because of preprocessor variable", id, name)
                 else:
@@ -334,19 +334,19 @@ class Guru:
                     continue
                 name, src = f.get("Name"), f.get("src")
                 if "$(" in id:
-                    log.warn("cannot guarantee no 'Id' collision with "
+                    log.warning("cannot guarantee no 'Id' collision with "
                              "<File Id='%s' Name='%s'> "
                              "because of preprocessor variable", id, name)
                 else:
                     self.file_ids[id] = True
                 if "$(" in name:
-                    log.warn("cannot guarantee no 'Name' collision with "
+                    log.warning("cannot guarantee no 'Name' collision with "
                              "<File Id='%s' Name='%s'> "
                              "because of preprocessor variable", id, name)
                 else:
                     self.short_path_names[name] = True
                 if "$(" in src:
-                    log.warn("cannot guarantee no 'src' collision with "
+                    log.warning("cannot guarantee no 'src' collision with "
                              "<File Id='%s' src='%s'> "
                              "because of preprocessor variable", id, src)
                 else:

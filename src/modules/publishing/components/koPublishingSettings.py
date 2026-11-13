@@ -139,13 +139,13 @@ class koPublishingSettings(PreferenceSerializer):
                 try:
                     pickle_file = open(self.syncDataFilepath, "rb")
                 except Exception as ex:
-                    log.warn("Could not open publishing data file %r. Error: %r",
+                    log.warning("Could not open publishing data file %r. Error: %r",
                              self.syncDataFilepath, str(ex))
                 else:
                     try:
                         self._sync_data = pickle.load(pickle_file)
                     except pickle.PickleError:
-                        log.warn("Failed to load publishing data for %r. Error: %r",
+                        log.warning("Failed to load publishing data for %r. Error: %r",
                                  self.syncDataFilepath, str(ex))
                     finally:
                         pickle_file.close()
@@ -196,7 +196,7 @@ class koPublishingSettings(PreferenceSerializer):
         try:
             pickle_file = open(self.syncDataFilepath, "wb")
         except Exception as ex:
-            log.warn("Could not write to publishing data file %r. Error: %r",
+            log.warning("Could not write to publishing data file %r. Error: %r",
                      self.syncDataFilepath, str(ex))
         else:
             try:

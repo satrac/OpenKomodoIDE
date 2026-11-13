@@ -363,7 +363,7 @@ class _KoPythonCommonRefactoringLangSvc(KoRefactoringLanguageServiceBase):
             bytes3 = re.compile(r'\.\w+').sub("", bytes2)
             words = set([x for x in re.split(re.compile('\\s+'), bytes3) if x])
             if not words:
-                log.warn("categorize variables: no words matched")
+                log.warning("categorize variables: no words matched")
             self.determineWordUsage(words, scimoz, koDoc,
                                     selectionStart, selectionEnd, callback_wrapper)
         except RefactoringException as ex:

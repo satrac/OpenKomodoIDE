@@ -6,6 +6,7 @@
 #define PYPROPSET_H_
 
 #include <Python.h>
+#include "py3compat.h"
 
 #include <SC_PropSet.h>
 
@@ -61,7 +62,7 @@ typedef struct {
     PropSetEx * propSet;
 } PyPropSet;
 
-#define PyPropSet_Check(op) ((op)->ob_type == &PyPropSetType)
+#define PyPropSet_Check(op) (Py_TYPE(op) == &PyPropSetType)
 #define PyPropSet_GET_PROPSET(op) (((PyPropSet *)(op))->propSet)
 
 PyObject*

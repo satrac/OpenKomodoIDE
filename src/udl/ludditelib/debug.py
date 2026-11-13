@@ -238,7 +238,7 @@ def _style_names_from_style_num(style_num):
                 style_names.append(style_group)
                 break
     else:
-        log.warn("lang 'UDL' not in styles.StateMap: won't have "
+        log.warning("lang 'UDL' not in styles.StateMap: won't have "
                  "common style groups in HTML output")
     
     return style_names

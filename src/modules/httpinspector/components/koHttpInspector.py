@@ -345,7 +345,7 @@ class koProxyReqRespPair:
         getTextFunction = getattr(self, "getText_%s" % (itemName), None)
         if getTextFunction:
             return getTextFunction()
-        log.warn("Unknown tree column name: %s", itemName)
+        log.warning("Unknown tree column name: %s", itemName)
         return "(Error: Unknown text field name)"
 
     def getText_creation_id(self):
@@ -592,7 +592,7 @@ class koProxyReqRespPair:
         if headerNames is None or headerValues is None:
             return
         if len(headerNames) != len(headerValues):
-            log.warn("_saveHeadersForRow: num of header names: %d, does not match num of values: %d", len(headerNames), len(headerValues))
+            log.warning("_saveHeadersForRow: num of header names: %d, does not match num of values: %d", len(headerNames), len(headerValues))
             return
         # Update the headers
         headers = {}
@@ -770,7 +770,7 @@ class koHttpInspector:
                     self.proxy_to_port = 8080
             except ValueError:
                 log.error("'Proxy Forwarding Address' preference is invalid: '%s'", forwardedToAddress)
-                log.warn("Proxy forwarding has been turning off")
+                log.warning("Proxy forwarding has been turning off")
                 self.proxyForwardingEnabled = False
 
     def _set_proxyBreakFromPrefs(self):
@@ -930,7 +930,7 @@ class koHttpInspector:
                 uiObserver.notifyRowsChanged()
                 log.debug("notifyRowsChanged: sent proxyChangedNotification")
             except Exception as e:
-                log.warn("notifyRowsChanged: Proxy observer raised an exception")
+                log.warning("notifyRowsChanged: Proxy observer raised an exception")
                 log.exception(e)
         log.debug("notifyRowsChanged: done")
 
@@ -1049,7 +1049,7 @@ class koHttpInspector:
                         try:
                             uiObserver.notifyBreakRequest(kpp)
                         except Exception as e:
-                            log.warn("handleClientRequest: Proxy observer raised an exception")
+                            log.warning("handleClientRequest: Proxy observer raised an exception")
                             log.exception(e)
                             return None, None
                         self._continueRunningCondition.acquire()
@@ -1128,7 +1128,7 @@ class koHttpInspector:
                         log.debug("handleServerResponse: notifyProxyPairHasChanged")
                         uiObserver.notifyProxyPairHasChanged(kpp)
                     except Exception as e:
-                        log.warn("handleServerResponse: Proxy observer raised an exception")
+                        log.warning("handleServerResponse: Proxy observer raised an exception")
                         log.exception(e)
                         return None
                     if isBreak:
@@ -1138,7 +1138,7 @@ class koHttpInspector:
                             log.debug("handleServerResponse: notifyBreakResponse")
                             uiObserver.notifyBreakResponse(kpp)
                         except Exception as e:
-                            log.warn("handleServerResponse: Proxy observer raised an exception")
+                            log.warning("handleServerResponse: Proxy observer raised an exception")
                             log.exception(e)
                             return None
                         log.debug("handleServerResponse: Acquiring _continueRunningCondition lock")
@@ -1448,7 +1448,7 @@ class koHttpInspectorRuleRequirement:
                 if r.match(val):
                     return True
             except re.error:
-                log.warn("Rule requirement: Invalid RE expression: '%s'", self.value)
+                log.warning("Rule requirement: Invalid RE expression: '%s'", self.value)
         else:
             # String match (case insensitive)
             # XXX - Should be saved case insensitive, so we don't have to keep

@@ -228,7 +228,7 @@ class KoTemplateToolkitLinter(object):
                                  + self._exprTagRE.sub(self._stripInnerPart, m.group(2))
                                  + self._spaceOutNonNewlines(m.group(3)))
                 else:
-                    log.warn("Thought this would match a perl tag, but no")
+                    log.warning("Thought this would match a perl tag, but no")
                     fixedPart = self._spaceOutNonNewlines(part)
             else:
                 fixedPart = self._spaceOutNonNewlines(part)

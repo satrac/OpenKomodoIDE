@@ -188,7 +188,7 @@ class koDocumentSettingsManager:
             if prefs.hasLongPref('scrollWidth'):
                 scimoz.scrollWidth = prefs.getLongPref("scrollWidth")
             else:
-                log.warn('should set default scroll width?')
+                log.warning('should set default scroll width?')
 
         if prefs.getBooleanPref('scrollWidthTracking'):
             scimoz.scrollWidthTracking = prefs.getBooleanPref("scrollWidthTracking")

@@ -432,7 +432,7 @@ class test_monitoring_files(unittest.TestCase):
                         if gid != s.st_gid:
                             break
                     else:
-                        log.warn("Could not find alternative group for chown test")
+                        log.warning("Could not find alternative group for chown test")
                         break
                     # Change the group ownership
                     os.chown(filename, -1, gid)
@@ -1271,7 +1271,7 @@ class test_monitoring_files_and_directories(unittest.TestCase):
                 #dir_observer_recursive.dump()
                 assert( dir_observer_recursive.wasNotifiedOn(new_sub_dir, FS_DIR_CREATED) )
                 for newfilename in new_sub_dir_files:
-                    #log.warn("Checking newfilename: '%s'", newfilename)
+                    #log.warning("Checking newfilename: '%s'", newfilename)
                     assert( not dir_observer.wasNotifiedOn(newfilename, FS_FILE_CREATED) )
                     assert( dir_observer_recursive.wasNotifiedOn(newfilename, FS_FILE_CREATED) )
             time.sleep(POLL_PERIOD + 0.2)

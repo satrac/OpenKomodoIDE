@@ -64,7 +64,7 @@ class Scheme(SchemeBase):
         observerSvc.notifyObservers(self,'keybinding-scheme-changed', self.name);
         
     def remove(self):
-        log.warn("Removing scheme " + self.name)
+        log.warning("Removing scheme " + self.name)
         if os.path.exists(self.fname):
             os.remove(self.fname)
         schemeService = components.classes['@activestate.com/koKeybindingSchemeService;1'].getService()

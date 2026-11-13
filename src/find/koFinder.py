@@ -2196,7 +2196,7 @@ def _regex_info_from_ko_find_data(pattern, repl=None,
     # Determine the flags.
     flags = re.MULTILINE   # Generally always want line-based searching.
     if caseSensitivity not in (FOC_INSENSITIVE, FOC_SENSITIVE, FOC_SMART):
-        log.warn("Unrecognized case-sensitivity %r, setting to insensitive",
+        log.warning("Unrecognized case-sensitivity %r, setting to insensitive",
                  caseSensitivity)
         caseSensitivity = FOC_INSENSITIVE
     if caseSensitivity == FOC_INSENSITIVE:

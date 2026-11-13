@@ -457,24 +457,47 @@ def _setupMozillaEnv():
                       config.mozObjDir, "dist", "bin")
         os.environ["PATH"] = binDir + os.pathsep + os.environ["PATH"]
 
-        # Add prebuilt Python to PATH so mozilla's build system can find python2.7.
-        # The prebuilt interpreter only locates its stdlib when invoked via its
-        # absolute path, so put small wrappers first on PATH.
-        prebuiltPythonDir = dirname(config.python)
-        prebuiltPythonLibDir = abspath(join(prebuiltPythonDir, "..", "lib"))
+        # Add Python wrappers to PATH.  The Mozilla 35 build tooling still
+        # expects a Python 2.7 interpreter, while the application runtime and
+        # PyXPCOM now use Python 3.  Expose both, with the bare "python" name
+        # kept as Python 2 for Mozilla's configure/make.  The prebuilt
+        # interpreter only locates its stdlib when invoked via its absolute
+        # path, so put small wrappers first on PATH.
         pybinDir = join(config.buildDir, "pybin")
         if not exists(pybinDir):
             os.makedirs(pybinDir)
-        for pyName in ("python2.7", "python2", "python"):
-            wrapperPath = join(pybinDir, pyName)
+
+        def _makePythonWrapper(name, pythonExe, libDir):
+            wrapperPath = join(pybinDir, name)
             with open(wrapperPath, "w") as wrapper:
                 wrapper.write('#!/bin/sh\n'
                               'export LD_LIBRARY_PATH="%s:$LD_LIBRARY_PATH"\n'
                               'exec "%s" "$@"\n'
-                              % (prebuiltPythonLibDir, config.python))
+                              % (libDir, pythonExe))
             os.chmod(wrapperPath, 0o755)
-        os.environ["PATH"] = pybinDir + os.pathsep + prebuiltPythonDir + os.pathsep + os.environ["PATH"]
-        os.environ["LD_LIBRARY_PATH"] = prebuiltPythonLibDir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
+
+        # Python 3 (application/PyXPCOM runtime).
+        py3Dir = dirname(config.python)
+        py3LibDir = abspath(join(py3Dir, "..", "lib"))
+        if config.pyVer.startswith("3"):
+            for pyName in ("python" + config.pyVer, "python3"):
+                _makePythonWrapper(pyName, config.python, py3LibDir)
+            os.environ["PATH"] = pybinDir + os.pathsep + py3Dir + os.pathsep + os.environ["PATH"]
+            os.environ["LD_LIBRARY_PATH"] = py3LibDir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
+
+        # Legacy Python 2.7 for the Mozilla build scripts.
+        py2Dir = join(dirname(config.buildDir), "prebuilt",
+                      "python2.7", config.platform, "bin")
+        py2Exe = join(py2Dir, "python")
+        if exists(py2Exe):
+            py2LibDir = abspath(join(py2Dir, "..", "lib"))
+            for pyName in ("python2.7", "python2", "python"):
+                _makePythonWrapper(pyName, py2Exe, py2LibDir)
+            os.environ["PATH"] = pybinDir + os.pathsep + py2Dir + os.pathsep + os.environ["PATH"]
+            os.environ["LD_LIBRARY_PATH"] = py2LibDir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
+        elif config.pyVer.startswith("3"):
+            # No Python 2 available: let "python" resolve to Python 3.
+            _makePythonWrapper("python", config.python, py3LibDir)
         
         # Ensure have the required autoconf version (use our own).
         autoconfPrefix = abspath(join(dirname(__file__), "support", "autoconf-2.13"))
@@ -1304,8 +1327,25 @@ def target_configure(argv):
 
     if config["python"] is None:
         if config["pythonVersion"] is None:
-            config["pythonVersion"] = "2.7"
-        if config["pythonVersion"] in ("2.6", "2.7"):
+            config["pythonVersion"] = "3.14"
+        if config["pythonVersion"].startswith("3"):
+            # Use a system Python 3 rather than the old prebuilt Python 2
+            # bundles.  The silo target below symlinks the stdlib into the
+            # Komodo dist.
+            config["pyVer"] = config["pythonVersion"]
+            pyCandidates = ["python" + config["pyVer"], "python3"]
+            pythonExe = None
+            for candidate in pyCandidates:
+                try:
+                    pythonExe = which.which(candidate)
+                    break
+                except which.WhichError:
+                    pass
+            if pythonExe is None:
+                raise BuildError("could not find Python %s in PATH"
+                                 % (config["pythonVersion"],))
+            config["python"] = abspath(pythonExe)
+        elif config["pythonVersion"] in ("2.6", "2.7"):
             config["pyVer"] = config["pythonVersion"]
             # Extract the prebuilt Python directory.
             if sys.platform == "win32":
@@ -1642,6 +1682,80 @@ def _disablePythonUserSiteFeature(site_filepath):
         f.write(contents)
 
 
+def _silo_system_python3(config, siloDir, mozBinDir, mozLibDir):
+    """Create a Python 3 "silo" in the Komodo dist using symlinks.
+
+    We no longer ship a private Python 2 tree.  Instead we point the
+    Komodo dist at the system Python 3 installation, while still keeping
+    PYTHONHOME inside the dist so the application and its build scripts
+    find a consistent prefix.
+    """
+    py = config.python
+    pyver = config.pyVer
+
+    def py_query(expr):
+        out = subprocess.check_output([py, "-c", expr], universal_newlines=True)
+        return out.strip()
+
+    stdlib = py_query("import sysconfig; print(sysconfig.get_path('stdlib'))")
+    include = py_query("import sysconfig; print(sysconfig.get_path('include'))")
+    libdir = py_query("import sysconfig; print(sysconfig.get_config_var('LIBDIR') or '')")
+    ldlib = py_query("import sysconfig; print(sysconfig.get_config_var('LDLIBRARY') or '')")
+    if not libdir:
+        libdir = join(dirname(dirname(py)), "lib")
+
+    log.info("siloing system Python %s (stdlib %s) to `%s'", pyver, stdlib, siloDir)
+    for subdir in ("bin", "lib", "include"):
+        path = join(siloDir, subdir)
+        if not exists(path):
+            os.makedirs(path)
+
+    # stdlib and development headers are large; link them rather than copy.
+    stdlib_dst = join(siloDir, "lib", "python" + pyver)
+    if not exists(stdlib_dst):
+        os.symlink(stdlib, stdlib_dst)
+    include_dst = join(siloDir, "include", "python" + pyver)
+    if not exists(include_dst):
+        os.symlink(include, include_dst)
+
+    # Provide the shared library in the silo's lib directory so the
+    # $ORIGIN/../python/lib rpath used by PyXPCOM resolves.
+    if ldlib:
+        lib_src = join(libdir, ldlib)
+        lib_dst = join(siloDir, "lib", ldlib)
+        if exists(lib_src) and not exists(lib_dst):
+            os.symlink(lib_src, lib_dst)
+        for extra in (ldlib + ".1.0", ldlib.replace(".so", ".so.1.0")):
+            extra_src = join(libdir, extra)
+            extra_dst = join(siloDir, "lib", extra)
+            if exists(extra_src) and not exists(extra_dst):
+                os.symlink(extra_src, extra_dst)
+        # The mozilla build links against the unversioned .so in bin/.
+        if not exists(join(mozBinDir, ldlib)):
+            os.symlink(join(libdir, ldlib), join(mozBinDir, ldlib))
+        if not exists(join(mozLibDir, ldlib)):
+            os.symlink(join("..", "bin", ldlib), join(mozLibDir, ldlib))
+
+    # A wrapper (rather than a symlink) so PYTHONHOME is always correct
+    # even when invoked through the mozpython symlink.
+    pythonBin = join(siloDir, "bin", "python3")
+    with open(pythonBin, "w") as f:
+        f.write('#!/bin/sh\n'
+                'SELF="$(readlink -f "$0")"\n'
+                'PYHOME="$(cd "$(dirname "$SELF")/.." && pwd)"\n'
+                'export PYTHONHOME="$PYHOME"\n'
+                'exec "%s" "$@"\n' % (py,))
+    os.chmod(pythonBin, 0o755)
+    pythonAlias = join(siloDir, "bin", "python")
+    if not exists(pythonAlias):
+        os.symlink("python3", pythonAlias)
+
+    # mozpython is used for command-line PyXPCOM work and tests.
+    mozpython = join(mozBinDir, "mozpython")
+    if not exists(mozpython):
+        os.symlink(join("..", "python", "bin", "python3"), mozpython)
+
+
 def target_silo_python(argv=["silo_python"]):
     argv = argv[1:]
     log.info("target: silo_python")
@@ -1682,7 +1796,10 @@ def target_silo_python(argv=["silo_python"]):
         else:
             landmark = None
     else:
-        landmark = os.path.join(siloDir, "bin", "python")
+        if pyver >= (3, 0):
+            landmark = os.path.join(siloDir, "lib", "python" + config.pyVer)
+        else:
+            landmark = os.path.join(siloDir, "bin", "python")
     if landmark and exists(landmark):
         if argv and argv[0] == "--force":
             argv = argv[1:]
@@ -1690,6 +1807,13 @@ def target_silo_python(argv=["silo_python"]):
         else:
             log.info("siloed Python already exists at `%s'", siloDir)
             return argv
+
+    if pyver >= (3, 0):
+        if not sys.platform.startswith("linux"):
+            raise BuildError("siloing system Python 3 is only implemented "
+                             "for Linux")
+        _silo_system_python3(config, siloDir, mozBinDir, mozLibDir)
+        return argv
 
     # Copy the configured Python to the silo dir.
     if sys.platform == "win32":
@@ -1885,6 +2009,10 @@ def target_pyxpcom(argv=["pyxpcom"]):
     pyxpcom_obj_dir = join(moz_obj_dir, "extensions", "python")
     if not exists(pyxpcom_obj_dir):
         os.makedirs(pyxpcom_obj_dir)
+    # Drop any stale configure cache: it may contain the old Python 2 paths.
+    cache_file = join(pyxpcom_obj_dir, "config.cache")
+    if exists(cache_file):
+        os.unlink(cache_file)
     configure_flags = 'PYTHON="%s"' % (_unix_path_from_path(config.python), )
     configure_options = []
     if sys.platform.startswith("linux"):

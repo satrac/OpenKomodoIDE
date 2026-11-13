@@ -427,7 +427,7 @@ class KoFeatureStatusService:
                 except COMException as ex:
                     # do nothing: Notify sometimes raises an exception if
                     # receivers are not registered?
-                    log.warn("exception notifying 'feature_status_ready': %s", ex)
+                    log.warning("exception notifying 'feature_status_ready': %s", ex)
                     pass
             except:
                 if not self._ignoreExceptions:
@@ -848,7 +848,7 @@ class KoFeatureStatusService:
                                        re.sub("p.*$", "", version).split('.')))
                 minVersionToCompare = list(map(int, minVersion.split('.')))
             except ValueError:
-                log.warn("couldn't process Ruby version as expected for "
+                log.warning("couldn't process Ruby version as expected for "
                          "comparison: version check may be inaccurate: "
                          "version=%r, minVersion=%r", version, minVersion)
                 versionToCompare = version

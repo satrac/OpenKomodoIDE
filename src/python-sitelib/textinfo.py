@@ -1423,7 +1423,7 @@ class PathAccessor(Accessor):
             if self._read_state == self.READ_ALL:
                 self.close()
         except Exception as ex:
-            log.warn("Could not read file: %r due to: %r", self.path, ex)
+            log.warning("Could not read file: %r due to: %r", self.path, ex)
             raise
 
     def strip_bom(self, bom):

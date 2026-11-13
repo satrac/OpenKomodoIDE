@@ -843,7 +843,7 @@ class GIT:
         if output.startswith("git version "):
             version = output.strip().split(" ", 2)[2]
         else:
-            log.warn("Unable to obtain version from git executable %r, "
+            log.warning("Unable to obtain version from git executable %r, "
                      "output: %r", self.executable, output)
             version = None
 

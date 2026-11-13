@@ -69,7 +69,7 @@ class KoTclCompletion:
         inputfile = open(filename,"r")
 
         if inputfile.readline().strip() != tipVersionStr:
-            log.warn("(%s) does not have correct version string", filename)
+            log.warning("(%s) does not have correct version string", filename)
             return
 
         lines = inputfile.readlines()

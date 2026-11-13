@@ -139,8 +139,15 @@ else:
     if sys.platform.startswith("linux"):
         if not os.environ.get('CC'):
             os.environ['CC'] = 'g++'
-        defines.append(('GTK',None)) 
-    extra_objects = ['libpcre.a']
+        defines.append(('GTK',None))
+        # Prefer the bundled libpcre.a (built by the Conscript), but fall
+        # back to the system libpcre when building stand-alone.
+        if os.path.exists('libpcre.a'):
+            extra_objects = ['libpcre.a']
+        else:
+            libraries.append('pcre')
+    else:
+        extra_objects = ['libpcre.a']
 
     # Depending on your gcc and Python version, one of both of the following lines might
     # be necessary

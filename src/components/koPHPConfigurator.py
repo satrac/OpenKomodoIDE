@@ -33,20 +33,20 @@ class koPHPConfigurator:
         log.debug('_configureDebugger:: php executable: %r', executable)
         if not executable:
             msg = 'Could not locate any PHP binaries'
-            log.warn(msg)
+            log.warning(msg)
             return msg
         oldini = phpInfoEx.cfg_file_path
         log.debug('_configureDebugger:: oldini: %r', oldini)
         import shutil
         if not os.path.exists(executable):
             msg = 'Executable path %s does not exist' % executable
-            log.warn(msg)
+            log.warning(msg)
             return msg
         if oldini and not os.path.isfile(oldini):
             # we have a directory, check for php.ini inside it
             oldini = os.path.join(oldini, "php.ini")
             if not os.path.isfile(oldini):
-                log.warn('INI path %s does not exist' % oldini)
+                log.warning('INI path %s does not exist' % oldini)
                 oldini = None
 
         # get the version so we can figure out
@@ -55,13 +55,13 @@ class koPHPConfigurator:
         log.debug('_configureDebugger:: versionText: %r', versionText)
         if not versionText:
             msg = 'Unable to retrieve PHP version'
-            log.warn(msg)
+            log.warning(msg)
             return msg
         version = self._make_full_version(versionText)
         log.debug('_configureDebugger:: version: %r', version)
         if not version:
             msg = 'Unable to retrieve PHP version [',versionText,'].'
-            log.warn(msg)
+            log.warning(msg)
             return msg
         
         # build the path to the extension in komodo/php
@@ -131,7 +131,7 @@ class koPHPConfigurator:
                                             extensionname)
             if not os.path.exists(source_extension):
                 msg = 'Debugger extension for PHP version %s (path %s) is not available.' % (versionText, source_extension)
-                log.warn(msg)
+                log.warning(msg)
                 return msg
         log.debug('_configureDebugger:: source_extension: %r', source_extension)
 
@@ -141,7 +141,7 @@ class koPHPConfigurator:
                 os.makedirs(inipath)
         except:
             msg = 'Unable to make directory [%s]' %inipath
-            log.warn(msg)
+            log.warning(msg)
             return msg
         if len(inipath) < 7 or inipath[-7:] != 'php.ini':
             ininame = os.path.join(inipath,'php.ini')
@@ -157,7 +157,7 @@ class koPHPConfigurator:
                 ini.close()
             except:
                 msg = 'Unable to read ini at [%s]' % oldini
-                log.warn(msg)
+                log.warning(msg)
                 return msg
 
         # modify the ini file contents
@@ -202,7 +202,7 @@ cgi.force_redirect = 0
                 os.chmod(ininame,0o644)
         except:
             msg = 'Unable to write ini at [%s]' % inipath
-            log.warn(msg)
+            log.warning(msg)
             return msg
         log.debug('_configureDebugger:: new ini written: %r', ininame)
 
@@ -213,7 +213,7 @@ cgi.force_redirect = 0
                     os.makedirs(extensiondir)
             except:
                 msg = 'Unable to create directory [%s]' % extensiondir
-                log.warn(msg)
+                log.warning(msg)
                 return msg
             dest = os.path.join(extensiondir,extensionname)
             try:
@@ -222,7 +222,7 @@ cgi.force_redirect = 0
                     os.chmod(dest,0o755)
             except:
                 msg = 'Unable to copy [%s] to [%s]'%(source_extension,dest)
-                log.warn(msg)
+                log.warning(msg)
                 return msg
         
         phpInfoEx.cfg_file_path = inipath
@@ -231,7 +231,7 @@ cgi.force_redirect = 0
             return ''
         # This message assumed by wizard_php.p.js::_installing_Install
         msg = 'PHP is configured, but was unable to load the debugger extension at [%s]' % extensionFilePath
-        log.warn(msg)
+        log.warning(msg)
         return msg
 
     def configureDebugger(self, executable, oldini, inipath, extensiondir):

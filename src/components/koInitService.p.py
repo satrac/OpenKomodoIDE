@@ -173,14 +173,14 @@ def _copy(src, dst, overwriteExistingFiles=True, ignoreErrors=False,
                           ignoredFileNames=ignoredFileNames)
                 except (IOError, os.error) as why:
                     if ignoreErrors:
-                        log.warn("Failed to copy %r to %r - %r", s, d, why)
+                        log.warning("Failed to copy %r to %r - %r", s, d, why)
                     else:
                         raise OSError("Can't copy %s to %s: %s"\
                               % (repr(s), repr(d), str(why)))
                     
         elif not usingWildcards:
             if ignoreErrors:
-                log.warn("Source file %r does not exist", srcFile)
+                log.warning("Source file %r does not exist", srcFile)
             else:
                 raise OSError("Source file %r does not exist" % srcFile)
 
@@ -276,12 +276,12 @@ class KoInitService(object):
         # want the main UI thread to be responsive and this is the best thing
         # we've got to make that happen.
         # http://docs.python.org/2/library/sys.html#sys.setcheckinterval
-        sys.setcheckinterval(15)
+        sys.setswitchinterval(0.015)
 
         # Warn about multiple inits of init service -- possible with
         # circular usages of koIInitService (bug 81114).
         if hasattr(sys, "_komodo_initsvc_init_count_sentinel"):
-            log.warn("Multiple calls to 'KoInitService.__init__()' "
+            log.warning("Multiple calls to 'KoInitService.__init__()' "
                      "(see bug 81114)!")
             sys._komodo_initsvc_init_count_sentinel += 1
         else:
@@ -413,7 +413,7 @@ class KoInitService(object):
                 except AttributeError:
                     # Windows XP and Windows 2003 do not have GetErrorMode.
                     import platform
-                    log.warn("setPlatformErrorMode:: GetErrorMode not available on platform: %s",
+                    log.warning("setPlatformErrorMode:: GetErrorMode not available on platform: %s",
                              platform.win32_ver()[0])
                     SetErrorMode(SEM_FAILCRITICALERRORS)
                 else:
@@ -568,7 +568,7 @@ class KoInitService(object):
             logger.propagate = True
             logger.addHandler(BugsnagHandler())
         except Exception as e:
-            log.error("Failed starting bugsnag error reporter: %s" % e.message)
+            log.error("Failed starting bugsnag error reporter: %s" % e)
         
 
     def _safelyReloadSys(self):
@@ -654,13 +654,13 @@ class KoInitService(object):
             locale.setlocale(locale.LC_ALL,'')
         except Exception:
             log.exception("_setlocale")
-            log.warn('Unable to setlocale for %s'%os.getenv('LANG'))
+            log.warning('Unable to setlocale for %s'%os.getenv('LANG'))
             return None
         try:
             return self._setencoding()
         except Exception:
             log.exception("_setlocale")
-            log.warn('Unable to set encoding for locale %s'%os.getenv('LANG'))
+            log.warning('Unable to set encoding for locale %s'%os.getenv('LANG'))
         return None
 
     def _removeEuroLocale(self):
@@ -693,7 +693,7 @@ class KoInitService(object):
             # _any_ language supported by Windows, latin or otherwise.)
             log.debug("encoding set to '%s'" % sys.getdefaultencoding())
             if not self._startup_locale:
-                log.warn("Unable to determine the current locale "+\
+                log.warning("Unable to determine the current locale "+\
                             "settings, defaulting to en_US.cp1252")
                 # set the locale to something that we can
                 # least let komodo startup and run with
@@ -703,7 +703,7 @@ class KoInitService(object):
             # on darwin, and possibly other BSD systems, filesystem is UTF8
             log.debug("encoding set to '%s'" % sys.getdefaultencoding())
             if not self._startup_locale:
-                log.warn("Unable to determine the current locale "+\
+                log.warning("Unable to determine the current locale "+\
                             "settings, defaulting to mac-roman")
                 # set the locale to something that we can
                 # least let komodo startup and run with
@@ -719,7 +719,7 @@ class KoInitService(object):
                 self._removeEuroLocale()
                 self._startup_locale = self._setlocale()
             if not self._startup_locale:
-                log.warn("Unable to determine the current locale "+\
+                log.warning("Unable to determine the current locale "+\
                             "settings, please set LANG environment "+\
                             "variable. Defaulting to en_US.iso8859-1")
                 # set the locale to something that we can
@@ -770,7 +770,7 @@ class KoInitService(object):
             #    sys.setdefaultencoding('utf-8')
             #    del sys.setdefaultencoding
             #except Exception,e:
-            #    log.warn('cannot set encoding to utf-8: %s'%e)
+            #    log.warning('cannot set encoding to utf-8: %s'%e)
 
             # this bit is the GTK important bit
             # if it's not done, GTK won't display correctly
@@ -779,7 +779,7 @@ class KoInitService(object):
                 log.info("Setting LC_CTYPE to utf-8")
                 locale.setlocale(locale.LC_CTYPE,new_locale)
             except Exception as e:
-                log.warn("cannot reset LOCALE set to %s : %s" % (new_locale,e))
+                log.warning("cannot reset LOCALE set to %s : %s" % (new_locale,e))
 
             if sys.platform.startswith("sunos"):
                 # UTF-8 support on Solaris is not working correctly with
@@ -1151,14 +1151,14 @@ class KoInitService(object):
             # Convert configured formatter preferences.
             if prefs.hasPrefHere("configuredFormatters"):
                 old_formatters = prefs.getPref("configuredFormatters")
-                log.warn("upgrading %d formatter preferences", old_formatters.length)
+                log.warning("upgrading %d formatter preferences", old_formatters.length)
                 new_formatters = components.classes["@activestate.com/koOrderedPreference;1"].\
                                      createInstance(components.interfaces.koIOrderedPreference)
                 for i in range(old_formatters.length):
                     fpref = old_formatters.getPref(i)
                     uuid = fpref.getString("uuid")
                     if not uuid:
-                        log.warn("Formatter preference at %d has no uuid entry", i)
+                        log.warning("Formatter preference at %d has no uuid entry", i)
                         continue
                     new_formatters.appendString(uuid)
                     prefs.setPref(uuid, fpref)
@@ -1244,7 +1244,7 @@ class KoInitService(object):
                     if not ( diff <= 60 and diff >= 0):
                         workspaces.deletePref(id)
             except Exception as e:
-                log.warn("Couldn't upgrade prefs at step '70': %s", e)
+                log.warning("Couldn't upgrade prefs at step '70': %s", e)
             
         # Set the version so we don't have to upgrade again.
         prefs.setLongPref("version", self._current_pref_version)
@@ -1271,13 +1271,13 @@ class KoInitService(object):
             try:
                 self._addDependency(depPrefs, dependencyObj)
             except:
-                log.warn("Could not add %s to dependents.", depName)
+                log.warning("Could not add %s to dependents.", depName)
         else:
             try:
                 self._updateDependency(depPrefs.getPref(depName),
                                         dependencyObj)
             except:
-                log.warn("Could not update existing %s dependents.", depName)
+                log.warning("Could not update existing %s dependents.", depName)
     
     def _updateDependency(self, dependencyPref, dependencyObj):
         #update exes
@@ -1587,7 +1587,7 @@ class KoInitService(object):
         #     xre_dir = join(currHostUserDataDir, "XRE")
         #     for ext_filename in glob.glob(join(xre_dir, "extensions.*")):
         #         ext_filepath = join(xre_dir, ext_filename) 
-        #         log.warn("not upgrading '%s'" % (ext_filepath, ))
+        #         log.warning("not upgrading '%s'" % (ext_filepath, ))
         #         os.remove(ext_filepath)
 
     def upgradeUserSettings(self):

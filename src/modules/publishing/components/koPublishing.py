@@ -230,7 +230,7 @@ class koPublishingPushOperation(koPublishingOperation):
                 try:
                     self._connection.close()
                 except Exception as ex:
-                    log.warn("Error closing the connection: %r", ex)
+                    log.warning("Error closing the connection: %r", ex)
 
 
 class koPublishingPullOperation(koPublishingOperation):
@@ -510,7 +510,7 @@ class koPublishingSyncOperation(koPublishingOperation):
                 try:
                     filecheck_connection.close()
                 except Exception as ex:
-                    log.warn("Error closing the filecheck connection: %r", ex)
+                    log.warning("Error closing the filecheck connection: %r", ex)
             numFilesChecked = float(1)
             filesToCheckLen = len(set_local_dirs)
             proggressValue = 0
@@ -604,7 +604,7 @@ class koPublishingSyncOperation(koPublishingOperation):
                 try:
                     self._connection.close()
                 except Exception as ex:
-                    log.warn("Error closing the sync connection: %r", ex)
+                    log.warning("Error closing the sync connection: %r", ex)
 
 
 class ProxiedSynchronizationCallback(koAsyncCallbackWithProgressWrapper):
@@ -735,7 +735,7 @@ class koFilePushOperation(threading.Thread):
                         try:
                             self._connection.close()
                         except Exception as ex:
-                            log.warn("Error closing the connection: %r", ex)
+                            log.warning("Error closing the connection: %r", ex)
 
         koRemoteTransSvc = components.classes["@activestate.com/koRemoteTransferService;1"]. \
                             getService(components.interfaces.koIRemoteTransferService)

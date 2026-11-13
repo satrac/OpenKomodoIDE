@@ -116,7 +116,7 @@ class KoRefactoringLanguageServiceBase:
                 try:
                     start_lines["curr"] = line
                 except e:
-                    log.warn("Could not convert scope line to `int`: %s", e)
+                    log.warning("Could not convert scope line to `int`: %s", e)
                 finally:
                     start_lines["curr"] = 1
             request["id"] = koCodeintel.getNextScopeLine(
@@ -249,7 +249,7 @@ def getRefactoringLanguageService(languageName):
                                  + languageName].\
               getService(components.interfaces.koIRefactoringLanguageService)
     except:
-        log.warn("Can't find a refactoring service for %s", languageName)
+        log.warning("Can't find a refactoring service for %s", languageName)
         return components.classes["@activestate.com/koBaseRefactoringLanguageService;1"].\
               getService(components.interfaces.koIRefactoringLanguageService)
 

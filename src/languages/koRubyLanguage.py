@@ -342,7 +342,7 @@ end section
             #qlog.debug("new_indent_string: %r", new_indent_string)
             return new_indent_string
         except:
-            log.warn("Got exception computing _calcIndentLevel", exc_info=1)
+            log.warning("Got exception computing _calcIndentLevel", exc_info=1)
             return ''
 
     # This function works its way back through the buffer, to a max of
@@ -854,7 +854,7 @@ class KoRubyCompileLinter:
             try:
                 os.unlink(tmpFileName)
             except:
-                log.warn("Got exception trying to delete temp file %s", tmpFileName, exc_info=1)
+                log.warning("Got exception trying to delete temp file %s", tmpFileName, exc_info=1)
                 pass
         
         results = koLintResults()
@@ -956,7 +956,7 @@ class KoRubyCompileLinter:
                     result.columnStart = col_left + 1
                     result.columnEnd = col_right + 1
                 except:
-                    log.warn("Got exception computing _parseRubyResults", exc_info=1)
+                    log.warning("Got exception computing _parseRubyResults", exc_info=1)
                 i += 3
             else:
                 i += 1

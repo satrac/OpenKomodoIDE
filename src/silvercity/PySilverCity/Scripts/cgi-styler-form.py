@@ -88,7 +88,7 @@ def handle_submit(form):
     encoding = form['encoding'].value
 
     if encoding != 'Auto':
-        source = str(source, encoding).encode('utf-8')
+        source = (source.decode(encoding) if isinstance(source, bytes) else source).encode('utf-8')
     else:
         source = str(source)
         

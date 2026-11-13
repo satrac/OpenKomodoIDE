@@ -1,0 +1,60 @@
+--- a/configure.in	2026-11-13 00:39:08.163288373 -0500
++++ b/configure.in	2026-11-13 00:40:15.244843186 -0500
+@@ -108,7 +108,7 @@
+ dnl Set the minimum version of toolkit libs used by mozilla
+ dnl ========================================================
+ PERL_VERSION=5.006
+-PYTHON_VERSION=2.4
++PYTHON_VERSION=3.0
+ WINDRES_VERSION=2.14.90
+ W32API_VERSION=3.8
+ 
+@@ -724,7 +724,7 @@
+     AC_MSG_RESULT([yes])    
+ fi
+ 
+-MOZ_PATH_PROGS(PYTHON, $PYTHON python2.5 python2.4 python)
++MOZ_PATH_PROGS(PYTHON, $PYTHON python3.14 python3 python)
+ if test -z "$PYTHON"; then
+     AC_MSG_ERROR([python was not found in \$PATH])
+ fi
+@@ -1521,8 +1521,8 @@
+     ;;
+ 
+ *cygwin*|*mingw*|*mks*|*msvc*|*wince)
+-    # we need Python 2.5 on Windows
+-    PYTHON_VERSION=2.5
++    # we need Python 3 on Windows
++    PYTHON_VERSION=3.0
+     if test -n "$_WIN32_MSVC"; then
+         HOST_AR=lib
+         HOST_AR_FLAGS='-NOLOGO -OUT:"$@"'
+@@ -1575,11 +1575,10 @@
+     ;;
+ esac
+ 
+-dnl We require version 2.4 or newer of Python to build,
+-dnl and 2.5 or newer on Windows.
++dnl We require version 3.0 or newer of Python to build.
+ AC_MSG_CHECKING([for minimum required Python version >= $PYTHON_VERSION])
+ changequote(,)
+-$PYTHON -c "import sys; sys.exit(sys.version[:3] < sys.argv[1])" $PYTHON_VERSION
++$PYTHON -c "import sys; sys.exit(sys.version_info[:2] < tuple(map(int, sys.argv[1].split('.'))))" $PYTHON_VERSION
+ _python_res=$?
+ changequote([,])
+ if test "$_python_res" != 0; then
+@@ -4198,11 +4197,11 @@
+ MOZ_PYTHON=$PYTHON
+ dnl Ask Python what its version number is
+ changequote(,)
+-MOZ_PYTHON_VER=`$PYTHON -c "import sys;print '%d%d' % sys.version_info[0:2]"`
+-MOZ_PYTHON_VER_DOTTED=`$PYTHON -c "import sys;print '%d.%d' % sys.version_info[0:2]"`
++MOZ_PYTHON_VER=`$PYTHON -c "import sys;print('%d%d' % sys.version_info[0:2])"`
++MOZ_PYTHON_VER_DOTTED=`$PYTHON -c "import sys;print('%d.%d' % sys.version_info[0:2])"`
+ changequote([,])
+ dnl Ask for the Python "prefix" (ie, home/source dir)
+-MOZ_PYTHON_PREFIX=`$PYTHON -c "import sys; print sys.prefix"`
++MOZ_PYTHON_PREFIX=`$PYTHON -c "import sys; print(sys.prefix)"`
+ dnl Setup the include and library directories.
+ if test "$OS_ARCH" = "WINNT"; then
+     MOZ_PYTHON_PREFIX=`$CYGPATH_W $MOZ_PYTHON_PREFIX | $CYGPATH_S`

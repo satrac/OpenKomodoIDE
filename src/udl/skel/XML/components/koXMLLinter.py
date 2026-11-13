@@ -73,7 +73,7 @@ class KoXMLCompileLinter:
                 if lineStart <= len(lines) and len(lines[lineStart-1]):
                     break
                 elif lineStart == 0:
-                    log.warn("Could not find a suitable line on which "
+                    log.warning("Could not find a suitable line on which "
                              "to display lint result for line %d.",
                              parser.ErrorLineNumber)
                     return None

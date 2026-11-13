@@ -192,7 +192,7 @@ class GenericCommandHandler:
             currentPosFilePath, currentPosFileLine, currentPosFileCol \
                 = diff.file_pos_from_diff_pos(currentPosLine, currentPosCol)
         except difflibex.DiffLibExError as ex:
-            log.warn("could not jump to corresponding line: %s", ex)
+            log.warning("could not jump to corresponding line: %s", ex)
             return
         
         # Ensure can use that file path (normalized, not relative,
@@ -217,7 +217,7 @@ class GenericCommandHandler:
                 anchorFilePath, anchorFileLine, anchorFileCol \
                     = diff.file_pos_from_diff_pos(anchorLine, anchorCol)
             except difflibex.DiffLibExError as ex:
-                log.warn("could not jump to corresponding line: %s", ex)
+                log.warning("could not jump to corresponding line: %s", ex)
                 return
             
             if anchorFilePath != currentPosFilePath:

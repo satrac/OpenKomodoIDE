@@ -22,7 +22,7 @@ except ImportError:
     # Not available on Windows - fallback to using regular subprocess module.
     from subprocess import Popen, PIPE
     if sys.platform != "win32":
-        log.warn("Could not import subprocess32 module, falling back to subprocess module")
+        log.warning("Could not import subprocess32 module, falling back to subprocess module")
 
 try:
     from xpcom import components
@@ -251,7 +251,7 @@ class ProcessOpen(Popen):
                         _enc_env[key.encode(encoding)] = value.encode(encoding)
                     except UnicodeEncodeError:
                         # Could not encode it, warn we are dropping it.
-                        log.warn("Could not encode environment variable %r "
+                        log.warning("Could not encode environment variable %r "
                                  "so removing it", key)
                 env = _enc_env
 

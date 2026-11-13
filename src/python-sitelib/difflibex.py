@@ -549,7 +549,7 @@ class Diff:
                             idx += 1
                         if idx >= len(lines) \
                            or not lines[idx].rstrip() == "---":
-                            log.warn("unexpected line in middle of plain hunk: "
+                            log.warning("unexpected line in middle of plain hunk: "
                                      "%r (line %d)", lines[idx], idx)
                             break
                         idx += 1

@@ -383,7 +383,7 @@ class XMLLangIntel(LangIntel):
         accessor = buf.accessor
         attrName = accessor.text_range(*accessor.contiguous_style_range_from_pos(trg.pos-3))
         if not attrName:
-            log.warn("no attribute name in cpln_start_attribute_value")
+            log.warning("no attribute name in cpln_start_attribute_value")
             return []
     
         values = self.get_valid_attribute_values(attrName, buf, trg.pos)

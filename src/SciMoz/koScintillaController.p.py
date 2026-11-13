@@ -338,7 +338,7 @@ class koScintillaController:
     def onEvent( self, param0 ):
         # Result: void - None
         # In: param0: wstring
-        log.warn("Scintilla controller caught an event: ", param0)
+        log.warning("Scintilla controller caught an event: ", param0)
 
     def _has_sel(self):
         sm = self.scimoz()

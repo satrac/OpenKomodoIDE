@@ -583,7 +583,7 @@ def addNewUDLLanguage(languageName):
     if languageName in StateMap:
         import logging
         log = logging.getLogger("language styles")
-        log.warn("addNewUDLLanguage: overwriting statemap for lang %s",
+        log.warning("addNewUDLLanguage: overwriting statemap for lang %s",
                  languageName)
         # Make sure the state-map inherits from UDL
         tmp = StateMap['UDL'].copy()

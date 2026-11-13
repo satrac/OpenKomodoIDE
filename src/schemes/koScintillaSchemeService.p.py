@@ -300,7 +300,7 @@ class Scheme(SchemeBase):
                                 styles["data sections"] = self._commonStyles[nameType]
                                 break
                         else:
-                            log.warn("No style for [%s/data sections]", language)
+                            log.warning("No style for [%s/data sections]", language)
                 version += 1
                 
             if version == 10:
@@ -354,10 +354,10 @@ class Scheme(SchemeBase):
 
             try:
                 self.save()
-                log.warn("Upgraded scheme %r from version %d to %d.",
+                log.warning("Upgraded scheme %r from version %d to %d.",
                          self.name, orig_version, self._current_scheme_version)
             except EnvironmentError as ex:
-                log.warn("Unable to save scheme upgrade for %r, error: %r",
+                log.warning("Unable to save scheme upgrade for %r, error: %r",
                          self.name, ex)
 
     def revert(self):
@@ -444,7 +444,7 @@ class Scheme(SchemeBase):
         observerSvc.notifyObservers(self,'scheme-changed',self.name);
         
     def remove(self):
-        log.warn("Removing scheme " + self.name)
+        log.warning("Removing scheme " + self.name)
         schemeService = components.classes['@activestate.com/koScintillaSchemeService;1'].getService()
         if os.path.exists(self.fname):
             os.remove(self.fname)
@@ -733,7 +733,7 @@ class Scheme(SchemeBase):
     def getIndicator(self, indic_name):
         indic_dict = self._indicators.get(indic_name)
         if indic_dict is None:
-            log.warn("getIndicator:: no indicator for name %r", indic_name)
+            log.warning("getIndicator:: no indicator for name %r", indic_name)
             return (0, scincolor2mozcolor(0), 0, False)
         return (
             indic_dict.get('style', 0),
@@ -1014,14 +1014,14 @@ class Scheme(SchemeBase):
         for indic_name in self._indicators:
             indic_no = IndicatorName2ScimozNo.get(indic_name)
             if not indic_no:
-                log.warn("applyScheme:: no indicator for name %r", indic_name)
+                log.warning("applyScheme:: no indicator for name %r", indic_name)
                 continue
             if "alpha" in self._indicators[indic_name]:
                 self._indicators[indic_name]["outline_alpha"] = self._indicators[indic_name]["alpha"]
             for key, value in list(self._indicators[indic_name].items()):
                 setter = indicator_setters.get(key)
                 if setter is None:
-                    log.warn("applyScheme:: no indicator setter for %r", key)
+                    log.warning("applyScheme:: no indicator setter for %r", key)
                     continue
                 if indic_no == DECORATOR_TABSTOP_TS1:
                     # Pending tabstops - update all of them (1 through 5)
@@ -1092,7 +1092,7 @@ class Scheme(SchemeBase):
                 if defaultForeColor is not None:
                     break
         if defaultForeColor is None:
-            log.warn("Unable to find a default foreground color in scheme %r",
+            log.warning("Unable to find a default foreground color in scheme %r",
                      self.name)
             defaultForeColor = 0x000000 # fallback - black
         return defaultForeColor
@@ -1110,7 +1110,7 @@ class Scheme(SchemeBase):
                 if defaultBackColor is not None:
                     break
         if defaultBackColor is None:
-            log.warn("Unable to find a default background color in scheme %r",
+            log.warning("Unable to find a default background color in scheme %r",
                      self.name)
             defaultBackColor = 0xFFFFFF # fallback - white
         return defaultBackColor
@@ -1396,7 +1396,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
         maxLineLength = _globalPrefs.getLongPref('print_lineLength')
         # Sanity check
         if maxLineLength < 0:
-            log.warn("Found a negative pref for print_lineLength = %d", maxLineLength)
+            log.warning("Found a negative pref for print_lineLength = %d", maxLineLength)
             maxLineLength = 0
         scimoz.colourise(0, scimoz.textLength)
         textlength = scimoz.textLength
@@ -1528,7 +1528,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
             #    of 1 through 8, but we have a consistent story for it:
             # Do more or less what they requested,
             # and spit out one character per line.
-            log.warn("Maximum line-width of %d is less-than the line-number region of %d",
+            log.warning("Maximum line-width of %d is less-than the line-number region of %d",
                      maxLineLength, prefixLen)
             maxLineLength = 1
         if selectionOnly:
@@ -1616,7 +1616,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
                 #    of 1 through 8, but we have a consistent story for it:
                 # Do more or less what they requested,
                 # and spit out one character per line.
-                log.warn("Maximum line-width of %d is less-than the line-number region of %d",
+                log.warning("Maximum line-width of %d is less-than the line-number region of %d",
                          maxLineLength, prefixLen)
                 maxLineLength = 1
         numlines, leftover = divmod(lineEnd - lineStart, maxLineLength)
@@ -1730,7 +1730,7 @@ class KoScintillaSchemeService(SchemeServiceBase):
         elif (styleNumber, language) in ScimozStyleNo2SpecificName:
             stylename = ScimozStyleNo2SpecificName[(styleNumber, language)]
         else:
-            log.warn("No style information for style number %s for language %s", styleNumber, language)
+            log.warning("No style information for style number %s for language %s", styleNumber, language)
             stylename = 'default'
         opener = '<span class="%s">' % stylename.replace(' ', '_')
         closer = '</span>'
@@ -1770,7 +1770,7 @@ def _initializeStyleInfo():
     for indic_name, component_name in list(IndicatorNameMap.items()):
         indic_no = getattr(koILintResult, component_name, None)
         if indic_no is None:
-            log.warn("applyScheme:: no koILintResult value for %r", component_name)
+            log.warning("applyScheme:: no koILintResult value for %r", component_name)
             continue
         IndicatorName2ScimozNo[indic_name] = indic_no
         ScimozNo2IndicatorName[1 << indic_no] = indic_name
@@ -1780,7 +1780,7 @@ def scincolor2mozcolor(scincolor):
     try:
         hexscin = '%06x' % scincolor
     except TypeError:
-        log.warn("scincolor was %r", scincolor)
+        log.warning("scincolor was %r", scincolor)
         hexscin = '000000'
     moz = hexscin[4:] + hexscin[2:4] + hexscin[:2]
     return '#' + moz

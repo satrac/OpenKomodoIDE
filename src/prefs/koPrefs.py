@@ -128,6 +128,7 @@ del nonnegative
 
 # special value to mean "not set"
 NOT_SET = type("NOT_SET", (object,), {
+    "__bool__": lambda self: False,
     "__nonzero__": lambda self: False
     })()
 
@@ -1420,7 +1421,7 @@ class koPreferenceCache(object):
         assert self._is_sane()
         pref = UnwrapObject(self.pref_map.get(id, (None, None))[0])
         if not isinstance(pref, (koPreferenceRoot, koPreferenceChild)):
-            log.warn("deserializing and reserializing prefset %r", id)
+            log.warning("deserializing and reserializing prefset %r", id)
             # Deserializing prefsets from before Komodo 9.0.0a1; there was no
             # separate class for root prefs.
             root = koPreferenceRoot()

@@ -126,7 +126,7 @@ class KoHistoryService(History):
         try:
             self.notifyObservers(None, 'history_changed', "")
         except COMException as ex:
-            log.warn("exception notifying 'history_changed': %s", ex)
+            log.warning("exception notifying 'history_changed': %s", ex)
             pass
         return res
 

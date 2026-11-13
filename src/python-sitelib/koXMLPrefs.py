@@ -141,7 +141,7 @@ def dePickleCache(pickleFilename):
     try:
         file = open(pickleFilename, "rb")
     except IOError:
-        log.warn("dePickleCache: Can't open file %r", pickleFilename)
+        log.warning("dePickleCache: Can't open file %r", pickleFilename)
         return None
 
     try:
@@ -420,7 +420,7 @@ def serializePref(stream, pref, prefType, prefName=None, basedir=None):
                         if pref.endswith(relative2):
                             pref = relative2
                         else:
-                            log.warn(("Possible problem in serializePref: "
+                            log.warning(("Possible problem in serializePref: "
                                       + "RelativizeURL(pref:%s) => %s not "
                                       + "found at end of pref, unquoted to %s"),
                                       pref, relative, relative2)
@@ -503,7 +503,7 @@ class koXMLPreferenceSetObjectFactory:
             if prefObject is not None:
                 return prefObject
             else:
-                log.warn("the dePickledCache object was None")
+                log.warning("the dePickledCache object was None")
                 try:
                     # Remove the bad pickle file.
                     os.remove(cacheFilename)
@@ -527,7 +527,7 @@ class koXMLPreferenceSetObjectFactory:
                     # If we haven't tried to load the picked version, try that
                     # now as a fallback - bug 105385.
                     if cacheFilename is None and os.path.exists(filename + "c"):
-                            log.warn("falling back to the cached pref file")
+                            log.warning("falling back to the cached pref file")
                             prefObject = dePickleCache(filename + "c")
                             if prefObject is not None:
                                 return prefObject

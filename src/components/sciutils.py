@@ -1101,7 +1101,7 @@ def getLeadingPerlCITDLExpr(offset, styledText, position,
         try:
             triggerChar = text[i+1]
         except IndexError as ex:
-            log.warn("text does not include trailing trigger "
+            log.warning("text does not include trailing trigger "
                      "char to resolve possible ambiguities in '%s'",
                      match.group(0))
             triggerChar = None

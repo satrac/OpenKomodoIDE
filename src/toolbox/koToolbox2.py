@@ -213,7 +213,7 @@ class Database(object):
             if exists(backup_path):
                 editorhistory._rm_file(backup_path)
             if exists(backup_path): # couldn't remove it
-                log.warn("couldn't remove old '%s' (skipping backup)",
+                log.warning("couldn't remove old '%s' (skipping backup)",
                          backup_path)
                 editorhistory._rm_file(self.path)
             else:
@@ -525,7 +525,7 @@ class Database(object):
                 with open(os.path.join(root,f),"r") as fp:
                     data = DataParser.readCleanData(fp)
                     if not data:
-                        log.warn("Could not read data for " + f)
+                        log.warning("Could not read data for " + f)
                         continue
 
                     newTool = json.loads("{}")
@@ -2286,7 +2286,7 @@ class ToolboxLoader(object):
             elif ext == ".zip":
                 self._importZippedFiles(srcPath, parentPath, parent_id)
             else:
-                log.warn("import tool: skipping file %s as it isn't a Komodo tool, has ext %s",
+                log.warning("import tool: skipping file %s as it isn't a Komodo tool, has ext %s",
                          srcPath, os.path.splitext(srcPath)[1] )
         
     def importFileWithNewName(self, parentPath, srcPath, destPath):
@@ -2297,7 +2297,7 @@ class ToolboxLoader(object):
             updateToolName(destPath, os.path.basename(destPath))
             self._testAndAddItem(True, parentPath, destPath, parent_id)
         else:
-            log.warn("import tool: skipping file %s as it isn't a Komodo tool, has ext %s",
+            log.warning("import tool: skipping file %s as it isn't a Komodo tool, has ext %s",
                      srcPath, os.path.splitext(srcPath)[1] )
 
     _up_dir_re = re.compile(r'(?:^|[/\\])\.\.(?:$|[/\\])')

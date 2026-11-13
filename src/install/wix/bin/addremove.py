@@ -72,7 +72,7 @@ class Merger(object):
         return low, high
 
     def handle_unknown(self, line):
-        log.warn("Ignoring unknown line: %r", line)
+        log.warning("Ignoring unknown line: %r", line)
 
     def handle_add(self, line):
         log.info("  adding file '%s'", line)

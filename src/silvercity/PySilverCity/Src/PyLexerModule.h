@@ -6,6 +6,7 @@
 #define PYLEXERMODULE_H_
 
 #include <Python.h>
+#include "py3compat.h"
 
 #include "ILexer.h"
 #include "Scintilla.h"
@@ -29,7 +30,7 @@ typedef struct {
     LexState * lexer;
 } PyLexState;
 
-#define PyLexState_Check(op) ((op)->ob_type == &PyLexStateType)
+#define PyLexState_Check(op) (Py_TYPE(op) == &PyLexStateType)
 
 PyObject*
 PyLexState_new(LexState * lexerWrapper);

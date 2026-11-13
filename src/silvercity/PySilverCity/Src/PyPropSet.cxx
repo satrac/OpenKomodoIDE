@@ -54,7 +54,7 @@ PyPropSet_subscript(PyPropSet *self, PyObject *key)
 
     if (!PyString_Check(key)) {
         PyErr_Format(PyExc_TypeError, "expected string, %.200s found",
-           key->ob_type->tp_name);
+           Py_TYPE(key)->tp_name);
         return NULL;
     }
     
@@ -71,7 +71,7 @@ PyPropSet_ass_subscript(PyPropSet *self, PyObject *key, PyObject *value)
 
     if (!PyString_Check(key)) {
         PyErr_Format(PyExc_TypeError, "expected string, %.200s found",
-           key->ob_type->tp_name);
+           Py_TYPE(key)->tp_name);
         return -1;
     }
 
@@ -117,7 +117,7 @@ PyPropSet_set_from_map(PyPropSet *self, PyObject *pyPropertyMap)
 
     if (!PyMapping_Check(pyPropertyMap)) {
         PyErr_Format(PyExc_TypeError, "expected dictionary, %.200s found",
-           pyPropertyMap->ob_type->tp_name);
+           Py_TYPE(pyPropertyMap)->tp_name);
         goto onError;
     }
 
@@ -128,7 +128,7 @@ PyPropSet_set_from_map(PyPropSet *self, PyObject *pyPropertyMap)
 
     if (!PySequence_Check(pyPropertyList)) {
         PyErr_Format(PyExc_TypeError, "expected a list, %.200s found",
-           pyPropertyList->ob_type->tp_name);
+           Py_TYPE(pyPropertyList)->tp_name);
         goto onError;
     }
 
@@ -146,7 +146,7 @@ PyPropSet_set_from_map(PyPropSet *self, PyObject *pyPropertyMap)
 
         if (!PyArg_ParseTuple(pyItem, "OO", &pyKey, &pyValue)) {
             PyErr_Format(PyExc_TypeError, "expected a 2-tuple, %.200s found",
-               pyPropertyMap->ob_type->tp_name);
+               Py_TYPE(pyPropertyMap)->tp_name);
             goto onError;
         }
 
@@ -230,40 +230,26 @@ static PyMethodDef PyPropSet_methods[] =
     { NULL, NULL }
 };
 
-static PyObject *
-PyPropSet_getattr(PyPropSet *self, char *name)
-{
-    return Py_FindMethod(PyPropSet_methods, (PyObject *) self, name);
-}
-
 PyMappingMethods PyPropSet_as_mapping = {
     0,                                          /* mp_length */
     (binaryfunc) PyPropSet_subscript,           /* mp_subscript */
     (objobjargproc) PyPropSet_ass_subscript,    /* mp_ass_subscript */
 };
 
-PyTypeObject PyPropSetType = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "PropertySet",
-    sizeof(PyPropSet),
-    0,
-    (destructor) PyPropSet_dealloc,            /*tp_dealloc*/
-    0,                                         /*tp_print*/
-    (getattrfunc) PyPropSet_getattr,           /*tp_getattr*/
-    0,                                         /*tp_setattr*/
-    0,                                         /*tp_compare*/
-    0,                                         /*tp_repr*/
-    0,                                         /*tp_as_number*/
-    0,                                         /*tp_as_sequence*/
-    &PyPropSet_as_mapping,                     /*tp_as_mapping*/
-    0,                                         /*tp_hash */
-    0,                                         /*tp_call*/
-    0,                                         /*tp_str */
-};
+PyTypeObject PyPropSetType = {};
 
 void
 initPyPropSet(void)
 {
-    PyPropSetType.ob_type = &PyType_Type;
+    PyTypeObject *t = &PyPropSetType;
+    memset(t, 0, sizeof(*t));
+    PyObject_Init((PyObject *)t, &PyType_Type);
+    t->tp_name = "PropertySet";
+    t->tp_basicsize = sizeof(PyPropSet);
+    t->tp_dealloc = (destructor) PyPropSet_dealloc;
+    t->tp_flags = Py_TPFLAGS_DEFAULT;
+    t->tp_methods = PyPropSet_methods;
+    t->tp_as_mapping = &PyPropSet_as_mapping;
+    if (PyType_Ready(t) < 0)
+        PyErr_Clear();
 }

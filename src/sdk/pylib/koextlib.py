@@ -262,7 +262,7 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
     mainlex_path = normpath(join(base_dir, "udl",
                                  safe_lang.lower()+"-mainlex.udl"))
     if exists(mainlex_path):
-        log.warn("`%s' exists (skipping)", mainlex_path)
+        log.warning("`%s' exists (skipping)", mainlex_path)
     else:
         if not dry_run and not exists(dirname(mainlex_path)):
             _mkdir(dirname(mainlex_path), log.debug)
@@ -280,14 +280,14 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
     lang_svc_path = normpath(join(base_dir, "components",
                                   "ko%s_UDL_Language.py" % safe_lang))
     if exists(lang_svc_path):
-        log.warn("`%s' exists (skipping)", lang_svc_path)
+        log.warning("`%s' exists (skipping)", lang_svc_path)
     else:
         guid = uuid.uuid4()
         if ext is None:
             default_ext_assign = ""
         else:
             if not ext.startswith('.'):
-                log.warn("extension for %s, %r, does not being with a '.': "
+                log.warning("extension for %s, %r, does not being with a '.': "
                          "that might cause problems" % (lang, ext))
             default_ext_assign = "defaultExtension = %r" % ext
         if is_xml_based:
@@ -314,7 +314,7 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
 
     # Create templates.
     if not ext:
-        log.warn("no file extension given for %s: skipping generation "
+        log.warning("no file extension given for %s: skipping generation "
                  "of 'New File' templates" % lang)
     else:
         tpl_paths = [
@@ -323,7 +323,7 @@ def create_udl_lang_skel(base_dir, lang, ext=None, is_html_based=False,
         ]
         for tpl_path in tpl_paths:
             if exists(tpl_path):
-                log.warn("`%s' exists (skipping)", tpl_path)
+                log.warning("`%s' exists (skipping)", tpl_path)
                 continue
             if not dry_run and not exists(dirname(tpl_path)):
                 _mkdir(dirname(tpl_path), log.debug)
@@ -354,7 +354,7 @@ def create_codeintel_lang_skel(base_dir, lang, dry_run=False, force=False,
     lang_path = normpath(join(base_dir, "pylib",
                               "codeintel_%s.py" % safe_lang.lower()))
     if exists(lang_path) and not force:
-        log.warn("`%s' exists (skipping, use --force to override)",
+        log.warning("`%s' exists (skipping, use --force to override)",
                  lang_path)
     else:
         if not dry_run and not exists(dirname(lang_path)):
@@ -393,7 +393,7 @@ class ${safe_lang}Lexer(UDLLexer):
     cile_path = normpath(join(base_dir, "pylib",
                               "cile_%s.py" % safe_lang.lower()))
     if exists(cile_path) and not force:
-        log.warn("`%s' exists (skipping, use --force to override)",
+        log.warning("`%s' exists (skipping, use --force to override)",
                  cile_path)
     else:
         if not dry_run and not exists(dirname(cile_path)):
@@ -592,7 +592,7 @@ def build_ext(base_dir, support_devinstall=True, unjarred=False,
 
         # add em:unpack if necessary
         if not ext_info.unpack and set(xpi_manifest).difference(unpack_excludes):
-            log.warn("setting <em:unpack> due to %r",
+            log.warning("setting <em:unpack> due to %r",
                      list(set(xpi_manifest).difference(unpack_excludes)))
             (in_file, out_file) = (None, None)
             try:
@@ -875,7 +875,7 @@ class KomodoInfo(object):
             #   to: .../bin/komodo
             komodo_path = join(up_3_dir, "bin", "komodo")
         if not exists(komodo_path):
-            _log.warn("`%s' doesn't exist", komodo_path)
+            _log.warning("`%s' doesn't exist", komodo_path)
         self._where_am_i_cache = "install"
         return "install"
     

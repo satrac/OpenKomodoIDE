@@ -117,7 +117,7 @@ class koTransferOperation(threading.Thread, koAsyncOperationBase):
             self._localpaths[idx] = to_path
             self._local_stats[idx] = os.stat(to_path)
         except ValueError:
-            log.warn("rename_locally:: Could not find localpath entry for: %r",
+            log.warning("rename_locally:: Could not find localpath entry for: %r",
                      from_path)
 
     def remove_locally(self, local_uri, remote_uri):
@@ -427,7 +427,7 @@ class koTransferUploadOperation(koTransferOperation):
                 try:
                     connection.close()
                 except Exception as ex:
-                    log.warn("Error closing the connection: %r", ex)
+                    log.warning("Error closing the connection: %r", ex)
 
 
 class koRemoteTransferService(object):

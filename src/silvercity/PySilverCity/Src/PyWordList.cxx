@@ -42,13 +42,19 @@ static PyMethodDef PyWordList_methods[] =
 
 
 static PyObject *
-PyWordList_getattr(PyWordList *self, char *name)
+PyWordList_get_words(PyWordList *self, void *closure)
 {
-    if (strcmp(name, "words") == 0)
+    if (self->wordListAsString) {
+        Py_INCREF(self->wordListAsString);
         return self->wordListAsString;
-
-    return Py_FindMethod(PyWordList_methods, (PyObject *) self, name);
+    }
+    Py_RETURN_NONE;
 }
+
+static PyGetSetDef PyWordList_getset[] = {
+    {"words", (getter) PyWordList_get_words, NULL, NULL, NULL},
+    { NULL }
+};
 
 static void
 PyWordList_dealloc(PyWordList* self)
@@ -57,30 +63,20 @@ PyWordList_dealloc(PyWordList* self)
     PyObject_Del(self);
 }
 
-
-PyTypeObject PyWordListType = {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "WordList",
-    sizeof(PyWordList),
-    0,
-    (destructor) PyWordList_dealloc,        /*tp_dealloc*/
-    0,                                      /*tp_print*/
-    (getattrfunc) PyWordList_getattr,       /*tp_getattr*/
-    0,                                      /*tp_setattr*/
-    0,                                      /*tp_compare*/
-    0,                                      /*tp_repr*/
-    0,                                      /*tp_as_number*/
-    0,                                      /*tp_as_sequence*/
-    0,                                      /*tp_as_mapping*/
-    0,                                      /*tp_hash */
-    0,                                      /*tp_call*/
-    0,                                      /*tp_str */
-};
-
+PyTypeObject PyWordListType = {};
 
 void
 initPyWordList(void)
 {
-    PyWordListType.ob_type = &PyType_Type;
+    PyTypeObject *t = &PyWordListType;
+    memset(t, 0, sizeof(*t));
+    PyObject_Init((PyObject *)t, &PyType_Type);
+    t->tp_name = "WordList";
+    t->tp_basicsize = sizeof(PyWordList);
+    t->tp_dealloc = (destructor) PyWordList_dealloc;
+    t->tp_flags = Py_TPFLAGS_DEFAULT;
+    t->tp_methods = PyWordList_methods;
+    t->tp_getset = PyWordList_getset;
+    if (PyType_Ready(t) < 0)
+        PyErr_Clear();
 }

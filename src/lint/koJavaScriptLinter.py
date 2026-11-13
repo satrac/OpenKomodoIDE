@@ -341,7 +341,7 @@ class KoJSHintLinter(CommonJSLinter):
             p = process.ProcessOpen(cmd, cwd=cwd, env=self._setLDLibraryPath(), stdin=fd)
             stdout, stderr = p.communicate()
             if stderr:
-                log.warn("Error in jshint: stderr: %s, command was: %s",
+                log.warning("Error in jshint: stderr: %s, command was: %s",
                          stderr, cmd)
             #log.debug("jshint: stdout: %s, stderr: %s", stdout, stderr)
             warnLines = stdout.splitlines() # Don't need the newlines.

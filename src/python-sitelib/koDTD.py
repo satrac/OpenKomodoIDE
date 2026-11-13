@@ -382,10 +382,10 @@ class DTD:
                 text = self.applyEntities(self.l.text[self.l.textindex:])
                 self.l.text = self.l.text[:self.l.textindex-1] + text
             else:
-                log.warn("UNRESOLVED REFERENCE [%s][%s][%s][%s]", m.group('ref'), entity.type, entity.entity, filename)
+                log.warning("UNRESOLVED REFERENCE [%s][%s][%s][%s]", m.group('ref'), entity.type, entity.entity, filename)
         else:
             # XXX we need catalog support to do this
-            log.warn("UNRESOLVED REFERENCE [%s][%s][%s]", m.group('ref'), entity.type, entity.entity)
+            log.warning("UNRESOLVED REFERENCE [%s][%s][%s]", m.group('ref'), entity.type, entity.entity)
         return ""
         
     def element(self, m):

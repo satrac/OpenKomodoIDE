@@ -47,7 +47,7 @@ def get_notification_service(notifications_type, log):
         log.info("Setting up OS File Notifications for Unix")
         from osFileNotifications_unix import UnixFileWatcherService as FWS
     else:
-        log.warn("Unknown platform: %s", sys.platform)
+        log.warning("Unknown platform: %s", sys.platform)
         # Raise exception then
         raise "Unknown platform: %s" % sys.platform
     return FWS()

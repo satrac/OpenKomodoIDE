@@ -350,7 +350,7 @@ class KPFTreeView(TreeView):
         self._rows = self._rows[:index]+self._rows[sibling:]
         if not self._tree:
             # bug 101553: Could happen at shutdown: there is no more project tree
-            log.warn("koKPFTreeView.p.py: removeProject: there is no self._tree")
+            log.warning("koKPFTreeView.p.py: removeProject: there is no self._tree")
             return
         self._tree.rowCountChanged(index, (index - sibling))
 

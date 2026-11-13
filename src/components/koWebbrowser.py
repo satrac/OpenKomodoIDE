@@ -307,7 +307,7 @@ class KoWebbrowser(object):
             try:
                 localAppDataDir = _get_win_folder("CSIDL_LOCAL_APPDATA")
             except Exception as ex:
-                log.warn("error getting local appdata dir: %s", ex)
+                log.warning("error getting local appdata dir: %s", ex)
             else:
                 if localAppDataDir:
                     default_install_dirs_from_browser_type["googlechrome"].append(

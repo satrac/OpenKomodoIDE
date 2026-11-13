@@ -82,7 +82,7 @@ class KomodoWindowData(object):
         return findPartById(id)
 
     def findPartForRunningMacro(self, partType, name, where='*'):
-        log.warn("DEPRECATED koIPartService.findPartForRunningMacro, use koIPartService.findPart")
+        log.warning("DEPRECATED koIPartService.findPartForRunningMacro, use koIPartService.findPart")
         return self.findPart(partType, name, where, self.runningMacro)
 
     # **** New tools: verify findPart is used only to find parts, not tools.
@@ -159,7 +159,7 @@ class KoPartService(object):
             w = w.parent
             sentinel -= 1
         else:
-            log.warn("hit sentinel in KoPartService.project_window_data()!")
+            log.warning("hit sentinel in KoPartService.project_window_data()!")
         
         # If we do not have a window from caller, then get the most recent
         # window and live with it.
@@ -186,7 +186,7 @@ class KoPartService(object):
     def _deprecate_runningMacro(self):
         if getattr(self, '_deprecated_runningMacro', None) is None:
             self._deprecated_runningMacro = True
-            log.warn("koIPartService.runningMacro is deprecated.  Please use koIToolbox2Service.runningMacro instead.")
+            log.warning("koIPartService.runningMacro is deprecated.  Please use koIToolbox2Service.runningMacro instead.")
 
     @property
     def toolboxSvc(self):
@@ -214,7 +214,7 @@ class KoPartService(object):
                               "Komodo no longer supports setting the toolbox")
 
     def get_toolbox(self):
-        log.warn("DEPRECATED koIPartService.toolbox, use koIToolbox2Service.getStandardToolbox")
+        log.warning("DEPRECATED koIPartService.toolbox, use koIToolbox2Service.getStandardToolbox")
         return components.classes["@activestate.com/koToolbox2Service;1"].\
                        getService(components.interfaces.koIToolbox2Service).\
                        getStandardToolbox()
@@ -290,7 +290,7 @@ class KoPartService(object):
         if m:
             newContents = m.group(1) + m.group(2) + newName + m.group(2) + m.group(3)
         else:
-            log.warn("Can't find the name attribute %s in file %s", oldName, oldPath)
+            log.warning("Can't find the name attribute %s in file %s", oldName, oldPath)
             ptn = re.compile(r'''(.*?<project[^>]+ \bname\s*=\s*)(["'])[^'"]+\2(.*)$''', re.DOTALL)
             m = ptn.match(contents)
             if m:

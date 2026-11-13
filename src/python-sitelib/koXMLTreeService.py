@@ -82,7 +82,7 @@ def currentTag(text):
     return (td['prefix'],td['name'],ad, m.start(0))
 
 def elementFromTag(tree, tag, parent=None):
-    from cElementTree import Element
+    from xml.etree.ElementTree import Element
     tagName = tag[1]
     if not tagName:
         tagName = ""
@@ -140,7 +140,7 @@ class iterparse:
 
     def __iter__(self):
         events = []
-        from cElementTree import TreeBuilder, XMLParser
+        from xml.etree.ElementTree import TreeBuilder, XMLParser
         b = TreeBuilder()
         p = XMLParser(b)
         p._setevents(events, self._events)
@@ -757,7 +757,7 @@ if __name__ == "__main__":
     #print tostring(tree.root)
     assert tree.current.localName == "html", "current element is incorrect"
 
-    #from cElementTree import Element
+    #from xml.etree.ElementTree import Element
     #tag = u"{urn:test}test"
     #print tag
     #e = Element(tag, {})

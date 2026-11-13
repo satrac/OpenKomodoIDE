@@ -303,7 +303,7 @@ class Database(object):
                 if koLang is not None and koLang.name in (komodo_lang, norm_komodo_lang):
                     # Someone's defined a koILanguage for this lang - create
                     # dummy langinfo for it.
-                    log.warn("no LangInfo class found for %r, creating a fallback for it",
+                    log.warning("no LangInfo class found for %r, creating a fallback for it",
                              komodo_lang)
                     self._langinfo_from_norm_lang[norm_komodo_lang] = _generateFallbackKoLangInfo(self, koLang)
                     self._build_tables()
@@ -444,7 +444,7 @@ class Database(object):
             if li.exts:
                 for ext in li.exts:
                     if not ext.startswith('.'):
-                        log.warn("exts must start with '.': ext %r for "
+                        log.warning("exts must start with '.': ext %r for "
                                  "lang %r", ext, li.name)
                     if sys.platform in ("win32", "darwin"):
                         ext = ext.lower()
@@ -527,7 +527,7 @@ class Database(object):
             try:
                 module = _module_from_path(path)
             except Exception as ex:
-                log.warn("could not import `%s': %s", path, ex)
+                log.warning("could not import `%s': %s", path, ex)
                 #import traceback
                 #traceback.print_exc()
                 continue

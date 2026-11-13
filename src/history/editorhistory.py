@@ -279,7 +279,7 @@ class Database(object):
             if exists(backup_path):
                 _rm_file(backup_path)
             if exists(backup_path): # couldn't remove it
-                log.warn("couldn't remove old '%s' (skipping backup)",
+                log.warning("couldn't remove old '%s' (skipping backup)",
                          backup_path)
                 _rm_file(self.path)
             else:

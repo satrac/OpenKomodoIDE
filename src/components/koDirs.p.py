@@ -35,8 +35,7 @@ class KoDirs:
     def __init__(self):
         self._ver_major, self._ver_minor = self._ver.split('.')
 
-    @property
-    def _userDataDir(self):
+    def _getUserDataDir(self):
         # Workaround for os.environ not being able to deal with Unicode on
         # Windows; see bug 94439.
         if sys.platform.startswith("win"):
@@ -47,14 +46,13 @@ class KoDirs:
             result = _wgetenv("KOMODO_USERDATADIR")
         else:
             result = os.environ.get("KOMODO_USERDATADIR")
-        setattr(self, "_userDataDir", result)
         return result
 
     def _userAppDataPath(self):
         # Allow a special environment variable to override the User Data
         # Dir for a Komodo run. The main motivation for this is bug
         # 32270.
-        envPath = self._userDataDir
+        envPath = self._getUserDataDir()
         if envPath:
             path = os.path.expanduser(envPath)
         else:
@@ -66,7 +64,7 @@ class KoDirs:
         # Allow a special environment variable to override the User Data
         # Dir for a Komodo run. The main motivation for this is bug
         # 32270.
-        envPath = self._userDataDir
+        envPath = self._getUserDataDir()
         if envPath:
             path = os.path.expanduser(envPath)
         else:
@@ -94,7 +92,7 @@ class KoDirs:
                             "%s.%s" % (self._ver_major, self._ver_minor))
 
     def get_hostUserDataDir(self):
-        log.warn("hostUserDataDir is deprecated, use userDataDir instead")
+        log.warning("hostUserDataDir is deprecated, use userDataDir instead")
         return self.get_userDataDir()
 
     def get_userCacheDir(self):

@@ -100,22 +100,28 @@ static PyMethodDef moduleMethods[] =
 
 // Module init functions.
 
-extern "C"
+static struct PyModuleDef silvercity_module = {
+    PyModuleDef_HEAD_INIT,
+    MODULE_NAME,
+    module_doc,
+    -1,
+    moduleMethods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+extern "C" PyMODINIT_FUNC
+PyInit__SilverCity(void)
 {
-
-#ifdef WIN32
-_declspec(dllexport) 
-#endif
-void
-init_SilverCity(void)
-{ 
-    PyObject * m;
-
-    m = Py_InitModule3(MODULE_NAME, moduleMethods, module_doc);
-    (void) PyModule_GetDict(m);
+    PyObject *m = PyModule_Create(&silvercity_module);
+    if (m == NULL)
+        return NULL;
 
     initPyLexState();
     initPyPropSet();
     initPyWordList();
-}
+
+    return m;
 }

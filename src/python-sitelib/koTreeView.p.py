@@ -965,7 +965,7 @@ class InvalidationRange(object):
     def log_warn(self, *args, **kwargs):
         """Wrapper for self.log.warn"""
         if self.log:
-            self.log.warn(*args, **kwargs)
+            self.log.warning(*args, **kwargs)
     def log_exception(self, *args, **kwargs):
         """Wrapper for self.log.exception"""
         if self.log:

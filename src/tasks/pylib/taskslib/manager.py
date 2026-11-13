@@ -92,7 +92,7 @@ class Manager(object):
             try:
                 module.register(self)
             except errors.TasksError as ex:
-                log.warn("error registering `%s' taskslib support "
+                log.warning("error registering `%s' taskslib support "
                     "module: %s", module_path, ex)
             except:
                 log.exception("unexpected error registering `%s' "

@@ -335,7 +335,7 @@ class koRemoteFileInfo:
 
             except Exception as e:     # Error parsing the date field
                 #print "\n%s" % e
-                self.log.warn("Unknown date in line: '%s'" % (line))
+                self.log.warning("Unknown date in line: '%s'" % (line))
                 self.st_mtime = 0   # Unknown date, 1970 it is!
 
             if isSymlink:
@@ -387,7 +387,7 @@ class koRemoteFileInfo:
                 self.st_time = time.mktime(t)
             except Exception as e:     # Error parsing the date field
                 #print "\n%s" % e
-                self.log.warn("Unknown date in line: '%s'" % (line))
+                self.log.warning("Unknown date in line: '%s'" % (line))
                 self.st_mtime = 0   # Unknown date, 1970 it is!
 
             filename = fi[2]

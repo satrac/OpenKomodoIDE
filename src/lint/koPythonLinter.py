@@ -431,7 +431,7 @@ class KoPythonCommonPyflakesChecker(_GenericPythonLinter):
         except which.WhichError:
             checkerExe = None
         if not checkerExe:
-            log.warn("pyflakes not found")
+            log.warning("pyflakes not found")
             return
         fout, tmpfilename = _localTmpFileName()
         try:

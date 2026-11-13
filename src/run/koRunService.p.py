@@ -255,7 +255,7 @@ class KoInterpolationService:
         # Add extensible items:
         for code, handler in list(self._codemapAdditions.items()):
             if code in codeMap:
-                log.warn("overriding interpolation code %r", code)
+                log.warning("overriding interpolation code %r", code)
             codeMap[code] = lambda: self._interpolationCallbackHandler(handler,
                                             code, fileName, lineNum, word,
                                             selection, projectFile, prefSet)
@@ -921,7 +921,7 @@ class KoRunService:
             if not piece: continue
             equalSign = piece.find('=')
             if equalSign == -1:
-                log.warn("no '=' in env string line (skipping): %r" % piece)
+                log.warning("no '=' in env string line (skipping): %r" % piece)
                 continue
             envDict[piece[:equalSign]] = piece[equalSign+1:]
         return envDict
@@ -1004,13 +1004,13 @@ class KoRunService:
             try:
                 os.unlink(scriptFileName)
             except OSError as ex:
-                log.warn("Could not remove temporary script file '%s': %s"\
+                log.warning("Could not remove temporary script file '%s': %s"\
                            % (scriptFileName, ex))
         if inputFileName:
             try:
                 os.unlink(inputFileName)
             except OSError as ex:
-                log.warn("Could not remove temporary input file '%s': %s"\
+                log.warning("Could not remove temporary input file '%s': %s"\
                            % (inputFileName, ex))
         
         # Put appropriate message on the status bar.
@@ -1222,7 +1222,7 @@ class KoRunService:
             try:
                 thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
             except COMException as e:
-                log.warn("RunAsync: callback failed: %s, command %r",
+                log.warning("RunAsync: callback failed: %s, command %r",
                          str(e), command)
 
     def RunAsync(self, command, callbackHandler=None, cwd=None, env=None, input=None):

@@ -304,7 +304,7 @@ class koSysUtils:
             try:
                 eof = eofCode2eof[eofCode]
             except KeyError as ex:
-                log.warn("unexpected 'endOfLine' pref value: '%s'", eofCode)
+                log.warning("unexpected 'endOfLine' pref value: '%s'", eofCode)
                 # Paranoia: Fallback to a reasonable platform default.
                 if sys.platform.startswith("win"):
                     eof = "\r\n"

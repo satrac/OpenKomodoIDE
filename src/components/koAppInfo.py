@@ -69,7 +69,7 @@ class KoAppInfoEx:
         try:
             self._prefs.prefObserverService.addObserver(self, self.defaultInterpreterPrefName, 0)
         except Exception as e:
-            log.warn("Unable to listen for preference change for: %r",
+            log.warning("Unable to listen for preference change for: %r",
                      self.defaultInterpreterPrefName)
 
     def observe(self, subject, topic, data):
@@ -109,7 +109,7 @@ class KoAppInfoEx:
 
     def set_installationPath(self, path):
         if not os.path.isdir(path):
-            log.warn("_installationPath should be a directory, but was: %r",
+            log.warning("_installationPath should be a directory, but was: %r",
                      path)
             path = os.path.dirname(path)
         exepath = ""
@@ -278,7 +278,7 @@ class KoAppInfoEx:
                 executables = instance.FindExecutables()
                 result = components.interfaces.koIAsyncCallback.RESULT_SUCCESSFUL
             except Exception as ex:
-                log.warn("FindExecutables failed: %r", str(ex))
+                log.warning("FindExecutables failed: %r", str(ex))
 
             class CallbackRunnable(object):
                 """Used to fire callback on the original thread."""
@@ -295,7 +295,7 @@ class KoAppInfoEx:
             try:
                 starting_thread.dispatch(runnable, components.interfaces.nsIThread.DISPATCH_SYNC)
             except COMException as e:
-                log.warn("FindExecutables: callback failed: %s", str(e))
+                log.warning("FindExecutables: callback failed: %s", str(e))
 
         # Start the thread.
         t = threading.Thread(target=FindExecutablesThread,
@@ -788,7 +788,7 @@ class KoPHPInfoInstance(KoAppInfoEx):
         try:
             self._prefs.prefObserverService.addObserver(self, "phpConfigFile", 0)
         except Exception as e:
-            log.warn("Unable to listen for preference change for: 'phpConfigFile'")
+            log.warning("Unable to listen for preference change for: 'phpConfigFile'")
 
     def observe(self, subject, topic, data):
         KoAppInfoEx.observe(self, subject, topic, data)
@@ -1238,7 +1238,7 @@ class KoCVSInfoEx(KoAppInfoEx):
                                  match.group('family'))
             return version
         else:
-            log.warn('Could not determine CVS version [%s] "%s"', cvsExe, output)
+            log.warning('Could not determine CVS version [%s] "%s"', cvsExe, output)
             return None
  
 

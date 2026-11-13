@@ -436,7 +436,7 @@ class koInterpreterInvocation(object):
 
         except process.ProcessError as ex:
             msg = "Executing '%s' failed: %s\n" % (argv, str(ex))
-            log.warn(msg)
+            log.warning(msg)
             raise ServerException(nsError.NS_ERROR_FILE_EXECUTION_FAILED, msg)
 
         # The "invocation_terminated" notification is sent when the
@@ -506,13 +506,13 @@ class koInterpreterInvocation(object):
             try:
                 os.unlink(scriptFileName)
             except OSError as ex:
-                log.warn("Could not remove temporary script file '%s': %s",
+                log.warning("Could not remove temporary script file '%s': %s",
                          scriptFileName, ex)
         if inputFileName:
             try:
                 os.unlink(inputFileName)
             except OSError as ex:
-                log.warn("Could not remove temporary input file '%s': %s",
+                log.warning("Could not remove temporary input file '%s': %s",
                          inputFileName, ex)
         
         # Send appropriate notification.
@@ -1594,7 +1594,7 @@ class koXSLTInvocation(koInterpreterInvocation):
         if sys.platform.startswith("win"):
             pass
         elif sys.platform == "darwin":
-            log.warn("XXX determine appropriate environment for XSLT invocation on Mac OS X")
+            log.warning("XXX determine appropriate environment for XSLT invocation on Mac OS X")
             #XXX I suspect the right thing for Mac OS X is the
             #    following. Need to check, though.
             #koDirs = Cc["@activestate.com/koDirs;1"]\
@@ -1815,7 +1815,7 @@ class koTclInvocation(koInterpreterInvocation):
                 res = ctypes.windll.kernel32.GetBinaryTypeW(tclsh,
                                                             ctypes.pointer(binaryType))
                 if not res:
-                    log.warn("Failed to call ctypes.GetBinaryType: error %d",
+                    log.warning("Failed to call ctypes.GetBinaryType: error %d",
                              ctypes.get_last_error())
                 elif binaryType.value == 6: # SCS_64BIT_BINARY
                     executable = 'dbgp_tcldebug-x86_64.exe'
@@ -2368,7 +2368,7 @@ class koChromeInvocation(koInterpreterInvocation):
                 runutils.KoTerminalProcess(argv, cwd=os.getcwd(), env=env)
             except process.ProcessError as ex:
                 msg = "Executing '%s' failed: %s\n" % (argv, str(ex))
-                log.warn(msg)
+                log.warning(msg)
                 raise ServerException(nsError.NS_ERROR_FILE_EXECUTION_FAILED, msg)
         
         # Launch DBGP client.

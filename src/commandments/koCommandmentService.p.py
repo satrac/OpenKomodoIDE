@@ -124,19 +124,19 @@ def _handleCommandment(commandment):
                 # TODO: Should send a multi-file open request.
                 notifyObservers(None, "open_file", f)
             except COMException as e:
-                log.warn("No one observing 'open_file' notification.")
+                log.warning("No one observing 'open_file' notification.")
 
     elif name == 'new_window':
         try:
             notifyObservers(None, "new_window", '')
         except COMException as e:
-            log.warn("No one observing 'new_window' notification.")
+            log.warning("No one observing 'new_window' notification.")
 
     elif name == 'quit':
         try:
             notifyObservers(None, "quit", '')
         except COMException as e:
-            log.warn("No one observing 'quit' notification.")
+            log.warning("No one observing 'quit' notification.")
 
     elif name in ("macro", "macro_file"):
         # Execute the given macro code/file.

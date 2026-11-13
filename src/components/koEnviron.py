@@ -70,7 +70,7 @@ def _ParseBashEnvStr(envStr):
         value = envStrMatch.group("value")
         return name, value
     elif envStr:
-        log.warn("skipping environment string: '%s'" % envStr)
+        log.warning("skipping environment string: '%s'" % envStr)
 
 def parse_bash_set_output(output):
     """Parse Bash-like 'set' output"""
@@ -194,7 +194,7 @@ class KoUserEnviron:
         #    if shell:
         #        err = self.UpdateFromShell(shell)
         #        if err:
-        #            log.warn("could not get environment from '%s' shell: %s",
+        #            log.warning("could not get environment from '%s' shell: %s",
         #                     shell, err)
         #            self._UpdateFromStartupEnv() # fallback
         #    else:
@@ -219,7 +219,8 @@ class KoUserEnviron:
                 # Cannot do this on Windows because a "\" at the end of the
                 # line does not imply a continuation.
                 content = content.replace("\\\n", "")
-            content = str(content, self.startupEnvironEncoding)
+            if isinstance(content, bytes):
+                content = content.decode(self.startupEnvironEncoding)
             for line in content.split("\n"):
                 line = line.rstrip()
                 if not line:

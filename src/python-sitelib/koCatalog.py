@@ -13,11 +13,8 @@ log = logging.getLogger("koCatalog")
 #log.setLevel(logging.INFO)
 
 from elementtree import XMLTreeBuilder
-try:
-    import cElementTree as ElementTree # effbot's C module
-except ImportError:
-    log.error("using element tree and not cElementTree, performace will suffer")
-    import elementtree.ElementTree as ElementTree # effbot's pure Python module
+# Python 3's xml.etree.ElementTree is backed by the C accelerator.
+import xml.etree.ElementTree as ElementTree
 
 def _cmp(a, b):
     """Python 2-style three-way comparison (the builtin was removed in Py3)."""

@@ -173,7 +173,7 @@ def _verifyDependencies(promptToContinue):
         gtk_pkg_name = 'gtk-2.0'
         gtk_pkg_version = '2.24'
         if os.system('support/gdk_check > /dev/null 2>&1') != 0:
-            log.warn("It appears that either your system does not have %s "
+            log.warning("It appears that either your system does not have %s "
                      "installed, or your system's version of %s is not up to "
                      "date.\n"
                      "Komodo requires version %s or greater. Please update %s. "
@@ -261,7 +261,7 @@ def _ensure_executable(filename):
         perms = 0o700 | (filestat.st_mode & (0o077))
         os.chmod(filename, perms)
     except Exception as ex:
-        log.warn("could not set exec permissions on path %r - %s", filename, ex)
+        log.warning("could not set exec permissions on path %r - %s", filename, ex)
 
 def _install_desktop_shortcut(absInstallDir, suppressShortcut):
     """Install a desktop shortcut as appropriate.
@@ -349,10 +349,10 @@ Categories=__GNOME_DESKTOP_CATEGORIES__
             # Ensure the backup desktop shortcut has executable permissions.
             _ensure_executable(fallbackPath)
         except EnvironmentError as ex2:
-            log.warn("unexpected error creating fallback .desktop file "
+            log.warning("unexpected error creating fallback .desktop file "
                      "'%s': %s", fallbackPath, ex2)
         else:
-            log.warn("did not install desktop shortcut: %s "
+            log.warning("did not install desktop shortcut: %s "
                      "(a Komodo .desktop file has been created in '%s' "
                      "that you may install manually)",
                      ex, fallbackPath)
@@ -423,7 +423,7 @@ def _selinux_prepare(absInstallDir):
             if selinux.is_enabled():
                 raise Error(msg)
             else:
-                log.warn(msg + " (this can be safely ignored if you do "
+                log.warning(msg + " (this can be safely ignored if you do "
                                "not use SELinux on your system)")
                 break
 
@@ -520,7 +520,7 @@ def _install(installDir, userDataDir, suppressShortcut, destDir=None):
         log.debug("running '%s'" % cmd)
         retval = os.system(cmd)
         if retval:
-            log.warn("error running '%s'" % cmd)
+            log.warning("error running '%s'" % cmd)
 
     # Configure siloed GTK2 libs (if any).
     log.debug("Configuring GTK2...")

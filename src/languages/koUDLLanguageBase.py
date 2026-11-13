@@ -347,7 +347,7 @@ class KoUDLLanguage(KoLanguageBase):
             try:
                 lexresPath = self._lexresPathFromLexresLangName[self.lexresLangName]
             except KeyError:
-                log.warn("no lexer resource was found for '%s' language "
+                log.warning("no lexer resource was found for '%s' language "
                          "(no '%s.lexres' in lexers dirs)", languageName,
                          self.lexresLangName)
                 lexer.supportsFolding = 0

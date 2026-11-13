@@ -103,7 +103,7 @@ class BzrTestCaseBase(unittest.TestCase):
                     break
                 except Exception as ex:
                     if try_num < total_tries - 1:
-                        log.warn("Failed deleting, retrying: %s", ex)
+                        log.warning("Failed deleting, retrying: %s", ex)
                         # bzr seems to do something out-of-process on Windows
                         # that's extra slow? Wait a bit for it to finish
                         time.sleep(0.25)

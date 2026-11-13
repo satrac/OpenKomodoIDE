@@ -492,7 +492,7 @@ class koDocumentBase(object):
                 and fileNameLanguage not in common_markup_formats):
                 language = fileNameLanguage
             elif fileNameLanguage and fileNameLanguage != language:
-                log.warn("For file %s, favoring contents language %s over filename language %s",
+                log.warning("For file %s, favoring contents language %s over filename language %s",
                          baseName, language, fileNameLanguage)
             # bugs 94335 and 94775: set pref here
             self.prefs.setStringPref('language', language)
@@ -859,7 +859,7 @@ class koDocumentBase(object):
         # We never allow a code page other than 65001 (aka put scintilla
         # in Unicode/UTF-8 mode).
         if codePage != "65001":
-            log.warn("setting `koDocument.codePage` is DEPRECATED, hardwired "
+            log.warning("setting `koDocument.codePage` is DEPRECATED, hardwired "
                 "to 65001 (unicode mode): %r ignored", codePage)
 
     @components.ProxyToMainThread
@@ -1084,7 +1084,7 @@ class koDocumentBase(object):
         else:
             try:
                 if encoding.startswith('utf'):
-                    unicodebuffer = str(buffer, encoding)
+                    unicodebuffer = buffer.decode(encoding) if isinstance(buffer, bytes) else buffer
                     if (len(unicodebuffer) > 0):
                         encodingName, bomLength = koUnicodeEncoding.checkBOM(unicodebuffer)
                         if bomLength:
@@ -1094,7 +1094,7 @@ class koDocumentBase(object):
                     # It's an unknown 8-bit encoding.  Assume it's the
                     # configured default, and convert to unicode
                     encoding = encoding_name
-                    unicodebuffer = str(buffer, encoding_name)
+                    unicodebuffer = buffer.decode(encoding_name) if isinstance(buffer, bytes) else buffer
             except UnicodeError:
                 errstr = 'The file cannot be opened using the encoding "%s". '\
                     'You can change the encoding used to open files in the '\
@@ -1343,7 +1343,7 @@ class koDocumentBase(object):
             if not encoding_name:
                 # Bug 65746: This was not reproducable on our systems,
                 # but fixes the problem for a user with a Danish locale.
-                log.warn("No encoding name is available, defaulting to %s",
+                log.warning("No encoding name is available, defaulting to %s",
                     self.encoding.python_encoding_name)
                 encoding_name = self.encoding.python_encoding_name
             encodedText = self.get_buffer().encode(encoding_name, 'replace')
@@ -1351,7 +1351,7 @@ class koDocumentBase(object):
                 encoding_info = self.encodingServices.get_encoding_info(encoding_name)\
                            .python_encoding_name
                 self.encoding.use_byte_order_marker = encoding_info.byte_order_marker != ''
-            self._set_buffer_encoded(str(encodedText, encoding_name))
+            self._set_buffer_encoded(encodedText.decode(encoding_name) if isinstance(encodedText, bytes) else encodedText)
         except Exception as e:
             log.exception(e)
             raise

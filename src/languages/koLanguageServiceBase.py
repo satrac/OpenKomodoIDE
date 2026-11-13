@@ -726,7 +726,7 @@ class KoCommenterLanguageService:
                 textEnd = scimoz.getLineEndPosition(selEndLine)
             workers["line"](scimoz, textStart, textEnd)
         else:
-            log.warn("Could not comment code because no appropriate "\
+            log.warning("Could not comment code because no appropriate "\
                      "comment delimiter info exists for the current "\
                      "language.\n")
 
@@ -1423,7 +1423,7 @@ class KoLanguageBase:
                             sawSufficientWhiteSpace = True
                 return guess, foundTabs or (not sawSufficientWhiteSpace and defaultUsesTabs)
             else:
-                indentlog.warn("Found non-positive guess of %r (min %r)", guess, minIndentLevel)
+                indentlog.warning("Found non-positive guess of %r (min %r)", guess, minIndentLevel)
                 # Try the next parent-child pair
         return 0, 0
     
@@ -2364,7 +2364,7 @@ class KoLanguageBase:
                 and (scimoz.getFoldLevel(currentLineNo) & 0x3ff) > 0):
                 return self._getIndentForLine(scimoz, currentLineNo - 1)
         except Exception as e:
-            log.warn("Got exception computing indent", exc_info=1)
+            log.warning("Got exception computing indent", exc_info=1)
             return ''
         
     def insertElectricNewline(self, scimoz, indentStyle, closingCharPosn,

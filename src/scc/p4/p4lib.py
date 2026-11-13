@@ -1973,7 +1973,7 @@ class P4:
                                 line.strip())
                     break
             else:
-                log.warn("Unrecognized output line from running %s: "\
+                log.warning("Unrecognized output line from running %s: "\
                             "'%s'. Please report this to the maintainer."\
                             % (argv, line))
 

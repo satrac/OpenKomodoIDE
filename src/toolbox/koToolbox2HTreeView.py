@@ -785,7 +785,7 @@ class KoToolbox2HTreeView(TreeView):
     def refreshToolView(self, tool):
         index = self.getIndexByTool(tool)
         if index == -1:
-            log.warn("refreshToolView: can't find index for tool %s", tool.name)
+            log.warning("refreshToolView: can't find index for tool %s", tool.name)
             self.refreshStandardToolboxView()
             return
         self.refreshView(index)

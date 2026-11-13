@@ -336,7 +336,7 @@ def preprocess(infile, outfile=sys.stdout, defines={},
         contentType = registry.getContentType(infile)
         if contentType is None:
             contentType = "Text"
-            log.warn("defaulting content type for '%s' to '%s'",
+            log.warning("defaulting content type for '%s' to '%s'",
                      infile, contentType)
     try:
         cgs = _commentGroups[contentType]

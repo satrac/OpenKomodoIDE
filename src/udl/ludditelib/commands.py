@@ -175,7 +175,7 @@ def deprecated_compile(udl_path, skel=False, guid=None, guid_from_lang=None,
                         raise LudditeError("could not find `%s' in GUIDs text file"
                                            % mainObj.languageName)
             else:
-                log.warn("generating new GUID for `%s' language service: it is "
+                log.warning("generating new GUID for `%s' language service: it is "
                          "recommended that you use the -g|--guid option to ensure "
                          "a constant GUID from build to build",
                          mainObj.languageName)
@@ -185,7 +185,7 @@ def deprecated_compile(udl_path, skel=False, guid=None, guid_from_lang=None,
                                             add_missing=add_missing)
 
         if not ext:
-            log.warn("no file extension was given: no skeleton "
+            log.warning("no file extension was given: no skeleton "
                      "Komodo templates will be created")
         else:
             template_paths = [
@@ -216,7 +216,7 @@ def deprecated_compile(udl_path, skel=False, guid=None, guid_from_lang=None,
             ext_id = "%s@ActiveState.com" % codename
         if version is None:
             version = "1.0.0"
-            log.warn("defaulting 'version' to '%s' (use version option)",
+            log.warning("defaulting 'version' to '%s' (use version option)",
                      version)
         #else:
         #    XXX validate version
@@ -224,7 +224,7 @@ def deprecated_compile(udl_path, skel=False, guid=None, guid_from_lang=None,
             description = "%s language support for Komodo (UDL-based)" % lang_name
         if creator is None:
             creator = "Anonymous Coward"
-            log.warn("defaulting 'creator' to '%s' (use creator option)", creator)
+            log.warning("defaulting 'creator' to '%s' (use creator option)", creator)
     
         install_rdf_in = join(dirname(constants.__file__), "install.rdf.in")
         log.debug("reading 'install.rdf' template from '%s'", install_rdf_in)

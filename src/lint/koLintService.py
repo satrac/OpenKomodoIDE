@@ -266,7 +266,7 @@ class KoLintService:
                 self._linterCIDsByLanguageName[fixedName] = {'terminals':[],
                                                      'aggregator':cid}
             else:
-                log.warn("Possible Problem: more than one entry for linter aggregator %s (was %s), now %s",
+                log.warning("Possible Problem: more than one entry for linter aggregator %s (was %s), now %s",
                          name,
                          self._linterCIDsByLanguageName[fixedName]['aggregator'],
                          cid)

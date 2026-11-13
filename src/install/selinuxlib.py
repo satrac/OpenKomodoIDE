@@ -76,7 +76,7 @@ class SELinux:
             try:
                 selinuxenabled_path = which.which("selinuxenabled")
             except which.WhichError:
-                log.warn("couldn't find 'selinuxenabled' to "
+                log.warning("couldn't find 'selinuxenabled' to "
                          "determine if SELinux is enabled (presuming not)")
                 return False
         retval = os.system(selinuxenabled_path)
@@ -133,7 +133,7 @@ class SELinux:
                               "-d": "dir",  # only match to directories
                              }.get(parts[1], None)
                 else:
-                    log.warn("unexpected line in `%s': %r (ignoring)",
+                    log.warning("unexpected line in `%s': %r (ignoring)",
                              context_file, line)
                     continue
                 try:
@@ -141,7 +141,7 @@ class SELinux:
                                     filter,
                                     parts[-1]) )
                 except re.error:
-                    log.warn("error compiling %r regex from `%s': skipping",
+                    log.warning("error compiling %r regex from `%s': skipping",
                              parts[0], context_file)
         return config
 
@@ -179,7 +179,7 @@ class SELinux:
         cmd = '%s -s "%s"' % (execstack_path, path)
         retval = os.system(cmd)
         if retval:
-            log.warn("selinux: setting stack execution failed: %r", cmd)
+            log.warning("selinux: setting stack execution failed: %r", cmd)
 
 def chcon(path, context):
     """Change the security context of the given file."""

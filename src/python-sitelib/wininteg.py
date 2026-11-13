@@ -604,7 +604,7 @@ def removeFileAssociation(ext, action, exe, fromHKLM=False):
     try:
         [typeName, typeDisplay, currActions] = getFileAssociation(ext)
     except WinIntegError:
-        log.warn("extension '%s' is not registered, giving up", ext)
+        log.warning("extension '%s' is not registered, giving up", ext)
         return False
 
     log.info("type name for '%s' is '%s' actions: %r", ext, typeName, currActions)
@@ -633,7 +633,7 @@ def removeFileAssociation(ext, action, exe, fromHKLM=False):
     #---- 3. Abort if the current action is NOT to the given exe.
     commandExe = _parseFirstArg(command)
     if os.path.split(exe)[-1].lower() != os.path.split(commandExe)[-1].lower():
-        log.warn("current association, %r, is not to the given exe, "\
+        log.warning("current association, %r, is not to the given exe, "\
                  "%r, aborting", commandExe, exe)
         return False
 

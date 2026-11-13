@@ -470,7 +470,7 @@ def undo_replace(journal_id, dry_run=False, loadedFileManager=None):
     # 4. Sanity check.
     #TODO: Something more useful than just warning. Yield event?
     if paths_failing_sanity_check:
-        log.warn("sanity check failure: the following open(s) weren't "
+        log.warning("sanity check failure: the following open(s) weren't "
                  "restored to their exact state before the replacement: '%s'",
                  "', '".join(paths_failing_sanity_check))
 
@@ -479,12 +479,12 @@ def undo_replace(journal_id, dry_run=False, loadedFileManager=None):
         try:
             os.remove(journal.path)
         except EnvironmentError as ex:
-            log.warn("couldn't remove journal '%s': %s", journal.path, ex)
+            log.warning("couldn't remove journal '%s': %s", journal.path, ex)
         if exists(journal.summary_path):
             try:
                 os.remove(journal.summary_path)
             except EnvironmentError as ex:
-                log.warn("couldn't remove journal summary '%s': %s", 
+                log.warning("couldn't remove journal summary '%s': %s", 
                          journal.summary_path, ex)
 
 
@@ -1038,7 +1038,7 @@ class Journal(list):
                 except:
                     log.error("Can't remove remove %s", spath)
         except EnvironmentError as ex:
-            log.warn("error removing old journals: %s (ignored)", ex)
+            log.warning("error removing old journals: %s (ignored)", ex)
 
     @classmethod
     def journals(cls):

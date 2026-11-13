@@ -485,7 +485,7 @@ class Walker:
         except OSError as e:
             log.error("OSError while walking path: " + path)
         except Exception as e:
-            log.warn("Exception occurred while walking path: " + path + ", returning empty list")
+            log.warning("Exception occurred while walking path: " + path + ", returning empty list")
             
         return [[],[]]
 

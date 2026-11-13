@@ -1,0 +1,3325 @@
+diff -ruN a/xpcom/client/__init__.py b/xpcom/client/__init__.py
+--- a/xpcom/client/__init__.py	2026-11-13 00:39:08.164145092 -0500
++++ b/xpcom/client/__init__.py	2026-11-13 00:17:39.076970934 -0500
+@@ -36,7 +36,7 @@
+ # ***** END LICENSE BLOCK *****
+ 
+ import os
+-import new
++import types
+ import logging
+ import itertools
+ from xpcom import xpt, COMException, nsError, logger
+@@ -49,7 +49,7 @@
+ 
+ # Attribute names we may be __getattr__'d for, but know we don't want to delegate
+ # Could maybe just look for startswith("__") but this may screw things for some objects.
+-_special_getattr_names = ["__del__", "__len__", "__nonzero__", "__eq__", "__neq__"]
++_special_getattr_names = ["__del__", "__len__", "__bool__", "__nonzero__", "__eq__", "__ne__", "__neq__"]
+ 
+ _just_int_interfaces = ["nsISupportsPRInt32", "nsISupportsPRInt16", "nsISupportsPRUint32", "nsISupportsPRUint16", "nsISupportsPRUint8", "nsISupportsPRBool"]
+ _just_long_interfaces = ["nsISupportsPRInt64", "nsISupportsPRUint64"]
+@@ -128,9 +128,9 @@
+     codeObject = compile(method_code, "<XPCOMObject method '%s'>" % (name,), "exec")
+     # Exec the code object
+     tempNameSpace = {}
+-    exec codeObject in globals(), tempNameSpace
++    exec(codeObject, globals(), tempNameSpace)
+     ret = tempNameSpace[name]
+-    if not interface_method_cache.has_key(iid):
++    if iid not in interface_method_cache:
+         interface_method_cache[iid] = {}
+     interface_method_cache[iid][name] = ret
+     return ret
+@@ -156,10 +156,10 @@
+             flags = m.flags
+             if flags & FLAGS_TO_IGNORE == 0:
+                 if flags & XPT_MD_SETTER:
+-                    param_flags = map(lambda x: (x.param_flags,) + xpt.MakeReprForInvoke(x), m.params)
++                    param_flags = [(x.param_flags,) + xpt.MakeReprForInvoke(x) for x in m.params]
+                     setters[m.name] = m.method_index, param_flags
+                 elif flags & XPT_MD_GETTER:
+-                    param_flags = map(lambda x: (x.param_flags,) + xpt.MakeReprForInvoke(x), m.params)
++                    param_flags = [(x.param_flags,) + xpt.MakeReprForInvoke(x) for x in m.params]
+                     getters[m.name] = m.method_index, param_flags
+                 else:
+                     method_infos[m.name] = m
+@@ -176,13 +176,6 @@
+     return ret
+ 
+ class _XPCOMBase:
+-    def __cmp__(self, other):
+-        try:
+-            other = other._comobj_
+-        except AttributeError:
+-            pass
+-        return cmp(self._comobj_, other)
+-
+     def __hash__(self):
+         return hash(self._comobj_)
+ 
+@@ -194,7 +187,7 @@
+             pass
+         return self._comobj_ == other
+ 
+-    def __neq__(self, other):
++    def __ne__(self, other):
+         try:
+             other = other._comobj_
+         except AttributeError:
+@@ -207,13 +200,20 @@
+             self._comobj_.QueryInterface(IID_nsISupportsCString, 0)
+             return str(self._comobj_)
+         except COMException:
++            pass
++        try:
++            prin = self._comobj_.QueryInterface(IID_nsISupportsString)
++        except COMException:
+             return self.__repr__()
++        return prin.data
+ 
++    # Legacy Python 2 spelling retained for compatibility with callers that
++    # explicitly ask for the unicode representation.
+     def __unicode__(self):
+         try:
+             prin = self._comobj_.QueryInterface(IID_nsISupportsString)
+         except COMException:
+-            return unicode(str(self))
++            return str(str(self))
+         return prin.data
+ 
+     # Try the numeric support.
+@@ -226,13 +226,17 @@
+                 return cvt(prim.data)
+             except COMException:
+                 pass
+-        raise ValueError, "This object does not support automatic numeric conversion to this type"
++        raise ValueError("This object does not support automatic numeric conversion to this type")
+ 
+     def __int__(self):
+         return self._do_conversion(_int_interfaces, int)
+ 
++    def __index__(self):
++        return self._do_conversion(_int_interfaces, int)
++
++    # Legacy Python 2 spelling retained for compatibility.
+     def __long__(self):
+-        return self._do_conversion(_long_interfaces, long)
++        return self._do_conversion(_long_interfaces, int)
+ 
+     def __float__(self):
+         return self._do_conversion(_float_interfaces, float)
+@@ -287,7 +291,7 @@
+                     interface_infos = []
+                 for nominated_iid in interface_infos:
+                     # Interface may appear twice in the class info list, so check this here.
+-                    if not self.__dict__['_interface_infos_'].has_key(nominated_iid):
++                    if nominated_iid not in self.__dict__['_interface_infos_']:
+                         # Just invoke our QI on the object
+                         try:
+                             self.queryInterface(nominated_iid)
+@@ -299,7 +303,7 @@
+                     contractid_info['_interface_infos_'] = self.__dict__['_interface_infos_']
+                     contractid_info_cache[real_cid] = contractid_info
+             else:
+-                for key, val in contractid_info.items():
++                for key, val in list(contractid_info.items()):
+                     self.__dict__[key].update(val)
+ 
+     def _remember_interface_info(self, iid):
+@@ -308,7 +312,7 @@
+         # rebuild the world for each new object.
+         try:
+             data = BuildInterfaceInfo(iid)
+-        except COMException, why:
++        except COMException as why:
+             # Failing to build an interface info generally isn't a real
+             # problem - its probably just that the interface is non-scriptable.
+             logger.info("Failed to build interface info for %s: %s", iid, why)
+@@ -371,7 +375,7 @@
+ 
+     def __getattr__(self, attr):
+         if attr in _special_getattr_names:
+-            raise AttributeError, attr
++            raise AttributeError(attr)
+         # First allow the interface name to return the "raw" interface
+         interface = self.__dict__['_interface_names_'].get(attr, None)
+         if interface is not None:
+@@ -396,14 +400,14 @@
+             return getattr(interface, attr)
+         # Some interfaces may provide this name via "native" support.
+         # Loop over all interfaces, and if found, cache it for next time.
+-        for interface in self.__dict__['_interfaces_'].values():
++        for interface in list(self.__dict__['_interfaces_'].values()):
+             try:
+                 ret = getattr(interface, attr)
+                 self.__dict__['_name_to_interface_iid_'][attr] = interface._iid_
+                 return ret
+             except AttributeError:
+                 pass
+-        raise AttributeError, "XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr)
++        raise AttributeError("XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr))
+         
+     def __setattr__(self, attr, val):
+         iid = self._name_to_interface_iid_.get(attr, None)
+@@ -418,7 +422,7 @@
+                 interface = self.__dict__['_interfaces_'][iid]
+             setattr(interface, attr, val)
+             return
+-        raise AttributeError, "XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr)
++        raise AttributeError("XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr))
+ 
+     def _get_classinfo_repr_(self):
+         try:
+@@ -434,8 +438,8 @@
+         # We want the names from the union of _interface_infos_ (things we might
+         # know about from nsIClassInfo without QI) and _interface_names_ (which
+         # might include unscriptable interfaces), but ignore nsISupports
+-        iface_names = set(i.name for i in self.__dict__['_interface_infos_'].keys())
+-        iface_names.update(self.__dict__['_interface_names_'].keys())
++        iface_names = set(i.name for i in list(self.__dict__['_interface_infos_'].keys()))
++        iface_names.update(list(self.__dict__['_interface_names_'].keys()))
+         if len(iface_names) > 1:
+             iface_names.discard("nsISupports")
+         
+@@ -469,12 +473,12 @@
+         self.__dict__['_object_name_'] = iid.name
+         self.__dict__.update(constants)
+         # We remember the constant names to prevent the user trying to assign to them!
+-        self.__dict__['_constant_names_'] = constants.keys()
++        self.__dict__['_constant_names_'] = list(constants.keys())
+ 
+     def __getattr__(self, attr):
+         # Allow the underlying interface to provide a better implementation if desired.
+         if attr in _special_getattr_names:
+-            raise AttributeError, attr
++            raise AttributeError(attr)
+ 
+         ret = getattr(self.__dict__['_comobj_'], attr, None)
+         if ret is not None:
+@@ -482,14 +486,14 @@
+         # Do the function thing first.
+         unbound_method = self.__dict__['_methods_'].get(attr, None)
+         if unbound_method is not None:
+-            return new.instancemethod(unbound_method, self, self.__class__)
++            return types.MethodType(unbound_method, self)
+ 
+         getters = self.__dict__['_property_getters_']
+         info = getters.get(attr)
+         if info is not None:
+             method_index, param_infos = info
+             if len(param_infos)!=1: # Only expecting a retval
+-                raise RuntimeError, "Can't get properties with this many args!"
++                raise RuntimeError("Can't get properties with this many args!")
+             args = ( param_infos, () )
+             return NS_InvokeByIndex(self._comobj_, method_index, args)
+ 
+@@ -500,24 +504,24 @@
+             unbound_method = BuildMethod(method_info, self._iid_)
+             # Cache it locally
+             self.__dict__['_methods_'][attr] = unbound_method
+-            return new.instancemethod(unbound_method, self, self.__class__)
++            return types.MethodType(unbound_method, self)
+ 
+-        raise AttributeError, "XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr)
++        raise AttributeError("XPCOM component '%s' has no attribute '%s'" % (self._object_name_, attr))
+ 
+     def __setattr__(self, attr, val):
+         # If we already have a __dict__ item of that name, and its not one of
+         # our constants, we just directly set it, and leave.
+-        if self.__dict__.has_key(attr) and attr not in self.__dict__['_constant_names_']:
++        if attr in self.__dict__ and attr not in self.__dict__['_constant_names_']:
+             self.__dict__[attr] = val
+             return
+         # Start sniffing for what sort of attribute this might be?
+         setters = self.__dict__['_property_setters_']
+         info = setters.get(attr)
+         if info is None:
+-            raise AttributeError, "XPCOM component '%s' can not set attribute '%s'" % (self._object_name_, attr)
++            raise AttributeError("XPCOM component '%s' can not set attribute '%s'" % (self._object_name_, attr))
+         method_index, param_infos = info
+         if len(param_infos)!=1: # Only expecting a single input val
+-            raise RuntimeError, "Can't set properties with this many args!"
++            raise RuntimeError("Can't set properties with this many args!")
+         real_param_infos = ( param_infos, (val,) )
+         return NS_InvokeByIndex(self._comobj_, method_index, real_param_infos)
+ 
+@@ -560,7 +564,7 @@
+         if iid is None: iid = self._iid_
+         try:
+             return Component(self._comobj_.QueryReferent(iid)._comobj_, iid)
+-        except COMException, details:
++        except COMException as details:
+             if details.errno != nsError.NS_ERROR_NULL_POINTER:
+                 raise
+             return None
+diff -ruN a/xpcom/components/pyabout.py b/xpcom/components/pyabout.py
+--- a/xpcom/components/pyabout.py	2026-11-13 00:39:08.164366915 -0500
++++ b/xpcom/components/pyabout.py	2026-11-13 00:13:51.690548242 -0500
+@@ -6,9 +6,9 @@
+ def getAbout():
+     # Generate it each time so its always up-to-date.
+     # Sort to keep things purdy
+-    mod_names = sys.modules.keys()
++    mod_names = list(sys.modules.keys())
+     mod_names.sort()
+-    env = os.environ.items()
++    env = list(os.environ.items())
+     env.sort()
+     return """
+ <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+diff -ruN a/xpcom/components.py b/xpcom/components.py
+--- a/xpcom/components.py	2026-11-13 00:39:17.032390780 -0500
++++ b/xpcom/components.py	2026-11-13 00:35:06.287424176 -0500
+@@ -36,36 +36,21 @@
+ # ***** END LICENSE BLOCK *****
+ 
+ # This module provides the JavaScript "components" interface
+-import xpt
+-import xpcom, _xpcom
+-import xpcom.client
+-import xpcom.server
+-import types
++from . import xpt
++
++StringTypes = [bytes, str]
+ 
+-StringTypes = [types.StringType, types.UnicodeType]
++def _get_xpcom():
++    from . import _xpcom
++    return _xpcom
+ 
+ def _get_good_iid(iid):
+     if iid is None:
+-        iid = _xpcom.IID_nsISupports
++        iid = _get_xpcom().IID_nsISupports
+     elif type(iid) in StringTypes and len(iid)>0 and iid[0] != "{":
+         iid = getattr(interfaces, iid)
+     return iid
+ 
+-# The "manager" object.
+-manager = xpcom.client.Component(_xpcom.GetComponentManager(), _xpcom.IID_nsIComponentManager)
+-
+-# The component registrar
+-registrar = xpcom.client.Component(_xpcom.GetComponentManager(), _xpcom.IID_nsIComponentRegistrar)
+-
+-# The "interfaceInfoManager" object - JS doesnt have this.
+-interfaceInfoManager = _xpcom.XPTI_GetInterfaceInfoManager()
+-
+-# The serviceManager - JS doesnt have this either!
+-serviceManager = _xpcom.GetServiceManager()
+-
+-# The "Exception" object
+-Exception = xpcom.COMException
+-
+ # Base class for our collections.
+ # It appears that all objects supports "." and "[]" notation.
+ # eg, "interface.nsISupports" or interfaces["nsISupports"]
+@@ -78,19 +63,19 @@
+     def keys(self):
+         if self._dict_data is None:
+             self._dict_data = self._build_dict()
+-        return self._dict_data.keys()
++        return list(self._dict_data.keys())
+     def items(self):
+         if self._dict_data is None:
+             self._dict_data = self._build_dict()
+-        return self._dict_data.items()
++        return list(self._dict_data.items())
+     def values(self):
+         if self._dict_data is None:
+             self._dict_data = self._build_dict()
+-        return self._dict_data.values()
++        return list(self._dict_data.values())
+     def has_key(self, key):
+         if self._dict_data is None:
+             self._dict_data = self._build_dict()
+-        return self._dict_data.has_key(key)
++        return key in self._dict_data
+ 
+     def __len__(self):
+         if self._dict_data is None:
+@@ -98,11 +83,11 @@
+         return len(self._dict_data)
+ 
+     def __getattr__(self, attr):
+-        if self._dict_data is not None and self._dict_data.has_key(attr):
++        if self._dict_data is not None and attr in self._dict_data:
+             return self._dict_data[attr]
+         return self._get_one(attr)
+     def __getitem__(self, item):
+-        if self._dict_data is not None and self._dict_data.has_key(item):
++        if self._dict_data is not None and item in self._dict_data:
+             return self._dict_data[item]
+         return self._get_one(item)
+ 
+@@ -115,20 +100,30 @@
+         d = self.__dict__
+         d['_iidobj_'] = iid # Allows the C++ framework to treat this as a native IID.
+         d['name'] = name
+-    def __cmp__(self, other):
+-        this_iid = self._iidobj_
+-        other_iid = getattr(other, "_iidobj_", other)
+-        return cmp(this_iid, other_iid)
++    def _cmp_iid(self, other):
++        return getattr(other, "_iidobj_", other)
++    def __eq__(self, other):
++        return self._iidobj_ == self._cmp_iid(other)
++    def __ne__(self, other):
++        return self._iidobj_ != self._cmp_iid(other)
++    def __lt__(self, other):
++        return str(self._iidobj_) < str(self._cmp_iid(other))
++    def __le__(self, other):
++        return str(self._iidobj_) <= str(self._cmp_iid(other))
++    def __gt__(self, other):
++        return str(self._iidobj_) > str(self._cmp_iid(other))
++    def __ge__(self, other):
++        return str(self._iidobj_) >= str(self._cmp_iid(other))
+     def __hash__(self):
+         return hash(self._iidobj_)
+     def __str__(self):
+         return str(self._iidobj_)
+     def __getitem__(self, item):
+-        raise TypeError, "components.interface objects are not subscriptable"
++        raise TypeError("components.interface objects are not subscriptable")
+     def __setitem__(self, item, value):
+-        raise TypeError, "components.interface objects are not subscriptable"
++        raise TypeError("components.interface objects are not subscriptable")
+     def __setattr__(self, attr, value):
+-        raise AttributeError, "Can not set attributes on components.Interface objects"
++        raise AttributeError("Can not set attributes on components.Interface objects")
+     def __get_constants(self):
+         try:
+             return _constants_by_iid_map[self._iidobj_]
+@@ -144,24 +139,56 @@
+         try:
+             return self.__get_constants()[attr]
+         except KeyError:
+-            raise AttributeError, "'%s' interfaces do not define a constant '%s'" % (self.name, attr)
++            raise AttributeError("'%s' interfaces do not define a constant '%s'" % (self.name, attr))
+     def __dir__(self):
+         return sorted(self.__get_constants().keys())
+ 
++def _get_interface_info_manager():
++    # During startup the interface manager may not have been created yet, as
++    # the component loader can import this module before components.py has
++    # finished executing.
++    global interfaceInfoManager
++    try:
++        return interfaceInfoManager
++    except NameError:
++        from . import _xpcom
++        interfaceInfoManager = _xpcom.XPTI_GetInterfaceInfoManager()
++        return interfaceInfoManager
++
++def _get_registrar():
++    global registrar
++    try:
++        return registrar
++    except NameError:
++        import xpcom.client
++        from . import _xpcom
++        registrar = xpcom.client.Component(_xpcom.GetComponentManager(),
++                                           _xpcom.IID_nsIComponentRegistrar)
++        return registrar
++
++def _get_service_manager():
++    global serviceManager
++    try:
++        return serviceManager
++    except NameError:
++        from . import _xpcom
++        serviceManager = _xpcom.GetServiceManager()
++        return serviceManager
++
+ class _Interfaces(_ComponentCollection):
+     def _get_one(self, name):
+         try:
+-            item = interfaceInfoManager.GetInfoForName(name)
+-        except xpcom.COMException, why:
++            item = _get_interface_info_manager().GetInfoForName(name)
++        except xpcom.COMException as why:
+             # Present a better exception message, and give a more useful error code.
+-            import nsError
++            from . import nsError
+             raise xpcom.COMException(nsError.NS_ERROR_NO_INTERFACE, "The interface '%s' does not exist" % (name,))
+         return _Interface(item.GetName(), item.GetIID())
+ 
+     def _build_dict(self):
+         ret = {}
+-        name_to_iid_dict = interfaceInfoManager.GetScriptableInterfaces()
+-        for name, iid in name_to_iid_dict.items():
++        name_to_iid_dict = _get_interface_info_manager().GetScriptableInterfaces()
++        for name, iid in list(name_to_iid_dict.items()):
+             ret[name] = _Interface(name, iid)
+         return ret
+ 
+@@ -176,23 +203,23 @@
+         self.contractid = contractid
+     def __getattr__(self, attr):
+         if attr == "clsid":
+-            rc = registrar.contractIDToCID(self.contractid)
++            rc = _get_registrar().contractIDToCID(self.contractid)
+             # stash it away - it can never change!
+             self.clsid = rc
+             return rc
+-        raise AttributeError, "%s class has no attribute '%s'" % (self.contractid, attr)
++        raise AttributeError("%s class has no attribute '%s'" % (self.contractid, attr))
+     def createInstance(self, iid = None):
+         import xpcom.client
+         try:
+             return xpcom.client.Component(self.contractid, _get_good_iid(iid))
+-        except xpcom.COMException, details:
+-            import nsError
++        except xpcom.COMException as details:
++            from . import nsError
+             # Handle "no such component" in a cleaner way for the user.
+             if details.errno == nsError.NS_ERROR_FACTORY_NOT_REGISTERED:
+                 raise xpcom.COMException(details.errno, "No such component '%s'" % (self.contractid,))
+             raise # Any other exception reraise.
+     def getService(self, iid = None):
+-        return serviceManager.getServiceByContractID(self.contractid, _get_good_iid(iid))
++        return _get_service_manager().getServiceByContractID(self.contractid, _get_good_iid(iid))
+ 
+ class _Classes(_ComponentCollection):
+     def __init__(self):
+@@ -203,10 +230,10 @@
+ 
+     def _build_dict(self):
+         ret = {}
+-        enum = registrar.enumerateContractIDs()
++        enum = _get_registrar().enumerateContractIDs()
+         while enum.hasMoreElements():
+             # Call the Python-specific FetchBlock, to keep the loop in C.
+-            items = enum.fetchBlock(2000, _xpcom.IID_nsISupportsCString)
++            items = enum.fetchBlock(2000, _get_xpcom().IID_nsISupportsCString)
+             for item in items:
+                 name = str(item.data)
+                 ret[name] = _Class(name)
+@@ -218,8 +245,12 @@
+ 
+ del _ComponentCollection
+ 
+-# The ID function
+-ID = _xpcom.IID
++# Provide a lazy ID() while _xpcom is still being imported.
++def _ID(*args, **kwargs):
++    from . import _xpcom
++    return _xpcom.IID(*args, **kwargs)
++ID = _ID
++
+ 
+ 
+ # Internal runnable class.
+@@ -271,11 +302,37 @@
+ def ProxyToMainThreadAsync(fn, dispatch_flags=interfaces.nsIThread.DISPATCH_NORMAL):
+     return ProxyToMainThread(fn, dispatch_flags)
+ 
++# Import the extensions after the interface collection has been created.
++# _xpcom's initialization loads the Python component loader, which in turn
++# imports parts of this module; deferring the import breaks that cycle.
++import xpcom
++from . import _xpcom
++import xpcom.client
++import xpcom.server
++
++# The "manager" object.
++manager = xpcom.client.Component(_xpcom.GetComponentManager(), _xpcom.IID_nsIComponentManager)
++
++# The component registrar
++registrar = xpcom.client.Component(_xpcom.GetComponentManager(), _xpcom.IID_nsIComponentRegistrar)
++
++# The "interfaceInfoManager" object - JS doesnt have this.
++interfaceInfoManager = _xpcom.XPTI_GetInterfaceInfoManager()
++
++# The serviceManager - JS doesnt have this either!
++serviceManager = _xpcom.GetServiceManager()
++
++# The "Exception" object
++Exception = xpcom.COMException
++
++# The ID function
++ID = _xpcom.IID
++
+ _xpcom.PROXY_SYNC = 1
+ _xpcom.PROXY_ASYNC = 2
+ _xpcom.PROXY_ALWAYS = 4
+ def _getProxyForObject(targetThread, iface, obj, flags):
+-    raise AttributeError, "getProxyForObject was removed - use nsIRunnable instead"
++    raise AttributeError("getProxyForObject was removed - use nsIRunnable instead")
+ _xpcom.getProxyForObject = _getProxyForObject
+ 
+ def _on_shutdown():
+@@ -286,7 +343,7 @@
+     xpcom.server._shutdown()
+ 
+ # import xpcom.shutdown late as it depends on us!
+-import shutdown
++from . import shutdown
+ shutdown.register(_on_shutdown)
+ 
+ del _on_shutdown, shutdown
+diff -ruN a/xpcom/__init__.py b/xpcom/__init__.py
+--- a/xpcom/__init__.py	2026-11-13 00:39:08.164145092 -0500
++++ b/xpcom/__init__.py	2026-11-13 00:30:42.331479189 -0500
+@@ -37,7 +37,6 @@
+ #
+ 
+ # The XPCOM (Cross Platform COM) package.
+-import exceptions
+ 
+ # A global "verbose" flag - currently used by the
+ # server package to print trace messages
+@@ -47,17 +46,17 @@
+ 
+ # The standard XPCOM exception object.
+ # Instances of this class are raised by the XPCOM extension module.
+-class Exception(exceptions.Exception):
++class Exception(Exception):
+     def __init__(self, errno, message = None):
+         assert int(errno) == errno, "The errno param must be an integer"
+         self.errno = errno
+         self.msg = message
+-        exceptions.Exception.__init__(self, errno)
++        super().__init__(errno)
+     def __str__(self):
+         if not hr_map:
+             from . import nsError
+-            for name, val in nsError.__dict__.items():
+-                if isinstance(val, (int, long)):
++            for name, val in list(nsError.__dict__.items()):
++                if isinstance(val, int):
+                     hr_map[val] = str(name)
+         message = self.msg
+         if message is None:
+@@ -77,7 +76,7 @@
+ class ServerException(Exception):
+     def __init__(self, errno=None, *args, **kw):
+         if errno is None:
+-            import nsError
++            from . import nsError
+             errno = nsError.NS_ERROR_FAILURE
+         Exception.__init__(self, errno, *args, **kw)
+ 
+@@ -95,13 +94,13 @@
+     def flush(self):
+         pass
+     def write(self, msg):
+-        import _xpcom
++        from . import _xpcom
+         _xpcom.LogConsoleMessage(msg)
+     def close(self):
+         pass
+ 
+ def setupLogging():
+-    import sys, os, threading, thread
++    import sys, os, threading, _thread
+     hdlr = logging.StreamHandler(ConsoleServiceStream())
+     fmt = logging.Formatter(logging.BASIC_FORMAT)
+     hdlr.setFormatter(fmt)
+@@ -110,7 +109,7 @@
+     # logger.warning("ob is %r", ob), and where repr(ob) itself tries to log)
+     # Later versions of logging use an RLock, so we detect an "old" style
+     # handler and update its lock
+-    if type(hdlr.lock) == thread.LockType:
++    if type(hdlr.lock) == _thread.LockType:
+         hdlr.lock = threading.RLock()
+ 
+     logger.addHandler(hdlr)
+@@ -122,15 +121,15 @@
+     if filename:
+         try:
+             # open without buffering so never pending output
+-            stream = open(filename, "wU", 0)
+-        except IOError, why:
+-            print >> sys.stderr, "pyxpcom failed to open log file '%s': %s" \
+-                                 % (filename, why)
++            stream = open(filename, "w", buffering=1)
++        except IOError as why:
++            print("pyxpcom failed to open log file '%s': %s" \
++                                 % (filename, why), file=sys.stderr)
+             # stream remains default
+ 
+     hdlr = logging.StreamHandler(stream)
+     # see above - fix a deadlock problem on this handler too.
+-    if type(hdlr.lock) == thread.LockType:
++    if type(hdlr.lock) == _thread.LockType:
+         hdlr.lock = threading.RLock()
+ 
+     fmt = logging.Formatter(logging.BASIC_FORMAT)
+diff -ruN a/xpcom/primitives.py b/xpcom/primitives.py
+--- a/xpcom/primitives.py	2026-11-13 00:39:08.164366915 -0500
++++ b/xpcom/primitives.py	2026-11-13 00:13:50.824975798 -0500
+@@ -34,6 +34,6 @@
+     try:
+         better = _primitives_map[prin.type]
+     except KeyError:
+-        raise ValueError, "This primitive type (%d) is not supported" % (prin.type,)
++        raise ValueError("This primitive type (%d) is not supported" % (prin.type,))
+     prin = prin.QueryInterface(better)
+     return prin.data
+diff -ruN a/xpcom/server/__init__.py b/xpcom/server/__init__.py
+--- a/xpcom/server/__init__.py	2026-11-13 00:39:08.164366915 -0500
++++ b/xpcom/server/__init__.py	2026-11-13 00:13:51.070149739 -0500
+@@ -37,7 +37,7 @@
+ 
+ # The xpcom.server package.
+ 
+-from policy import DefaultPolicy
++from .policy import DefaultPolicy
+ from xpcom import _xpcom
+ from xpcom.client import Component
+ 
+@@ -77,9 +77,9 @@
+ # Python loader will then (indirectly) create other modules for any
+ # .py file components
+ def PythonModuleLoader():
+-    import loader
++    from . import loader
+     return loader.ModuleLoader()
+ 
+ def _shutdown():
+-    from policy import _shutdown
++    from .policy import _shutdown
+     _shutdown()
+diff -ruN a/xpcom/server/loader.py b/xpcom/server/loader.py
+--- a/xpcom/server/loader.py	2026-11-13 00:39:08.164530232 -0500
++++ b/xpcom/server/loader.py	2026-11-13 00:28:30.629334327 -0500
+@@ -41,7 +41,7 @@
+ from xpcom import components, nsError, verbose, COMException
+ import xpcom.shutdown
+ 
+-import module
++from . import module
+ 
+ def _has_good_attr(obj, attr):
+     # Actually allows "None" to be specified to disable inherited attributes.
+@@ -71,10 +71,10 @@
+                                                    py_module.__file__))
+ 
+     # Else, run over all top-level objects looking for likely candidates.
+-    for name, obj in py_module.__dict__.items():
++    for name, obj in list(py_module.__dict__.items()):
+         try:
+             # Examine class types or new style classes that inherit from object.
+-            if (type(obj) == types.ClassType or issubclass(obj, object)) and \
++            if (type(obj) == type or issubclass(obj, object)) and \
+                _has_good_attr(obj, "_com_interfaces_") and \
+                _has_good_attr(obj, "_reg_clsid_") and \
+                _has_good_attr(obj, "_reg_contractid_"):
+@@ -148,14 +148,21 @@
+         mod = self.com_modules.get(fqn)
+         if mod is not None:
+             return mod
+-        import ihooks, sys
++        import sys
++        import importlib.util
+         base_name = os.path.splitext(os.path.basename(fqn))[0]
+-        loader = ihooks.ModuleLoader()
+ 
+         module_name_in_sys = "component:%s" % (base_name,)
+-        stuff = loader.find_module(base_name, [componentFile.parent.path])
+-        assert stuff is not None, "Couldn't find the module '%s'" % (base_name,)
+-        py_mod = loader.load_module( module_name_in_sys, stuff )
++        spec = importlib.util.spec_from_file_location(module_name_in_sys, fqn)
++        assert spec is not None and spec.loader is not None, \
++            "Couldn't find the module '%s'" % (base_name,)
++        py_mod = importlib.util.module_from_spec(spec)
++        sys.modules[module_name_in_sys] = py_mod
++        try:
++            spec.loader.exec_module(py_mod)
++        except Exception:
++            sys.modules.pop(module_name_in_sys, None)
++            raise
+ 
+         # Make and remember the COM module.
+         comps = FindCOMComponents(py_mod)
+@@ -238,8 +245,8 @@
+                 pylibPath = join(extDir, pylibName)
+                 if pylibPath not in sys.path and exists(pylibPath):
+                     if verbose:
+-                        print "pyXPCOMExtensionHelper:: Adding pylib to sys.path:" \
+-                              " %r" % (pylibPath, )
++                        print("pyXPCOMExtensionHelper:: Adding pylib to sys.path:" \
++                              " %r" % (pylibPath, ))
+                     sys.path.append(pylibPath)
+ 
+                 platformPylibPath = join(extDir, "platform")
+@@ -248,8 +255,8 @@
+                         pylibPath = join(platformPylibPath, platform_name, pylibName)
+                         if pylibPath not in sys.path and exists(pylibPath):
+                             if verbose:
+-                                print "pyXPCOMExtensionHelper:: Adding pylib to sys.path:" \
+-                                      " %r" % (pylibPath, )
++                                print("pyXPCOMExtensionHelper:: Adding pylib to sys.path:" \
++                                      " %r" % (pylibPath, ))
+                             sys.path.append(pylibPath)
+                 else:
+                     # Don't bother checking platform next loop.
+diff -ruN a/xpcom/server/module.py b/xpcom/server/module.py
+--- a/xpcom/server/module.py	2026-11-13 00:39:08.164530232 -0500
++++ b/xpcom/server/module.py	2026-11-13 00:13:51.075289685 -0500
+@@ -35,7 +35,7 @@
+ # ***** END LICENSE BLOCK *****
+ 
+ from xpcom import components, ServerException, nsError
+-from factory import Factory
++from .factory import Factory
+ 
+ class Module:
+     _com_interfaces_ = components.interfaces.nsIModule
+diff -ruN a/xpcom/server/policy.py b/xpcom/server/policy.py
+--- a/xpcom/server/policy.py	2026-11-13 00:39:17.034381017 -0500
++++ b/xpcom/server/policy.py	2026-11-13 00:15:38.682434553 -0500
+@@ -41,7 +41,6 @@
+ import xpcom
+ import xpcom.server
+ import operator
+-import types
+ import logging
+ 
+ 
+@@ -62,8 +61,8 @@
+ _supports_primitives_map_ = {} # Filled on first use.
+ _function_interfaces_ = None # Filled on first use
+ 
+-_interface_sequence_types_ = types.TupleType, types.ListType
+-_string_types_ = types.StringType, types.UnicodeType
++_interface_sequence_types_ = tuple, list
++_string_types_ = bytes, str
+ XPTI_GetInterfaceInfoManager = _xpcom.XPTI_GetInterfaceInfoManager
+ 
+ def _GetNominatedInterfaces(obj):
+@@ -77,7 +76,7 @@
+             global _function_interfaces_
+             if _function_interfaces_ is None:
+                 name_to_iid_dict = iim.GetFunctionInterfaces()
+-                _function_interfaces_ = name_to_iid_dict.values()
++                _function_interfaces_ = list(name_to_iid_dict.values())
+             return _function_interfaces_
+         return None
+ 
+@@ -155,7 +154,7 @@
+         self._iid_ = iid
+         self._is_function_ = None # looked up lazily in _CallMethod_
+         if ni is None:
+-            raise ValueError, "The object '%r' can not be used as a COM object" % (instance,)
++            raise ValueError("The object '%r' can not be used as a COM object" % (instance,))
+         # This is really only a check for the user - the same thing is
+         # done by the framework.
+         # XXXmarkh - this should probably die now we have better error
+@@ -352,15 +351,15 @@
+ 
+ _supports_primitives_data_ = [
+     ("nsISupportsCString", "__str__", str),
+-    ("nsISupportsString", "__unicode__", unicode),
+-    ("nsISupportsPRUint64", "__long__", long),
+-    ("nsISupportsPRInt64", "__long__", long),
++    ("nsISupportsString", "__str__", str),
++    ("nsISupportsPRUint64", "__int__", int),
++    ("nsISupportsPRInt64", "__int__", int),
+     ("nsISupportsPRUint32", "__int__", int),
+     ("nsISupportsPRInt32", "__int__", int),
+     ("nsISupportsPRUint16", "__int__", int),
+     ("nsISupportsPRInt16", "__int__", int),
+     ("nsISupportsPRUint8", "__int__", int),
+-    ("nsISupportsPRBool", "__nonzero__", operator.truth),
++    ("nsISupportsPRBool", "__bool__", operator.truth),
+     ("nsISupportsDouble", "__float__", float),
+     ("nsISupportsFloat", "__float__", float),
+ ]
+diff -ruN a/xpcom/src/dllmain.cpp b/xpcom/src/dllmain.cpp
+--- a/xpcom/src/dllmain.cpp	2026-11-13 00:39:08.165288367 -0500
++++ b/xpcom/src/dllmain.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -186,13 +186,13 @@
+ #ifndef NS_DEBUG
+ 		Py_OptimizeFlag = 1;
+ #endif // NS_DEBUG
+-		// Must force Python to start using thread locks, as
+-		// this is certainly a threaded environment we are playing in
+-		PyEval_InitThreads();
+ 	}
+ 	// Get the Python interpreter state
+ 	PyGILState_STATE state = PyGILState_Ensure();
+ 
++	// Set up the IID object type before any interface types are registered.
++	Py_nsIID::InitType();
++
+ 	// Make sure we have _something_ as sys.argv.
+ 	if (PySys_GetObject("argv")==NULL) {
+ 		PyObject *path = PyList_New(0);
+diff -ruN a/xpcom/src/ErrorUtils.cpp b/xpcom/src/ErrorUtils.cpp
+--- a/xpcom/src/ErrorUtils.cpp	2026-11-13 00:39:08.164530232 -0500
++++ b/xpcom/src/ErrorUtils.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -317,21 +317,21 @@
+ 	PyObject *argsTB = NULL;
+ 	PyObject *obResult = NULL;
+ 
+-	/* Import the modules we need - cStringIO and traceback */
+-	modStringIO = PyImport_ImportModule("cStringIO");
++	/* Import the modules we need - io and traceback */
++	modStringIO = PyImport_ImportModule("io");
+ 	if (modStringIO==NULL)
+-		TRACEBACK_FETCH_ERROR("cant import cStringIO\n");
++		TRACEBACK_FETCH_ERROR("cant import io\n");
+ 
+ 	modTB = PyImport_ImportModule("traceback");
+ 	if (modTB==NULL)
+ 		TRACEBACK_FETCH_ERROR("cant import traceback\n");
+-	/* Construct a cStringIO object */
++	/* Construct an io.StringIO object */
+ 	obFuncStringIO = PyObject_GetAttrString(modStringIO, "StringIO");
+ 	if (obFuncStringIO==NULL)
+-		TRACEBACK_FETCH_ERROR("cant find cStringIO.StringIO\n");
++		TRACEBACK_FETCH_ERROR("cant find io.StringIO\n");
+ 	obStringIO = PyObject_CallObject(obFuncStringIO, NULL);
+ 	if (obStringIO==NULL)
+-		TRACEBACK_FETCH_ERROR("cStringIO.StringIO() failed\n");
++		TRACEBACK_FETCH_ERROR("io.StringIO() failed\n");
+ 	/* Get the traceback.print_exception function, and call it. */
+ 	obFuncTB = PyObject_GetAttrString(modTB, "print_tb");
+ 	if (obFuncTB==NULL)
+diff -ruN a/xpcom/src/Makefile.in b/xpcom/src/Makefile.in
+--- a/xpcom/src/Makefile.in	2026-11-13 00:39:08.164852723 -0500
++++ b/xpcom/src/Makefile.in	2026-11-13 00:22:46.941175815 -0500
+@@ -55,7 +55,7 @@
+ LOCAL_INCLUDES = $(MOZ_PYTHON_INCLUDES)
+ EXTRA_LIBS += $(MOZ_PYTHON_LIBS)
+ 
+-EXPORTS		= PyXPCOM.h
++EXPORTS		= PyXPCOM.h py3compat.h
+ 
+ CPPSRCS= \
+ 	ErrorUtils.cpp \
+diff -ruN a/xpcom/src/module/_xpcom.cpp b/xpcom/src/module/_xpcom.cpp
+--- a/xpcom/src/module/_xpcom.cpp	2026-11-13 00:39:08.166261393 -0500
++++ b/xpcom/src/module/_xpcom.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -67,6 +67,8 @@
+ 
+ #include <Python.h>
+ 
++#include "py3compat.h"
++
+ #include "PyAppInfo.h"
+ 
+ #ifdef XP_WIN
+@@ -183,7 +185,7 @@
+ XRE_GetFileFromPathType XRE_GetFileFromPath NS_HIDDEN;
+ XRE_AddManifestLocationType XRE_AddManifestLocation NS_HIDDEN;
+ XRE_InitEmbedding2Type XRE_InitEmbedding2 NS_HIDDEN;
+-typedef bool (NS_FROZENCALL * init_xpcom_realType)();
++typedef PyObject *(NS_FROZENCALL * init_xpcom_realType)();
+ void *hLibPyXPCOM; // handle to main pyxpcom library
+ 
+ static already_AddRefed<nsIFile> GetAppDir() {
+@@ -556,39 +558,45 @@
+ 
+ static init_xpcom_realType init_xpcom_real = nullptr;
+ extern "C" NS_EXPORT
+-void 
++PyObject *
+ init_xpcom() {
+ 	if (init_xpcom_real) {
+ 		// We've already done the dance before; just do the real init
+-		init_xpcom_real();
+-		return;
++		return init_xpcom_real();
+ 	}
+ 
+ 	// Ensure XPCOM has been initialized
+ 	if (!EnsureXPCOM()) {
+ 		DUMP("EnsureXPCOM failed\n");
+-		return;
++		return NULL;
+ 	}
+ 
+ 	if (!RegisterPyAppInfo()) {
+ 		DUMP("RegisterPyAppInfo failed\n");
+-		return;
++		return NULL;
+ 	}
+ 
+ 	if (!EnsurePyXPCOM(&init_xpcom_real)) {
+ 		DUMP("Failed to load libpyxpcom.so!\n");
+-		return;
++		return NULL;
++	}
++
++	// Initialize the Python-facing _xpcom module and register all of the
++	// IIDs before loading the Python component loader.  The loader imports
++	// parts of the xpcom package, which in turn needs these symbols.
++	DUMP("About to do real xpcom init\n");
++	PyObject *module = init_xpcom_real();
++	if (!module) {
++		DUMP("init_xpcom_real failed\n");
++		return NULL;
+ 	}
++	DUMP("init_xpcom done\n");
+ 
+ 	if (!RegisterPyXPCOMComponents()) {
+ 		DUMP("RegisterPyXPCOMComponents failed\n");
+-		return;
++		return NULL;
+ 	}
+ 
+-	DUMP("About to do real xpcom init\n");
+-	init_xpcom_real();
+-	DUMP("init_xpcom done\n");
+-
+ 	// Close hLibPyXPCOM now that everything's loaded
+ 	#if defined(XP_WIN)
+ 		if (hLibPyXPCOM) {
+@@ -599,4 +607,14 @@
+ 			dlclose(hLibPyXPCOM);
+ 		}
+ 	#endif
++	return module;
++}
++
++// Python 3 module entry point.  Python looks for PyInit__xpcom because the
++// extension module is named "_xpcom".
++extern "C" NS_EXPORT
++PyObject *
++PyInit__xpcom(void)
++{
++	return init_xpcom();
+ }
+diff -ruN a/xpcom/src/py3compat.h b/xpcom/src/py3compat.h
+--- a/xpcom/src/py3compat.h	1969-12-31 19:00:00.000000000 -0500
++++ b/xpcom/src/py3compat.h	2026-11-13 00:27:08.456058877 -0500
+@@ -0,0 +1,171 @@
++/* ***** BEGIN LICENSE BLOCK *****
++ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
++ *
++ * The contents of this file are subject to the Mozilla Public License Version
++ * 1.1 (the "License"); you may not use this file except in compliance with
++ * the License. You may obtain a copy of the License at
++ * http://www.mozilla.org/MPL/
++ *
++ * Software distributed under the License is distributed on an "AS IS" basis,
++ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
++ * for the specific language governing rights and limitations under the
++ * License.
++ *
++ * The Original Code is the Python XPCOM language bindings.
++ *
++ * The Initial Developer of the Original Code is
++ * ActiveState Tool Corp.
++ * Portions created by the Initial Developer are Copyright (C) 2000
++ * the Initial Developer. All Rights Reserved.
++ *
++ * Contributor(s):
++ *   Mark Hammond <mhammond@skippinet.com.au> (original author)
++ *
++ * Alternatively, the contents of this file may be used under the terms of
++ * either the GNU General Public License Version 2 or later (the "GPL"), or
++ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
++ * in which case the provisions of the GPL or the LGPL are applicable instead
++ * of those above. If you wish to allow use of your version of this file only
++ * under the terms of either the GPL or the LGPL, and not to allow others to
++ * use your version of this file under the terms of the MPL, indicate your
++ * decision by deleting the provisions above and replace them with the notice
++ * and other provisions required by the GPL or the LGPL. If you do not delete
++ * the provisions above, a recipient may use your version of this file under
++ * the terms of any one of the MPL, the GPL or the LGPL.
++ *
++ * ***** END LICENSE BLOCK ***** */
++
++// py3compat.h - compatibility shims for the Python 3 C API.
++//
++// This file maps the small set of Python 2 C API spellings that PyXPCOM still
++// uses onto their Python 3 equivalents.  The important semantic decision is
++// that the old Python 2 "str" (a byte string) maps onto Python 3 "str" for
++// XPCOM text, while still accepting (and transparently handling) bytes where
++// the old API would have produced them.
++//
++// Must be included after <Python.h>.
++
++#ifndef __PYXPCOM_PY3COMPAT_H__
++#define __PYXPCOM_PY3COMPAT_H__
++
++#include <Python.h>
++
++#if PY_MAJOR_VERSION < 3
++#error "PyXPCOM now requires Python 3"
++#endif
++
++// Return a NUL terminated UTF-8 view of a str or bytes object.  For str
++// objects the buffer is owned by the object and remains valid for as long as
++// the object does.
++static inline const char *
++PyXPCOM_StringAsUTF8(PyObject *op)
++{
++	if (op == NULL)
++		return NULL;
++	if (PyBytes_Check(op))
++		return PyBytes_AS_STRING(op);
++	if (PyUnicode_Check(op))
++		return PyUnicode_AsUTF8(op);
++	PyErr_Format(PyExc_TypeError, "expected str or bytes, not %.200s",
++	             Py_TYPE(op)->tp_name);
++	return NULL;
++}
++
++// Return the size of the UTF-8 representation of a str or bytes object.
++static inline Py_ssize_t
++PyXPCOM_StringSize(PyObject *op)
++{
++	if (op == NULL)
++		return -1;
++	if (PyBytes_Check(op))
++		return PyBytes_GET_SIZE(op);
++	if (PyUnicode_Check(op)) {
++		Py_ssize_t size = 0;
++		if (PyUnicode_AsUTF8AndSize(op, &size) == NULL)
++			return -1;
++		return size;
++	}
++	return -1;
++}
++
++// Build a str from UTF-8 data.  If the data is not valid UTF-8 we fall back
++// to returning bytes, which keeps binary data working the way it did with
++// Python 2 strings.
++static inline PyObject *
++PyXPCOM_StringFromUTF8(const char *s, Py_ssize_t size)
++{
++	PyObject *ret = PyUnicode_DecodeUTF8(s, size, NULL);
++	if (ret != NULL)
++		return ret;
++	PyErr_Clear();
++	return PyBytes_FromStringAndSize(s, size);
++}
++
++// Return the single code point held by a str of length 1.
++static inline Py_UCS4
++PyXPCOM_UnicodeChar(PyObject *op)
++{
++	if (op == NULL || !PyUnicode_Check(op) ||
++	    PyUnicode_GET_LENGTH(op) != 1)
++		return 0;
++	return PyUnicode_READ_CHAR(op, 0);
++}
++
++// PyMethodChain / Py_FindMethodInChain were removed in Python 3.  PyXPCOM
++// uses them for interface method lookup, so provide a small local replacement.
++struct PyXPCOMMethodChain {
++	struct PyMethodDef *methods;
++	struct PyXPCOMMethodChain *link;
++};
++
++static inline PyObject *
++PyXPCOM_FindMethodInChain(PyXPCOMMethodChain *chain, PyObject *self,
++                          const char *name)
++{
++	for (; chain != NULL; chain = chain->link) {
++		if (chain->methods == NULL)
++			continue;
++		for (struct PyMethodDef *m = chain->methods; m->ml_name != NULL; ++m) {
++			if (strcmp(m->ml_name, name) == 0)
++				return PyCFunction_New(m, self);
++		}
++	}
++	PyErr_Format(PyExc_AttributeError,
++	             "'%.200s' object has no attribute '%s'",
++	             Py_TYPE(self)->tp_name, name);
++	return NULL;
++}
++
++// Python 2 string API -> Python 3 str/bytes API.
++#define PyString_Check(op) \
++	(PyUnicode_Check(op) || PyBytes_Check(op))
++#define PyString_FromString(s) \
++	PyUnicode_FromString(s)
++#define PyString_FromStringAndSize(s, n) \
++	PyXPCOM_StringFromUTF8((s), (n))
++#define PyString_AsString(op) \
++	((char *)PyXPCOM_StringAsUTF8((PyObject *)(op)))
++#define PyString_AS_STRING(op) \
++	((char *)PyXPCOM_StringAsUTF8((PyObject *)(op)))
++#define PyString_GET_SIZE(op) \
++	PyXPCOM_StringSize((PyObject *)(op))
++#define PyString_Size(op) \
++	PyXPCOM_StringSize((PyObject *)(op))
++
++// Python 2 integer API -> Python 3 long API.
++#define PyInt_Check(op)                    PyLong_Check(op)
++#define PyInt_FromLong(v)                  PyLong_FromLong(v)
++#define PyInt_AsLong(v)                    PyLong_AsLong(v)
++#define PyInt_AsUnsignedLongLongMask(v)    PyLong_AsUnsignedLongLongMask(v)
++#define PyNumber_Int                       PyNumber_Long
++
++// Python 2 call API.
++#define PyEval_CallObject(func, args)      PyObject_CallObject((func), (args))
++
++// Removed unicode size helpers.
++#define PyUnicode_GetSize(op)              PyUnicode_GET_LENGTH(op)
++#ifndef PyUnicode_GET_SIZE
++#define PyUnicode_GET_SIZE(op)             PyUnicode_GET_LENGTH(op)
++#endif
++
++#endif // __PYXPCOM_PY3COMPAT_H__
+diff -ruN a/xpcom/src/PyGInputStream.cpp b/xpcom/src/PyGInputStream.cpp
+--- a/xpcom/src/PyGInputStream.cpp	2026-11-13 00:39:08.164852723 -0500
++++ b/xpcom/src/PyGInputStream.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -105,22 +105,40 @@
+ 	if (NS_SUCCEEDED(nr)) {
+ 		Py_ssize_t py_size;
+ 		const void *py_buf;
+-		if (PyObject_AsReadBuffer(ret, &py_buf, &py_size)!=0) {
++		Py_buffer view;
++		bool have_view = false;
++		if (PyUnicode_Check(ret)) {
++			py_buf = PyUnicode_AsUTF8AndSize(ret, &py_size);
++			if (py_buf == NULL) {
++				nr = HandleNativeGatewayError(methodName);
++				Py_XDECREF(ret);
++				return nr;
++			}
++		} else if (PyObject_GetBuffer(ret, &view, PyBUF_SIMPLE) == 0) {
++			have_view = true;
++			py_buf = view.buf;
++			py_size = view.len;
++		} else {
++			PyErr_Clear();
+ 			PyErr_Format(PyExc_TypeError, "nsIInputStream::read() method must return a buffer object - not a '%s' object", ret->ob_type->tp_name);
+ 			nr = HandleNativeGatewayError(methodName);
++			Py_XDECREF(ret);
++			return nr;
++		}
++		if ( (py_size & 0xFFFFFFFF) != py_size) {
++			PyErr_SetString(PyExc_RuntimeError, "Python Buffer length overflows 32-bit in nsIInputStream::read");
++			nr = HandleNativeGatewayError(methodName);
+ 		} else {
+-		        if ( (py_size & 0xFFFFFFFF) != py_size) {
+-		                PyErr_SetString(PyExc_RuntimeError, "Python Buffer length overflows 32-bit in PyObject_AsWriteBuffer");
+-				nr = HandleNativeGatewayError(methodName);
+-		        } else {
+-				if (py_size > count) {
+-					PyXPCOM_LogWarning("nsIInputStream::read() was asked for %d bytes, but the string returned is %d bytes - truncating!\n", count, py_size);
+-					py_size = count;
+-				}
+-				memcpy(buf, py_buf, py_size);
+-				*_retval = py_size;
++			if (py_size > count) {
++				PyXPCOM_LogWarning("nsIInputStream::read() was asked for %d bytes, but the string returned is %d bytes - truncating!\n", count, py_size);
++				py_size = count;
+ 			}
++			memcpy(buf, py_buf, py_size);
++			*_retval = py_size;
+ 		}
++		if (have_view)
++			PyBuffer_Release(&view);
++		Py_XDECREF(ret);
+ 	}
+ 	return nr;
+ }
+diff -ruN a/xpcom/src/PyIID.cpp b/xpcom/src/PyIID.cpp
+--- a/xpcom/src/PyIID.cpp	2026-11-13 00:39:08.164852723 -0500
++++ b/xpcom/src/PyIID.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -59,12 +59,14 @@
+ 	PyObject *obIID;
+ 	PyObject *obBuf;
+ 	if ( PyArg_ParseTuple(args, "O", &obBuf)) {
+-		if (PyBuffer_Check(obBuf)) {
+-			PyBufferProcs *pb = NULL;
+-			pb = obBuf->ob_type->tp_as_buffer;
+-			void *buf = NULL;
+-			int size = (*pb->bf_getreadbuffer)(obBuf, 0, &buf);
++		if (PyObject_CheckBuffer(obBuf)) {
++			Py_buffer view;
++			if (PyObject_GetBuffer(obBuf, &view, PyBUF_SIMPLE) != 0)
++				return NULL;
++			void *buf = view.buf;
++			Py_ssize_t size = view.len;
+ 			if (size != sizeof(nsIID) || buf==NULL) {
++				PyBuffer_Release(&view);
+ 				PyErr_Format(PyExc_ValueError, "A buffer object to be converted to an IID must be exactly %zd bytes long", sizeof(nsIID));
+ 				return NULL;
+ 			}
+@@ -80,6 +82,7 @@
+ 				iid.m3[i] = *((PRUint8 *)ptr);
+ 				ptr += sizeof(PRUint8);
+ 			}
++			PyBuffer_Release(&view);
+ 			return new Py_nsIID(iid);
+ 		}
+ 	}
+@@ -137,26 +140,32 @@
+ // <nl>All pythoncom functions that return a CLSID/IID will return one of these
+ // objects.  However, in almost all cases, functions that expect a CLSID/IID
+ // as a param will accept either a string object, or a native Py_nsIID object.
+-PyTypeObject Py_nsIID::type =
++PyTypeObject Py_nsIID::type = {};
++
++/*static*/ void
++Py_nsIID::InitType()
+ {
+-	PyObject_HEAD_INIT(&PyType_Type)
+-	0,
+-	"IID",
+-	sizeof(Py_nsIID),
+-	0,
+-	PyTypeMethod_dealloc,                           /* tp_dealloc */
+-	0,                                              /* tp_print */
+-	PyTypeMethod_getattr,                           /* tp_getattr */
+-	0,                                              /* tp_setattr */
+-	PyTypeMethod_compare,                           /* tp_compare */
+-	PyTypeMethod_repr,                              /* tp_repr */
+-	0,                                              /* tp_as_number */
+-	0,                                              /* tp_as_sequence */
+-	0,                                              /* tp_as_mapping */
+-	PyTypeMethod_hash,                              /* tp_hash */
+-	0,                                              /* tp_call */
+-	PyTypeMethod_str,                               /* tp_str */
+-};
++	static bool initialized = false;
++	if (initialized)
++		return;
++	initialized = true;
++	PyTypeObject *t = &type;
++	memset(t, 0, sizeof(*t));
++	PyObject_Init((PyObject *)t, &PyType_Type);
++	t->tp_name = "IID";
++	t->tp_basicsize = sizeof(Py_nsIID);
++	t->tp_itemsize = 0;
++	t->tp_dealloc = PyTypeMethod_dealloc;
++	t->tp_getattro = PyTypeMethod_getattro;
++	t->tp_richcompare = PyTypeMethod_richcompare;
++	t->tp_repr = PyTypeMethod_repr;
++	t->tp_hash = PyTypeMethod_hash;
++	t->tp_str = PyTypeMethod_str;
++	t->tp_flags = Py_TPFLAGS_DEFAULT;
++	if (PyType_Ready(t) < 0) {
++		PyErr_Clear();
++	}
++}
+ 
+ Py_nsIID::Py_nsIID(const nsIID &riid)
+ {
+@@ -166,10 +175,13 @@
+ }
+ 
+ /*static*/PyObject *
+-Py_nsIID::PyTypeMethod_getattr(PyObject *self, char *name)
++Py_nsIID::PyTypeMethod_getattro(PyObject *self, PyObject *name)
+ {
+ 	Py_nsIID *me = (Py_nsIID *)self;
+-	if (strcmp(name, "name")==0) {
++	const char *cname = PyUnicode_AsUTF8(name);
++	if (cname == NULL)
++		return NULL;
++	if (strcmp(cname, "name")==0) {
+ 		char *iid_repr = nullptr;
+ 		nsCOMPtr<nsIInterfaceInfoManager> iim(do_GetService(
+ 		               NS_INTERFACEINFOMANAGER_SERVICE_CONTRACTID));
+@@ -185,16 +197,28 @@
+ 			ret = PyString_FromString("<cant get IID info!>");
+ 		return ret;
+ 	}
+-	return PyErr_Format(PyExc_AttributeError, "IID objects have no attribute '%s'", name);
++	return PyErr_Format(PyExc_AttributeError, "IID objects have no attribute '%s'", cname);
+ }
+ 
+-/* static */ int
+-Py_nsIID::PyTypeMethod_compare(PyObject *self, PyObject *other)
++/* static */ PyObject *
++Py_nsIID::PyTypeMethod_richcompare(PyObject *self, PyObject *other, int op)
+ {
+ 	Py_nsIID *s_iid = (Py_nsIID *)self;
+ 	Py_nsIID *o_iid = (Py_nsIID *)other;
+-	int rc = memcmp(&s_iid->m_iid, &o_iid->m_iid, sizeof(s_iid->m_iid)); 
+-	return rc == 0 ? 0 : (rc < 0 ? -1 : 1);
++	int rc = memcmp(&s_iid->m_iid, &o_iid->m_iid, sizeof(s_iid->m_iid));
++	bool result;
++	switch (op) {
++		case Py_EQ: result = (rc == 0); break;
++		case Py_NE: result = (rc != 0); break;
++		case Py_LT: result = (rc < 0); break;
++		case Py_LE: result = (rc <= 0); break;
++		case Py_GT: result = (rc > 0); break;
++		case Py_GE: result = (rc >= 0); break;
++		default: Py_RETURN_NOTIMPLEMENTED;
++	}
++	if (result)
++		Py_RETURN_TRUE;
++	Py_RETURN_FALSE;
+ }
+ 
+ /* static */ PyObject *
+@@ -218,13 +242,13 @@
+ 	return ret;
+ }
+ 
+-/* static */long
++/* static */Py_hash_t
+ Py_nsIID::PyTypeMethod_hash(PyObject *self)
+ {
+ 	const nsIID &iid = ((Py_nsIID *)self)->m_iid;
+ 
+-	long ret = iid.m0 + iid.m1 + iid.m2;
+-	for (int i=0;i<7;i++)
++	Py_hash_t ret = iid.m0 + iid.m1 + iid.m2;
++	for (int i=0;i<8;i++)
+ 		ret += iid.m3[i];
+ 	if ( ret == -1 )
+ 		return -2;
+diff -ruN a/xpcom/src/PyIInputStream.cpp b/xpcom/src/PyIInputStream.cpp
+--- a/xpcom/src/PyIInputStream.cpp	2026-11-13 00:39:08.164852723 -0500
++++ b/xpcom/src/PyIInputStream.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -64,24 +64,27 @@
+ static PyObject *DoPyRead_Buffer(nsIInputStream *pI, PyObject *obBuffer, PRUint64 n)
+ {
+ 	PRUint32 nread;
+-	void *buf;
+-	Py_ssize_t buf_len;
+-	if (PyObject_AsWriteBuffer(obBuffer, &buf, &buf_len) != 0) {
++	Py_buffer view;
++	if (PyObject_GetBuffer(obBuffer, &view, PyBUF_WRITABLE) != 0) {
+ 		PyErr_Clear();
+ 		PyErr_SetString(PyExc_TypeError, "The buffer object does not have a write buffer!");
+ 		return NULL;
+ 	}
+ 
++	Py_ssize_t buf_len = view.len;
++	void *buf = view.buf;
++
+ 	if ( (buf_len & 0xFFFFFFFF) != buf_len) {
++		PyBuffer_Release(&view);
+ 		PyErr_Clear();
+-		PyErr_SetString(PyExc_RuntimeError, "Python Buffer length overflows 32-bit in PyObject_AsWriteBuffer");
++		PyErr_SetString(PyExc_RuntimeError, "Python Buffer length overflows 32-bit in PyObject_GetBuffer");
+ 		return NULL;
+ 	}
+ 
+ 	if (n==(PRUint64)-1) {
+ 		n = buf_len;
+ 	} else {
+-		if (n > buf_len) {
++		if (n > (PRUint64)buf_len) {
+ 			NS_WARNING("Warning: PyIInputStream::read() was passed an integer size greater than the size of the passed buffer!  Buffer size used.\n");
+ 			n = buf_len;
+ 		}
+@@ -91,6 +94,7 @@
+ 	Py_BEGIN_ALLOW_THREADS;
+ 	r = pI->Read((char *)buf, static_cast<uint32_t>(n), &nread);
+ 	Py_END_ALLOW_THREADS;
++	PyBuffer_Release(&view);
+ 	if ( NS_FAILED(r) )
+ 		return PyXPCOM_BuildPyException(r);
+ 	return PyInt_FromLong(nread);
+@@ -108,7 +112,7 @@
+ 		MOZ_ASSERT(n >= 0, "Too much available");
+ 	}
+ 	if (n == 0) { // mozilla will assert if we alloc zero bytes.
+-		return PyBuffer_New(0);
++		return PyBytes_FromStringAndSize("", 0);
+ 	}
+ 	char *buf = (char *)moz_malloc(static_cast<size_t>(n));
+ 	if (buf==NULL) {
+@@ -123,26 +127,7 @@
+ 	Py_END_ALLOW_THREADS;
+ 	PyObject *rc = NULL;
+ 	if ( NS_SUCCEEDED(r) ) {
+-		rc = PyBuffer_New(nread);
+-		if (rc != NULL) {
+-			void *ob_buf;
+-			Py_ssize_t buf_len;
+-			if (PyObject_AsWriteBuffer(rc, &ob_buf, &buf_len) != 0) {
+-				// should never fail - we just created it!
+-				return NULL;
+-			}
+-
+-			if ( (buf_len & 0xFFFFFFFF) != buf_len) {
+-				PyErr_SetString(PyExc_RuntimeError, "Python Buffer length overflows 32-bit in PyObject_AsWriteBuffer");
+-				return NULL;
+-			}
+-
+-			if (buf_len != nread) {
+-				PyErr_SetString(PyExc_RuntimeError, "New buffer isn't the size we created it!");
+-				return NULL;
+-			}
+-			memcpy(ob_buf, buf, nread);
+-		}
++		rc = PyBytes_FromStringAndSize(buf, nread);
+ 	} else
+ 		PyXPCOM_BuildPyException(r);
+ 	nsMemory::Free(buf);
+diff -ruN a/xpcom/src/PyIInterfaceInfo.cpp b/xpcom/src/PyIInterfaceInfo.cpp
+--- a/xpcom/src/PyIInterfaceInfo.cpp	2026-11-13 00:39:17.036432266 -0500
++++ b/xpcom/src/PyIInterfaceInfo.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -46,6 +46,7 @@
+ // (c) 2000, ActiveState corp.
+ 
+ #include "PyXPCOM_std.h"
++#include "nsThreadUtils.h"
+ 
+ 
+ static nsIInterfaceInfo *GetI(PyObject *self) {
+diff -ruN a/xpcom/src/PyISupports.cpp b/xpcom/src/PyISupports.cpp
+--- a/xpcom/src/PyISupports.cpp	2026-11-13 00:39:08.164852723 -0500
++++ b/xpcom/src/PyISupports.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -180,7 +180,7 @@
+ 		return ret;
+ 	}
+ 	PyXPCOM_TypeObject *this_type = (PyXPCOM_TypeObject *)ob_type;
+-	return Py_FindMethodInChain(&this_type->chain, this, (char *)name);
++	return PyXPCOM_FindMethodInChain(&this_type->chain, this, (char *)name);
+ }
+ 
+ /* virtual */ int
+diff -ruN a/xpcom/src/PyXPCOM.h b/xpcom/src/PyXPCOM.h
+--- a/xpcom/src/PyXPCOM.h	2026-11-13 00:39:17.024912258 -0500
++++ b/xpcom/src/PyXPCOM.h	2026-11-13 00:27:08.456058877 -0500
+@@ -89,6 +89,8 @@
+ 
+ #include <Python.h>
+ 
++#include "py3compat.h"
++
+ // python 2.4 doesn't have Py_ssize_t
+ // => fallback to int
+ #if PY_VERSION_HEX < 0x02050000 && !defined(PY_SSIZE_T_MIN)
+@@ -225,7 +227,7 @@
+ 		PyXPCOM_I_CTOR ctor);
+ 	~PyXPCOM_TypeObject();
+ 
+-	PyMethodChain chain;
++	PyXPCOMMethodChain chain;
+ 	PyXPCOM_TypeObject *baseType;
+ 	PyXPCOM_I_CTOR ctor;
+ 
+@@ -234,10 +236,10 @@
+ 	static void Py_dealloc(PyObject *ob);
+ 	static PyObject *Py_repr(PyObject *ob);
+ 	static PyObject *Py_str(PyObject *ob);
+-	static PyObject *Py_getattr(PyObject *self, char *name);
+-	static int Py_setattr(PyObject *op, char *name, PyObject *v);
+-	static int Py_cmp(PyObject *ob1, PyObject *ob2);
+-	static long Py_hash(PyObject *self);
++	static PyObject *Py_getattro(PyObject *self, PyObject *name);
++	static int Py_setattro(PyObject *op, PyObject *name, PyObject *v);
++	static PyObject *Py_richcompare(PyObject *self, PyObject *other, int op);
++	static Py_hash_t Py_hash(PyObject *self);
+ };
+ 
+ //////////////////////////////////////////////////////////////////////////
+@@ -374,10 +376,11 @@
+ 
+ 	static bool IIDFromPyObject(PyObject *ob, nsIID *pRet);
+ 	/* Python support */
+-	static PyObject *PyTypeMethod_getattr(PyObject *self, char *name);
+-	static int PyTypeMethod_compare(PyObject *self, PyObject *ob);
++	static void InitType();
++	static PyObject *PyTypeMethod_getattro(PyObject *self, PyObject *name);
++	static PyObject *PyTypeMethod_richcompare(PyObject *self, PyObject *ob, int op);
+ 	static PyObject *PyTypeMethod_repr(PyObject *self);
+-	static long PyTypeMethod_hash(PyObject *self);
++	static Py_hash_t PyTypeMethod_hash(PyObject *self);
+ 	static PyObject *PyTypeMethod_str(PyObject *self);
+ 	static void PyTypeMethod_dealloc(PyObject *self);
+ 	static NS_EXPORT_STATIC_MEMBER_(PyTypeObject) type;
+diff -ruN a/xpcom/src/TypeObject.cpp b/xpcom/src/TypeObject.cpp
+--- a/xpcom/src/TypeObject.cpp	2026-11-13 00:39:08.165288367 -0500
++++ b/xpcom/src/TypeObject.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -51,35 +51,15 @@
+ #include <nsISupportsPrimitives.h>
+ 
+ 
+-static PyTypeObject PyInterfaceType_Type = {
+-	PyObject_HEAD_INIT(&PyType_Type)
+-	0,			/* Number of items for varobject */
+-	"interface-type",			/* Name of this type */
+-	sizeof(PyTypeObject),	/* Basic object size */
+-	0,			/* Item size for varobject */
+-	0,			/*tp_dealloc*/
+-	0,			/*tp_print*/
+-	PyType_Type.tp_getattr, /*tp_getattr*/
+-	0,			/*tp_setattr*/
+-	0,			/*tp_compare*/
+-	PyType_Type.tp_repr,	/*tp_repr*/
+-	0,			/*tp_as_number*/
+-	0,			/*tp_as_sequence*/
+-	0,			/*tp_as_mapping*/
+-	0,			/*tp_hash*/
+-	0,			/*tp_call*/
+-	0,			/*tp_str*/
+-	0,			/* tp_getattro */
+-	0,			/*tp_setattro */
+-	0,			/* tp_as_buffer */
+-	0,			/* tp_flags */
+-	"Define the behavior of a PythonCOM Interface type.",
+-};
++static PyTypeObject PyInterfaceType_Type = {};
+ 
+ /*static*/ bool
+ PyXPCOM_TypeObject::IsType(PyTypeObject *t)
+ {
+-	return t->ob_type == &PyInterfaceType_Type;
++	// All of our interface types are created by PyXPCOM_TypeObject and use
++	// Py_dealloc as their deallocator.  In Python 3 the old custom metaclass
++	// trick no longer works, so identify our types by this marker instead.
++	return t != NULL && t->tp_dealloc == &PyXPCOM_TypeObject::Py_dealloc;
+ }
+ 
+ ////////////////////////////////////////////////////////////////////
+@@ -87,20 +67,26 @@
+ // The type methods
+ //
+ /*static*/PyObject *
+-PyXPCOM_TypeObject::Py_getattr(PyObject *self, char *name)
++PyXPCOM_TypeObject::Py_getattro(PyObject *self, PyObject *name)
+ {
+-	return ((Py_nsISupports *)self)->getattr(name);
++	const char *cname = PyUnicode_AsUTF8(name);
++	if (cname == NULL)
++		return NULL;
++	return ((Py_nsISupports *)self)->getattr(cname);
+ }
+ 
+ /*static*/int
+-PyXPCOM_TypeObject::Py_setattr(PyObject *op, char *name, PyObject *v)
++PyXPCOM_TypeObject::Py_setattro(PyObject *op, PyObject *name, PyObject *v)
+ {
+-	return ((Py_nsISupports *)op)->setattr(name, v);
++	const char *cname = PyUnicode_AsUTF8(name);
++	if (cname == NULL)
++		return -1;
++	return ((Py_nsISupports *)op)->setattr(cname, v);
+ }
+ 
+ // @pymethod int|Py_nsISupports|__cmp__|Implements XPCOM rules for object identity.
+-/*static*/int
+-PyXPCOM_TypeObject::Py_cmp(PyObject *self, PyObject *other)
++/*static*/PyObject *
++PyXPCOM_TypeObject::Py_richcompare(PyObject *self, PyObject *other, int op)
+ {
+ 	// @comm As per the XPCOM rules for object identity, both objects are queried for nsISupports, and these values compared.
+ 	// The only meaningful test is for equality - the result of other comparisons is undefined
+@@ -108,20 +94,34 @@
+ 	nsISupports *pUnkOther;
+ 	nsISupports *pUnkThis;
+ 	if (!Py_nsISupports::InterfaceFromPyObject(self, NS_GET_IID(nsISupports), &pUnkThis, false))
+-		return -1;
++		return NULL;
+ 	if (!Py_nsISupports::InterfaceFromPyObject(other, NS_GET_IID(nsISupports), &pUnkOther, false)) {
+ 		pUnkThis->Release();
+-		return -1;
++		return NULL;
++	}
++	bool result;
++	switch (op) {
++		case Py_EQ: result = pUnkThis == pUnkOther; break;
++		case Py_NE: result = pUnkThis != pUnkOther; break;
++		case Py_LT: result = pUnkThis < pUnkOther; break;
++		case Py_LE: result = pUnkThis <= pUnkOther; break;
++		case Py_GT: result = pUnkThis > pUnkOther; break;
++		case Py_GE: result = pUnkThis >= pUnkOther; break;
++		default:
++			pUnkThis->Release();
++			pUnkOther->Release();
++			Py_RETURN_NOTIMPLEMENTED;
+ 	}
+-	int rc = pUnkThis==pUnkOther ? 0 :
+-		(pUnkThis < pUnkOther ? -1 : 1);
+ 	pUnkThis->Release();
+ 	pUnkOther->Release();
+-	return rc;
++	if (result)
++		Py_RETURN_TRUE;
++	Py_RETURN_FALSE;
+ }
+ 
+ // @pymethod int|Py_nsISupports|__hash__|Implement a hash-code for the XPCOM object using XPCOM identity rules.
+-/*static*/long PyXPCOM_TypeObject::Py_hash(PyObject *self)
++/*static*/Py_hash_t PyXPCOM_TypeObject::Py_hash(PyObject *self)
++
+ {
+ 	// We always return the value of the nsISupports *.
+ 	nsISupports *pUnkThis;
+@@ -185,42 +185,24 @@
+ 
+ PyXPCOM_TypeObject::PyXPCOM_TypeObject( const char *name, PyXPCOM_TypeObject *pBase, int typeSize, struct PyMethodDef* methodList, PyXPCOM_I_CTOR thector)
+ {
+-	static const PyTypeObject type_template = {
+-		PyObject_HEAD_INIT(&PyInterfaceType_Type)
+-		0,                                           /*ob_size*/
+-		"XPCOMTypeTemplate",                         /*tp_name*/
+-		sizeof(Py_nsISupports),                 /*tp_basicsize*/
+-		0,                                           /*tp_itemsize*/
+-		Py_dealloc,                                  /* tp_dealloc */
+-		0,                                           /* tp_print */
+-		Py_getattr,                                  /* tp_getattr */
+-		Py_setattr,                                  /* tp_setattr */
+-		Py_cmp,                                      /* tp_compare */
+-		Py_repr,                                     /* tp_repr */
+-    		0,                                           /* tp_as_number*/
+-		0,                                           /* tp_as_sequence */
+-		0,                                           /* tp_as_mapping */
+-		Py_hash,                                     /* tp_hash */
+-		0,                                           /* tp_call */
+-		Py_str,                                      /* tp_str */
+-		0,                                           /* tp_getattro */
+-		0,                                           /*tp_setattro */
+-		0,                                           /* tp_as_buffer */
+-		0,                                           /* tp_flags */
+-		0,                                           /* tp_doc */
+-		0,                                           /* tp_traverse */
+-		0,                                           /* tp_clear */
+-		0,                                           /* tp_richcompare */
+-		0,                                           /* tp_weaklistoffset */
+-		0,                                           /* tp_iter */
+-		0,                                           /* tp_iternext */
+-		0,                                           /* tp_methods */
+-		0,                                           /* tp_members */
+-		0,                                           /* tp_getset */
+-		0,                                           /* tp_base */
+-	};
++	// Zero the base PyTypeObject.  We deliberately do not zero the extra
++	// C++ members (chain/baseType/ctor) as they are set below.
++	memset((PyTypeObject *)this, 0, sizeof(PyTypeObject));
++	PyObject_Init((PyObject *)this, &PyType_Type);
+ 
+-	*((PyTypeObject *)this) = type_template;
++	tp_name = (char *)name;
++	tp_basicsize = typeSize;
++	tp_itemsize = 0;
++	tp_dealloc = Py_dealloc;
++	tp_getattro = Py_getattro;
++	tp_setattro = Py_setattro;
++	tp_richcompare = Py_richcompare;
++	tp_repr = Py_repr;
++	tp_hash = Py_hash;
++	tp_str = Py_str;
++	tp_methods = methodList;
++	tp_flags = Py_TPFLAGS_DEFAULT;
++	tp_base = pBase ? (PyTypeObject *)pBase : NULL;
+ 
+ 	chain.methods = methodList;
+ 	chain.link = pBase ? &pBase->chain : NULL;
+@@ -228,9 +210,9 @@
+ 	baseType = pBase;
+ 	ctor = thector;
+ 
+-	// cast away const, as Python doesn't use it.
+-	tp_name = (char *)name;
+-	tp_basicsize = typeSize;
++	if (PyType_Ready((PyTypeObject *)this) < 0) {
++		PyErr_Clear();
++	}
+ }
+ 
+ PyXPCOM_TypeObject::~PyXPCOM_TypeObject()
+diff -ruN a/xpcom/src/VariantUtils.cpp b/xpcom/src/VariantUtils.cpp
+--- a/xpcom/src/VariantUtils.cpp	2026-11-13 00:39:08.165288367 -0500
++++ b/xpcom/src/VariantUtils.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -418,7 +418,7 @@
+ 				FILL_SIMPLE_POINTER(char, *PyString_AS_STRING(val_use));
+ 				break;
+ 
+-			  case TD_WCHAR:
++			  case TD_WCHAR: {
+ 				if (!PyString_Check(val) && !PyUnicode_Check(val)) {
+ 					PyErr_SetString(PyExc_TypeError, "This parameter must be a string or Unicode object");
+ 					BREAK_FALSE;
+@@ -428,10 +428,12 @@
+ 				MOZ_ASSERT(PyUnicode_Check(val_use), "PyUnicode_FromObject didnt return a Unicode object!");
+ 				MOZ_ASSERT(PyUnicode_GET_SIZE(val_use) == 1, "String too long");
+ 				// Lossy!
+-				FILL_SIMPLE_POINTER(char16_t, *PyUnicode_AS_UNICODE(val_use));
+-				MOZ_ASSERT(*PyUnicode_AS_UNICODE(val_use) <= 0xFFFF,
++				char16_t wch = (char16_t)PyXPCOM_UnicodeChar(val_use);
++				MOZ_ASSERT(PyXPCOM_UnicodeChar(val_use) <= 0xFFFF,
+ 						   "Lossy cast of Unicode value to char16_t");
++				FILL_SIMPLE_POINTER(char16_t, wch);
+ 				break;
++				}
+ 
+ 			  case TD_PNSIID: {
+ 				nsIID **pp = reinterpret_cast<nsIID **>(pthis);
+@@ -1581,7 +1583,7 @@
+ 			BREAK_FALSE;
+ 		}
+ 		// Lossy!
+-		ns_v.val.wc = *PyUnicode_AS_UNICODE(val_use);
++		ns_v.val.wc = (char32_t)PyXPCOM_UnicodeChar(val_use);
+ 		break;
+ 		}
+ 
+@@ -2931,7 +2933,7 @@
+ 			BREAK_FALSE;
+ 		NS_ABORT_IF_FALSE(PyUnicode_Check(val_use), "PyUnicode_FromObject didnt return a Unicode object!");
+ 		// Lossy!
+-		FILL_SIMPLE_POINTER( char16_t, *PyUnicode_AS_UNICODE(val_use) );
++		FILL_SIMPLE_POINTER( char16_t, (char16_t)PyXPCOM_UnicodeChar(val_use) );
+ 		break;
+ 
+ //	  case nsXPTType::T_VOID:
+diff -ruN a/xpcom/src/XPCOMFunctions.cpp b/xpcom/src/XPCOMFunctions.cpp
+--- a/xpcom/src/XPCOMFunctions.cpp	2026-11-13 00:39:08.165288367 -0500
++++ b/xpcom/src/XPCOMFunctions.cpp	2026-11-13 00:27:08.456058877 -0500
+@@ -437,10 +437,10 @@
+ 
+ PyObject *AllocateBuffer(PyObject *self, PyObject *args)
+ {
+-	int bufSize;
+-	if (!PyArg_ParseTuple(args, "i", &bufSize))
++	Py_ssize_t bufSize;
++	if (!PyArg_ParseTuple(args, "n", &bufSize))
+ 		return NULL;
+-	return PyBuffer_New(bufSize);
++	return PyByteArray_FromStringAndSize(NULL, bufSize);
+ }
+ 
+ // Writes a message to the console service.  This could be done via pure
+@@ -517,6 +517,18 @@
+ 	{ NULL }
+ };
+ 
++static struct PyModuleDef xpcom_module_def = {
++	PyModuleDef_HEAD_INIT,
++	"_xpcom",
++	NULL,
++	-1,
++	xpcom_methods,
++	NULL,
++	NULL,
++	NULL,
++	NULL
++};
++
+ #define REGISTER_IID(t) { \
+ 	PyObject *iid_ob = Py_nsIID::PyObjectFromIID(NS_GET_IID(t)); \
+ 	PyDict_SetItemString(dict, "IID_"#t, iid_ob); \
+@@ -537,7 +549,7 @@
+ // The module init code.
+ //
+ extern "C" NS_EXPORT
+-bool
++PyObject *
+ init_xpcom_real() {
+     #if PYXPCOM_DEBUG_INTERFACE_COUNT || PYXPCOM_DEBUG_GATEWAY_COUNT
+     {
+@@ -562,18 +574,22 @@
+     // ensure the framework has valid state to work with.
+     PyXPCOM_EnsurePythonEnvironment();
+ 
+-    // Must force Python to start using thread locks
+-    PyEval_InitThreads();
++    // Initialize the IID type object before anything creates IIDs.
++    Py_nsIID::InitType();
+ 
+     // Create the module and add the functions
+-    oModule = Py_InitModule("_xpcom", xpcom_methods);
++    oModule = PyModule_Create(&xpcom_module_def);
++    if (oModule == NULL) {
++        PyXPCOM_LogError("Failed to create the _xpcom module");
++        return NULL;
++    }
+ 
+     PyObject *dict = PyModule_GetDict(oModule);
+     PyObject *pycom_Error = PyXPCOM_Error;
+     if (pycom_Error == NULL || PyDict_SetItemString(dict, "error", pycom_Error) != 0)
+     {
+             PyErr_SetString(PyExc_MemoryError, "can't define \"error\"");
+-            return false;
++            return NULL;
+     }
+     PyDict_SetItemString(dict, "IIDType", (PyObject *)&Py_nsIID::type);
+ 
+@@ -611,7 +627,15 @@
+                                    );
+     PyDict_SetItemString(dict, "NS_DEBUG", ob);
+     Py_DECREF(ob);
++
++    // Make the module visible to recursive imports that happen while the
++    // Python component loader is initializing.
++    PyObject *modules = PyImport_GetModuleDict();
++    if (modules != NULL) {
++        PyDict_SetItemString(modules, "_xpcom", oModule);
++    }
++
+     // Flag we initialized correctly!
+     PyXPCOM_ModuleInitialized = true;
+-    return true;
++    return oModule;
+ }
+diff -ruN a/xpcom/test/pyxpcom_test_tools.py b/xpcom/test/pyxpcom_test_tools.py
+--- a/xpcom/test/pyxpcom_test_tools.py	2026-11-13 00:39:08.166436808 -0500
++++ b/xpcom/test/pyxpcom_test_tools.py	2026-11-13 00:13:51.509265984 -0500
+@@ -44,7 +44,7 @@
+         win32pdh.RemoveCounter(hc2)
+         win32pdh.CloseQuery(hq)
+     else:
+-        raise RuntimeError, "Can't find myself!?"
++        raise RuntimeError("Can't find myself!?")
+ 
+ def CloseCounter(hq, hc):
+     win32pdh.RemoveCounter(hc)
+@@ -100,7 +100,7 @@
+         elif isinstance(test, unittest.TestCase):
+             test = self._getTestWrapper(test)
+         else:
+-            print "XXX - what is", test
++            print("XXX - what is", test)
+         return test
+ 
+ # A base class our tests should derive from (well, one day it will be)
+@@ -114,7 +114,7 @@
+ 
+ def testmain(*args, **kw):
+     new_kw = kw.copy()
+-    if not new_kw.has_key('testLoader'):
++    if 'testLoader' not in new_kw:
+         new_kw['testLoader'] = TestLoader()
+     try:
+         unittest.main(*args, **new_kw)
+@@ -123,4 +123,4 @@
+         ni = _xpcom._GetInterfaceCount()
+         ng = _xpcom._GetGatewayCount()
+         if ni or ng:
+-            print "********* WARNING - Leaving with %d/%d objects alive" % (ni,ng)
++            print("********* WARNING - Leaving with %d/%d objects alive" % (ni,ng))
+diff -ruN a/xpcom/test/regrtest.py b/xpcom/test/regrtest.py
+--- a/xpcom/test/regrtest.py	2026-11-13 00:39:08.166436808 -0500
++++ b/xpcom/test/regrtest.py	2026-11-13 00:13:51.291207812 -0500
+@@ -82,6 +82,6 @@
+     ni = _xpcom._GetInterfaceCount()
+     ng = _xpcom._GetGatewayCount()
+     if ni or ng:
+-        print "********* WARNING - Leaving with %d/%d objects alive" % (ni,ng)
++        print("********* WARNING - Leaving with %d/%d objects alive" % (ni,ng))
+     else:
+-        print "Yay! No leaks detected!"
++        print("Yay! No leaks detected!")
+diff -ruN a/xpcom/test/test_com_exceptions.py b/xpcom/test/test_com_exceptions.py
+--- a/xpcom/test/test_com_exceptions.py	2026-11-13 00:39:08.166436808 -0500
++++ b/xpcom/test/test_com_exceptions.py	2026-11-13 00:13:51.282066308 -0500
+@@ -69,15 +69,15 @@
+ 
+     def do_unsigned_long(self, p1, p2):
+         # This should cause the caller to see a "silent" NS_ERROR_NOT_IMPLEMENTED exception.
+-        raise ServerException, nsError.NS_ERROR_NOT_IMPLEMENTED
++        raise ServerException(nsError.NS_ERROR_NOT_IMPLEMENTED)
+ 
+     def do_long_long(self, p1, p2):
+         # This should cause the caller to see a "silent" NS_ERROR_NOT_IMPLEMENTED exception.
+-        raise ServerException, (nsError.NS_ERROR_NOT_IMPLEMENTED, "testing")
++        raise ServerException(nsError.NS_ERROR_NOT_IMPLEMENTED, "testing")
+ 
+     def do_unsigned_long_long(self, p1, p2):
+         # Report of a crash in this case - test it!
+-        raise ServerException, "A bad exception param"
++        raise ServerException("A bad exception param")
+ 
+ class TestHandler(logging.Handler):
+     def __init__(self, level=logging.ERROR): # only counting error records
+@@ -102,14 +102,14 @@
+         try:
+             try:
+                 func(*args)
+-            except COMException, what:
++            except COMException as what:
+                 if what.errno != expected_errno:
+                     raise
+         finally:
+             logger.handlers = old_handlers
+         if num_tracebacks != len(test_handler.records):
+-            print dir(logger)
+-        self.failUnlessEqual(num_tracebacks, len(test_handler.records),
++            print(dir(logger))
++        self.assertEqual(num_tracebacks, len(test_handler.records),
+                              "Expected %s tracebacks, got %s:\n\t%s" % (
+                                 num_tracebacks, len(test_handler.records),
+                                 "\n\t".join(test_handler.records)))
+diff -ruN a/xpcom/test/test_component/py_test_component.py b/xpcom/test/test_component/py_test_component.py
+--- a/xpcom/test/test_component/py_test_component.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_component/py_test_component.py	2026-11-13 00:15:43.522480609 -0500
+@@ -42,6 +42,9 @@
+ 
+ from xpcom import components, verbose, COMException, nsError
+ 
++def _cmp(a, b):
++    return (a > b) - (a < b)
++
+ class PythonTestComponent:
+     # Note we only list the "child" interface, not our intermediate interfaces
+     # (which we must, by definition, also support)
+@@ -77,7 +80,7 @@
+ 
+     def __del__(self):
+         if verbose:
+-            print "Python.TestComponent: __del__ method called - object is destructing"
++            print("Python.TestComponent: __del__ method called - object is destructing")
+ 
+     def do_boolean(self, p1, p2):
+         # boolean                  do_boolean(in boolean p1, inout boolean p2, out boolean p3);
+@@ -128,7 +131,7 @@
+         return ret, p1, p2
+     def do_wstring(self, p1, p2):
+         # wstring                  do_wstring(in wstring p1, inout wstring p2, out wstring p3);
+-        ret = u""
++        ret = ""
+         if p1 is not None: ret = ret + p1
+         if p2 is not None: ret = ret + p2
+         return ret, p1, p2
+@@ -200,7 +203,7 @@
+         #              [array, size_is(count)] in string arr2,
+         #              in unsigned long count,
+         #             [retval] out short result);
+-        return cmp(ar1, ar2)
++        return _cmp(ar1, ar2)
+ 
+     def DoubleString(self, val):
+         # void DoubleString(inout PRUint32 count, 
+@@ -252,11 +255,11 @@
+         return val.upper()
+     UpWideString2 = UpWideString
+     def CopyUTF8String(self, v):
+-        if not isinstance(v, unicode):
++        if not isinstance(v, str):
+             raise COMException(nsError.NS_ERROR_INVALID_ARG, "string %s is not a unicode, it's a %s" % (v, type(v)))
+         return v
+     def CopyUTF8String2(self, v):
+-        if not isinstance(v, unicode):
++        if not isinstance(v, str):
+             raise COMException(nsError.NS_ERROR_INVALID_ARG, "string %s is not a unicode, it's a %s" % (v, type(v)))
+         return v.encode("utf8")
+     # Test we can get an "out" array with an "in" size (and the size is not used anywhere as a size for an in!)
+@@ -265,7 +268,7 @@
+         if count > 1024:
+             # guard against PyXPCOM bugs eating memory
+             raise COMException(nsError.NS_ERROR_INVALID_ARG, "Count %s is too large" % (count,))
+-        return u"A" * count
++        return "A" * count
+ 
+     def GetStrings(self):
+         # void GetStrings(out PRUint32 count,
+@@ -282,7 +285,7 @@
+         #                [array, size_is(count)] inout PRUint8 data);
+         data = data.upper()
+         # This time we return a list of integers.
+-        return map( ord, data )
++        return list(map( ord, data ))
+ 
+     # Arrays of interfaces
+     def CheckInterfaceArray(self, interfaces):
+@@ -330,7 +333,7 @@
+     def SumArrays(self, array1, array2):
+         # void SumArrays(in PRUint32 count, [array, size_is(count)]in array1, [array, size_is(count)]in array2, [retval]result);
+         if len(array1)!=len(array2):
+-            print "SumArrays - not expecting different lengths!"
++            print("SumArrays - not expecting different lengths!")
+         result = 0
+         for i in array1:
+             result = result + i
+diff -ruN a/xpcom/test/test_components.py b/xpcom/test/test_components.py
+--- a/xpcom/test/test_components.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_components.py	2026-11-13 00:13:51.489780349 -0500
+@@ -42,7 +42,7 @@
+ from pyxpcom_test_tools import suite_from_functions, testmain
+ 
+ if not __debug__:
+-    raise RuntimeError, "This test uses assert, so must be run in debug mode"
++    raise RuntimeError("This test uses assert, so must be run in debug mode")
+ 
+ def test_interfaces():
+     "Test the xpcom.components.interfaces object"
+@@ -54,15 +54,15 @@
+     
+     # Test dictionary semantics
+     num_fetched = num_nsisupports = 0
+-    for name, iid in xpcom.components.interfaces.items():
++    for name, iid in list(xpcom.components.interfaces.items()):
+         num_fetched = num_fetched + 1
+         if name == "nsISupports":
+             num_nsisupports = num_nsisupports + 1
+             assert iid == xpcom._xpcom.IID_nsISupports, "Got the wrong IID!"
+         assert xpcom.components.interfaces[name] == iid
+     # Check all the lengths match.
+-    assert len(xpcom.components.interfaces.keys()) == len(xpcom.components.interfaces.values()) == \
+-               len(xpcom.components.interfaces.items()) == len(xpcom.components.interfaces) == \
++    assert len(list(xpcom.components.interfaces.keys())) == len(list(xpcom.components.interfaces.values())) == \
++               len(list(xpcom.components.interfaces.items())) == len(xpcom.components.interfaces) == \
+                num_fetched, "The collection lengths were wrong"
+     assert num_nsisupports == 1, "Didn't find exactly 1 nsiSupports!"
+ 
+@@ -77,7 +77,7 @@
+     
+     # Test dictionary semantics
+     num_fetched = num_mine = 0
+-    for name, klass in xpcom.components.classes.items():
++    for name, klass in list(xpcom.components.classes.items()):
+         num_fetched = num_fetched + 1
+         if name == prog_id:
+             assert klass.clsid == clsid, "Eeek - didn't get the correct IID - got %s" %klass.clsid
+@@ -86,16 +86,16 @@
+ # xpcom appears to add charset info to the contractid!?         
+ #        assert xpcom.components.classes[name].contractid == prog_id, "Expected '%s', got '%s'" % (prog_id, xpcom.components.classes[name].contractid)
+     # Check all the lengths match.
+-    if len(xpcom.components.classes.keys()) == len(xpcom.components.classes.values()) == \
+-               len(xpcom.components.classes.items()) == len(xpcom.components.classes) == \
++    if len(list(xpcom.components.classes.keys())) == len(list(xpcom.components.classes.values())) == \
++               len(list(xpcom.components.classes.items())) == len(xpcom.components.classes) == \
+                num_fetched:
+         pass
+     else:
+-        raise RuntimeError, "The collection lengths were wrong"
++        raise RuntimeError("The collection lengths were wrong")
+     if num_fetched <= 0:
+-        raise RuntimeError, "Didn't get any classes!!!"
++        raise RuntimeError("Didn't get any classes!!!")
+     if num_mine != 1:
+-        raise RuntimeError, "Didn't find exactly 1 of my contractid! (%d)" % (num_mine,)
++        raise RuntimeError("Didn't find exactly 1 of my contractid! (%d)" % (num_mine,))
+     
+ def test_id():
+     id = xpcom.components.ID(str(xpcom._xpcom.IID_nsISupports))
+diff -ruN a/xpcom/test/test_isupports_primitives.py b/xpcom/test/test_isupports_primitives.py
+--- a/xpcom/test/test_isupports_primitives.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_isupports_primitives.py	2026-11-13 00:16:01.898651561 -0500
+@@ -70,8 +70,8 @@
+ 
+ class ImplicitSupportsUnicode:
+     _com_interfaces_ = [components.interfaces.nsISupports]
+-    test_data = u"Copyright \xa9 the initial developer"
+-    def __unicode__(self):
++    test_data = "Copyright \xa9 the initial developer"
++    def __str__(self):
+         # An extended character in unicode tests can't hurt!
+         return self.test_data
+ 
+@@ -80,7 +80,7 @@
+                         components.interfaces.nsISupportsString]
+     type = components.interfaces.nsISupportsPrimitive.TYPE_STRING
+     # __unicode__ will be ignored by XPCOM, as we have _explicit_ support.
+-    test_data = u"Copyright \xa9 the initial developer"
++    test_data = "Copyright \xa9 the initial developer"
+     def __unicode__(self):
+         return self.test_data
+     def get_data(self):
+@@ -100,8 +100,8 @@
+ 
+ class ImplicitSupportsLong:
+     _com_interfaces_ = [components.interfaces.nsISupports]
+-    def __long__(self):
+-        return 99L
++    def __int__(self):
++        return 99
+ 
+ class ExplicitSupportsLong:
+     _com_interfaces_ = [components.interfaces.nsISupportsPrimitive,
+@@ -126,82 +126,82 @@
+     def testNoSupports(self):
+         ob = xpcom.server.WrapObject( NoSupportsString(), components.interfaces.nsISupports)
+         if not str(ob).startswith("<XPCOM "):
+-            raise RuntimeError, "Wrong str() value: %s" % (ob,)
++            raise RuntimeError("Wrong str() value: %s" % (ob,))
+ 
+     def testImplicitString(self):
+         ob = xpcom.server.WrapObject( ImplicitSupportsString(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(str(ob), "<MyImplicitStrObject>")
++        self.assertEqual(str(ob), "<MyImplicitStrObject>")
+ 
+     def testExplicitString(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsString(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(str(ob), "<MyExplicitStrObject>")
++        self.assertEqual(str(ob), "<MyExplicitStrObject>")
+ 
+     def testImplicitUnicode(self):
+         ob = xpcom.server.WrapObject( ImplicitSupportsUnicode(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(unicode(ob), ImplicitSupportsUnicode.test_data)
++        self.assertEqual(str(ob), ImplicitSupportsUnicode.test_data)
+ 
+     def testExplicitUnicode(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsUnicode(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(unicode(ob), ExplicitSupportsUnicode.test_data)
++        self.assertEqual(str(ob), ExplicitSupportsUnicode.test_data)
+ 
+     def testConvertInt(self):
+         # Try our conversions.
+         ob = xpcom.server.WrapObject( ExplicitSupportsString(), components.interfaces.nsISupports)
+-        self.failUnlessRaises( ValueError, int, ob)
++        self.assertRaises( ValueError, int, ob)
+ 
+     def testExplicitInt(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsInt(), components.interfaces.nsISupports)
+-        self.failUnlessAlmostEqual(float(ob), 99.0)
+-        self.failUnlessEqual(int(ob), 99)
++        self.assertAlmostEqual(float(ob), 99.0)
++        self.assertEqual(int(ob), 99)
+ 
+     def testImplicitInt(self):
+         ob = xpcom.server.WrapObject( ImplicitSupportsInt(), components.interfaces.nsISupports)
+-        self.failUnlessAlmostEqual(float(ob), 99.0)
+-        self.failUnlessEqual(int(ob), 99)
++        self.assertAlmostEqual(float(ob), 99.0)
++        self.assertEqual(int(ob), 99)
+ 
+     def testExplicitLong(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsLong(), components.interfaces.nsISupports)
+-        if long(ob) != 99 or not repr(long(ob)).endswith("L"):
+-            raise RuntimeError, "Bad value: %s" % (repr(long(ob)),)
+-        self.failUnlessAlmostEqual(float(ob), 99.0)
++        if int(ob) != 99:
++            raise RuntimeError("Bad value: %s" % (repr(int(ob)),))
++        self.assertAlmostEqual(float(ob), 99.0)
+ 
+     def testImplicitLong(self):
+         ob = xpcom.server.WrapObject( ImplicitSupportsLong(), components.interfaces.nsISupports)
+-        if long(ob) != 99 or not repr(long(ob)).endswith("L"):
+-            raise RuntimeError, "Bad value: %s" % (repr(long(ob)),)
+-        self.failUnlessAlmostEqual(float(ob), 99.0)
++        if int(ob) != 99:
++            raise RuntimeError("Bad value: %s" % (repr(int(ob)),))
++        self.assertAlmostEqual(float(ob), 99.0)
+ 
+     def testExplicitFloat(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsFloat(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(float(ob), 99.99)
+-        self.failUnlessEqual(int(ob), 99)
++        self.assertEqual(float(ob), 99.99)
++        self.assertEqual(int(ob), 99)
+ 
+     def testImplicitFloat(self):
+         ob = xpcom.server.WrapObject( ImplicitSupportsFloat(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(float(ob), 99.99)
+-        self.failUnlessEqual(int(ob), 99)
++        self.assertEqual(float(ob), 99.99)
++        self.assertEqual(int(ob), 99)
+ 
+ class PrimitivesModuleTestCase(unittest.TestCase):
+     def testExplicitString(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsString(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(primitives.GetPrimitive(ob), "<MyExplicitStrObject>")
++        self.assertEqual(primitives.GetPrimitive(ob), "<MyExplicitStrObject>")
+ 
+     def testExplicitUnicode(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsUnicode(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(primitives.GetPrimitive(ob), ExplicitSupportsUnicode.test_data)
+-        self.failUnlessEqual(type(primitives.GetPrimitive(ob)), unicode)
++        self.assertEqual(primitives.GetPrimitive(ob), ExplicitSupportsUnicode.test_data)
++        self.assertEqual(type(primitives.GetPrimitive(ob)), str)
+ 
+     def testExplicitInt(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsInt(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(primitives.GetPrimitive(ob), 99)
++        self.assertEqual(primitives.GetPrimitive(ob), 99)
+ 
+     def testExplicitLong(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsLong(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(primitives.GetPrimitive(ob), 99)
++        self.assertEqual(primitives.GetPrimitive(ob), 99)
+ 
+     def testExplicitFloat(self):
+         ob = xpcom.server.WrapObject( ExplicitSupportsFloat(), components.interfaces.nsISupports)
+-        self.failUnlessEqual(primitives.GetPrimitive(ob), 99.99)
++        self.assertEqual(primitives.GetPrimitive(ob), 99.99)
+ 
+ if __name__=='__main__':
+     testmain()
+diff -ruN a/xpcom/test/test_misc.py b/xpcom/test/test_misc.py
+--- a/xpcom/test/test_misc.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_misc.py	2026-11-13 00:17:39.078845605 -0500
+@@ -41,7 +41,6 @@
+ import xpcom.server
+ import xpcom._xpcom
+ import xpcom.components
+-import string
+ from pyxpcom_test_tools import testmain
+ 
+ import unittest
+@@ -59,15 +58,15 @@
+         return xpcom.components.classes[contractid].createInstance()
+     except xpcom.COMException:
+         if not reportedSampleMissing:
+-            print "***"
+-            print "*** This test requires an XPCOM sample component,"
+-            print "*** which does not exist.  To build this test, you"
+-            print "*** should change to the 'mozilla/xpcom/sample' directory,"
+-            print "*** and run 'make', then run this test again."
+-            print "***"
++            print("***")
++            print("*** This test requires an XPCOM sample component,")
++            print("*** which does not exist.  To build this test, you")
++            print("*** should change to the 'mozilla/xpcom/sample' directory,")
++            print("*** and run 'make', then run this test again.")
++            print("***")
+             reportedSampleMissing = 1
+         else:
+-            print "(skipping - no C++ sample...) ",
++            print("(skipping - no C++ sample...) ", end=' ')
+         return None
+ 
+ def get_sample_component_js():
+@@ -85,15 +84,15 @@
+         iim = xpcom._xpcom.XPTI_GetInterfaceInfoManager()
+     
+         if verbose_level:
+-            print "Dumping every interface I can find"
++            print("Dumping every interface I can find")
+         for num, iid in enumerate(iim.GetScriptableInterfaces().values()):
+             if verbose_level:
+                 iface = xpcom.xpt.Interface(iid)
+-                print iface.Describe()
++                print(iface.Describe())
+         if num < 200:
+-            print "Only found", num, "interfaces - this seems unusually low!"
++            print("Only found", num, "interfaces - this seems unusually low!")
+         elif verbose_level:
+-            print "Found", num, "interfaces"
++            print("Found", num, "interfaces")
+ 
+ class TestEnumContractIDs(unittest.TestCase):
+     def testContractIDs(self):
+@@ -104,9 +103,9 @@
+             item = enum.getNext(xpcom.components.interfaces.nsISupportsCString)
+             n = n + 1
+             if verbose_level:
+-                print "ContractID:", item.data
++                print("ContractID:", item.data)
+         if n < 200:
+-            print "Only found", n, "ContractIDs - this seems unusually low!"
++            print("Only found", n, "ContractIDs - this seems unusually low!")
+ 
+ class TestSampleComponent(unittest.TestCase):
+     def _doTestSampleComponent(self, test_flat = 0):
+@@ -120,11 +119,11 @@
+             test_flat = False # JS doesn't implement classinfo
+         if not test_flat:
+             c = c.queryInterface(xpcom.components.interfaces.nsISample)
+-        self.failUnlessEqual(c.value, initial_value)
++        self.assertEqual(c.value, initial_value)
+         c.value = "new value"
+-        self.failUnlessEqual(c.value, "new value")
++        self.assertEqual(c.value, "new value")
+         c.poke("poked value")
+-        self.failUnlessEqual(c.value, "poked value")
++        self.assertEqual(c.value, "poked value")
+         c.writeValue("Python just poked:")
+ 
+     def testSampleComponentFlat(self):
+@@ -139,10 +138,10 @@
+         "Test that hashing COM objects works"
+         d = {}
+         d[c] = None
+-        if not d.has_key(c):
+-            raise RuntimeError, "Can't get the exact same object back!"
+-        if not d.has_key(c.queryInterface(xpcom.components.interfaces.nsISupports)):
+-            raise RuntimeError, "Can't get back as nsISupports"
++        if c not in d:
++            raise RuntimeError("Can't get the exact same object back!")
++        if c.queryInterface(xpcom.components.interfaces.nsISupports) not in d:
++            raise RuntimeError("Can't get back as nsISupports")
+ 
+         # And the same in reverse - stick an nsISupports in, and make sure an explicit interface comes back.
+         d = {}
+@@ -150,10 +149,10 @@
+ #        c = xpcom.components.classes[contractid].createInstance() \
+ #            .queryInterface(xpcom.components.interfaces.nsISupports)
+         d[c] = None
+-        if not d.has_key(c):
+-            raise RuntimeError, "Can't get the exact same object back!"
+-        if not d.has_key(c.queryInterface(xpcom.components.interfaces.nsISample)):
+-            raise RuntimeError, "Can't get back as nsISupports"
++        if c not in d:
++            raise RuntimeError("Can't get the exact same object back!")
++        if c.queryInterface(xpcom.components.interfaces.nsISample) not in d:
++            raise RuntimeError("Can't get back as nsISupports")
+ 
+     def testHashJS(self):
+         c = get_sample_component_js()
+@@ -170,15 +169,15 @@
+         "Do some basic IID semantic tests."
+         iid_str = "{7ee4bdc6-cb53-42c1-a9e4-616b8e012aba}"
+         IID = xpcom._xpcom.IID
+-        self.failUnlessEqual(IID(iid_str), IID(iid_str))
+-        self.failUnlessEqual(hash(IID(iid_str)), hash(IID(iid_str)))
+-        self.failUnlessEqual(IID(iid_str), IID(iid_str.upper()))
+-        self.failUnlessEqual(hash(IID(iid_str)), hash(IID(iid_str.upper())))
++        self.assertEqual(IID(iid_str), IID(iid_str))
++        self.assertEqual(hash(IID(iid_str)), hash(IID(iid_str)))
++        self.assertEqual(IID(iid_str), IID(iid_str.upper()))
++        self.assertEqual(hash(IID(iid_str)), hash(IID(iid_str.upper())))
+         # If the above work, this shoud too, but WTF
+         dict = {}
+         dict[IID(iid_str)] = None
+-        self.failUnless(dict.has_key(IID(iid_str)), "hashes failed in dictionary")
+-        self.failUnless(dict.has_key(IID(iid_str.upper())), "uppercase hash failed in dictionary")
++        self.assertTrue(IID(iid_str) in dict, "hashes failed in dictionary")
++        self.assertTrue(IID(iid_str.upper()) in dict, "uppercase hash failed in dictionary")
+ 
+ class TestRepr(unittest.TestCase):
+     def _doTestRepr(self, progid, interfaces):
+@@ -186,9 +185,9 @@
+             ob = xpcom.components.classes[progid].createInstance()
+         else:
+             ob = progid
+-        self.failUnless(repr(ob).find(str(progid)) >= 0, repr(ob))
++        self.assertTrue(repr(ob).find(str(progid)) >= 0, repr(ob))
+         for interface_name in interfaces.split():
+-            self.failUnless(repr(ob).find(interface_name) >= 0, repr(ob))
++            self.assertTrue(repr(ob).find(interface_name) >= 0, repr(ob))
+ 
+     def testReprPython(self):
+         "Test repr() of Python objects"
+@@ -215,12 +214,12 @@
+         pyob = xpcom.server.UnwrapObject(ob)
+         # This depends on our __repr__ implementation, but that's OK - it
+         # can be updated should our __repr__ change :)
+-        self.failUnless(str(pyob).startswith("<component:py_test_component.PythonTestComponent"))
++        self.assertTrue(str(pyob).startswith("<component:py_test_component.PythonTestComponent"))
+         # Test that a non-Python implemented object can NOT be unwrapped.
+         ob = get_sample_component_any()
+         if ob is None:
+             return
+-        self.failUnlessRaises(ValueError, xpcom.server.UnwrapObject, ob)
++        self.assertRaises(ValueError, xpcom.server.UnwrapObject, ob)
+ 
+ class TestNonScriptable(unittest.TestCase):
+     def testQI(self):
+@@ -254,7 +253,7 @@
+         # QI to nsILoadGroup and fail
+         with self.assertRaises(xpcom.Exception) as cm:
+             comp.QueryInterface(xpcom.components.interfaces.nsILoadGroup)
+-        self.assertEquals(cm.exception.errno, xpcom.nsError.NS_ERROR_NO_INTERFACE)
++        self.assertEqual(cm.exception.errno, xpcom.nsError.NS_ERROR_NO_INTERFACE)
+         # Check that it's still on nsIChannel
+         # (the bug caused it to look on nsILoadGroup)
+         self.assertIsNone(comp.notificationCallbacks)
+@@ -267,7 +266,7 @@
+         # QI to nsILoadGroup and fail
+         with self.assertRaises(xpcom.Exception) as cm:
+             comp.QueryInterface(xpcom.components.interfaces.nsILoadGroup)
+-        self.assertEquals(cm.exception.errno, xpcom.nsError.NS_ERROR_NO_INTERFACE)
++        self.assertEqual(cm.exception.errno, xpcom.nsError.NS_ERROR_NO_INTERFACE)
+         # Check that it's still on nsIChannel
+         # (the bug caused it to look on nsILoadGroup)
+         self.assertIsNone(comp.notificationCallbacks)
+diff -ruN a/xpcom/test/test_optional_params.py b/xpcom/test/test_optional_params.py
+--- a/xpcom/test/test_optional_params.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_optional_params.py	2026-11-13 00:13:51.531311423 -0500
+@@ -50,40 +50,40 @@
+         ob = components.classes["Python.TestComponent"].createInstance()
+ 
+         ob.SetOptionalNumbers(8, 100)
+-        self.failUnless(ob.optional_number_1 == 8)
+-        self.failUnless(ob.optional_number_2 == 100)
++        self.assertTrue(ob.optional_number_1 == 8)
++        self.assertTrue(ob.optional_number_2 == 100)
+         ob.SetOptionalNumbers(5)
+-        self.failUnless(ob.optional_number_1 == 5)
+-        self.failUnless(ob.optional_number_2 == 0)
++        self.assertTrue(ob.optional_number_1 == 5)
++        self.assertTrue(ob.optional_number_2 == 0)
+         ob.SetOptionalNumbers()
+-        self.failUnless(ob.optional_number_1 == 0)
+-        self.failUnless(ob.optional_number_2 == 0)
++        self.assertTrue(ob.optional_number_1 == 0)
++        self.assertTrue(ob.optional_number_2 == 0)
+ 
+         ob.SetOptionalStrings("blah", "TestOptionalParams")
+-        self.failUnless(ob.optional_string_1 == "blah")
+-        self.failUnless(ob.optional_string_2 == "TestOptionalParams")
++        self.assertTrue(ob.optional_string_1 == "blah")
++        self.assertTrue(ob.optional_string_2 == "TestOptionalParams")
+         ob.SetOptionalStrings("try2")
+-        self.failUnless(ob.optional_string_1 == "try2")
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_string_1 == "try2")
++        self.assertTrue(ob.optional_string_2 == None)
+         ob.SetOptionalStrings()
+-        self.failUnless(ob.optional_string_1 == None)
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_string_1 == None)
++        self.assertTrue(ob.optional_string_2 == None)
+ 
+         ob.SetNumbersAndOptionalStrings(7, -3, "bleat", "bloat")
+-        self.failUnless(ob.optional_number_1 == 7)
+-        self.failUnless(ob.optional_number_2 == -3)
+-        self.failUnless(ob.optional_string_1 == "bleat")
+-        self.failUnless(ob.optional_string_2 == "bloat")
++        self.assertTrue(ob.optional_number_1 == 7)
++        self.assertTrue(ob.optional_number_2 == -3)
++        self.assertTrue(ob.optional_string_1 == "bleat")
++        self.assertTrue(ob.optional_string_2 == "bloat")
+         ob.SetNumbersAndOptionalStrings(77, -33, "wheat")
+-        self.failUnless(ob.optional_number_1 == 77)
+-        self.failUnless(ob.optional_number_2 == -33)
+-        self.failUnless(ob.optional_string_1 == "wheat")
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 77)
++        self.assertTrue(ob.optional_number_2 == -33)
++        self.assertTrue(ob.optional_string_1 == "wheat")
++        self.assertTrue(ob.optional_string_2 == None)
+         ob.SetNumbersAndOptionalStrings(777, -333)
+-        self.failUnless(ob.optional_number_1 == 777)
+-        self.failUnless(ob.optional_number_2 == -333)
+-        self.failUnless(ob.optional_string_1 == None)
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 777)
++        self.assertTrue(ob.optional_number_2 == -333)
++        self.assertTrue(ob.optional_string_1 == None)
++        self.assertTrue(ob.optional_string_2 == None)
+         try:
+             ob.SetNumbersAndOptionalStrings(1)
+             self.fail("Expected an exception for not enough arguments")
+@@ -91,30 +91,30 @@
+             pass
+ 
+         ob.SetOptionalNumbersAndStrings(8, -5, "optionals", " some stuff")
+-        self.failUnless(ob.optional_number_1 == 8)
+-        self.failUnless(ob.optional_number_2 == -5)
+-        self.failUnless(ob.optional_string_1 == "optionals")
+-        self.failUnless(ob.optional_string_2 == " some stuff")
++        self.assertTrue(ob.optional_number_1 == 8)
++        self.assertTrue(ob.optional_number_2 == -5)
++        self.assertTrue(ob.optional_string_1 == "optionals")
++        self.assertTrue(ob.optional_string_2 == " some stuff")
+         ob.SetOptionalNumbersAndStrings(88, -55, "forarray")
+-        self.failUnless(ob.optional_number_1 == 88)
+-        self.failUnless(ob.optional_number_2 == -55)
+-        self.failUnless(ob.optional_string_1 == "forarray")
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 88)
++        self.assertTrue(ob.optional_number_2 == -55)
++        self.assertTrue(ob.optional_string_1 == "forarray")
++        self.assertTrue(ob.optional_string_2 == None)
+         ob.SetOptionalNumbersAndStrings(888, -555)
+-        self.failUnless(ob.optional_number_1 == 888)
+-        self.failUnless(ob.optional_number_2 == -555)
+-        self.failUnless(ob.optional_string_1 == None)
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 888)
++        self.assertTrue(ob.optional_number_2 == -555)
++        self.assertTrue(ob.optional_string_1 == None)
++        self.assertTrue(ob.optional_string_2 == None)
+         ob.SetOptionalNumbersAndStrings(8888)
+-        self.failUnless(ob.optional_number_1 == 8888)
+-        self.failUnless(ob.optional_number_2 == 0)
+-        self.failUnless(ob.optional_string_1 == None)
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 8888)
++        self.assertTrue(ob.optional_number_2 == 0)
++        self.assertTrue(ob.optional_string_1 == None)
++        self.assertTrue(ob.optional_string_2 == None)
+         ob.SetOptionalNumbersAndStrings()
+-        self.failUnless(ob.optional_number_1 == 0)
+-        self.failUnless(ob.optional_number_2 == 0)
+-        self.failUnless(ob.optional_string_1 == None)
+-        self.failUnless(ob.optional_string_2 == None)
++        self.assertTrue(ob.optional_number_1 == 0)
++        self.assertTrue(ob.optional_number_2 == 0)
++        self.assertTrue(ob.optional_string_1 == None)
++        self.assertTrue(ob.optional_string_2 == None)
+ 
+ if __name__=='__main__':
+     testmain()
+diff -ruN a/xpcom/test/test_rewrapping.py b/xpcom/test/test_rewrapping.py
+--- a/xpcom/test/test_rewrapping.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_rewrapping.py	2026-11-13 00:13:51.544275445 -0500
+@@ -64,7 +64,7 @@
+             obsvc = components.classes["@mozilla.org/observer-service;1"]\
+                               .getService(components.interfaces.nsIObserverService)
+             obsvc.removeObserver(self, topic)
+-        except COMException, e:
++        except COMException as e:
+             somesupports.fail("Falied to remove observer: 0x%08x" %
+                               (e.errno & 0xFFFFFFFF,))
+             raise
+diff -ruN a/xpcom/test/test_streams.py b/xpcom/test/test_streams.py
+--- a/xpcom/test/test_streams.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_streams.py	2026-11-13 00:15:45.293497353 -0500
+@@ -37,7 +37,7 @@
+ 
+ import xpcom
+ from xpcom import _xpcom, components, COMException, ServerException, nsError
+-from StringIO import StringIO
++from io import StringIO
+ import unittest
+ from pyxpcom_test_tools import testmain
+ 
+@@ -55,7 +55,7 @@
+         pass
+ 
+     def available( self ):
+-        return self.data.len-self.data.pos
++        return len(self.data.getvalue()) - self.data.tell()
+ 
+     def readStr( self, amount):
+         return self.data.read(amount)
+@@ -85,11 +85,11 @@
+         self.do_test_input( get_test_input() )
+ 
+     def do_test_input(self, myStream):
+-        self.failUnlessEqual(str(myStream.read(5)), test_data[:5])
+-        self.failUnlessEqual(str(myStream.read(0)), '')
+-        self.failUnlessEqual(str(myStream.read(5)), test_data[5:10])
+-        self.failUnlessEqual(str(myStream.read(-1)), test_data[10:])
+-        self.failIf(myStream.isNonBlocking(), "Expected default to be blocking")
++        self.assertEqual(str(myStream.read(5)), test_data[:5])
++        self.assertEqual(str(myStream.read(0)), '')
++        self.assertEqual(str(myStream.read(5)), test_data[5:10])
++        self.assertEqual(str(myStream.read(-1)), test_data[10:])
++        self.assertFalse(myStream.isNonBlocking(), "Expected default to be blocking")
+         # stream observer mechanism has changed - we should test that.
+ 
+ if __name__=='__main__':
+diff -ruN a/xpcom/test/test_test_component.py b/xpcom/test/test_test_component.py
+--- a/xpcom/test/test_test_component.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_test_component.py	2026-11-13 00:15:43.522480609 -0500
+@@ -40,6 +40,9 @@
+ import xpcom._xpcom
+ import xpcom.nsError
+ 
++def _cmp(a, b):
++    return (a > b) - (a < b)
++
+ MakeVariant = xpcom._xpcom.MakeVariant
+ 
+ try:
+@@ -55,8 +58,8 @@
+ contractid = "Python.TestComponent"
+ 
+ really_big_string = "This is really repetitive!" * 10000
+-really_big_wstring = u"This is really repetitive!" * 10000
+-extended_unicode_string = u"The Euro Symbol is '\u20ac'"
++really_big_wstring = "This is really repetitive!" * 10000
++extended_unicode_string = "The Euro Symbol is '\u20ac'"
+ 
+ Cc = xpcom.components.classes
+ Ci = xpcom.components.interfaces
+@@ -69,7 +72,7 @@
+     UnsignedMismatchException = OverflowError
+ 
+ def print_error(error):
+-    print error
++    print(error)
+     global num_errors
+     num_errors = num_errors + 1
+ 
+@@ -85,7 +88,7 @@
+ 
+ def test_attribute(ob, attr_name, expected_init, new_value, new_value_really = None, expected_type = None):
+     if xpcom.verbose:
+-        print "Testing attribute %s" % (attr_name,)
++        print("Testing attribute %s" % (attr_name,))
+     if new_value_really is None:
+         new_value_really = new_value # Handy for eg bools - set a BOOL to 2, you still get back 1!
+         
+@@ -106,14 +109,14 @@
+     test_attribute(ob, attr_name, expected_init, val, expected, expected_type=expected_type)
+     test_attribute(ob, attr_name, expected_init, "", expected_type=expected_type)
+     test_attribute(ob, attr_name, expected_init, really_big_string, expected_type=expected_type)
+-    test_attribute(ob, attr_name, expected_init, u"normal unicode value", expected_type=expected_type)
+-    val = u"a null >\0<"
++    test_attribute(ob, attr_name, expected_init, "normal unicode value", expected_type=expected_type)
++    val = "a null >\0<"
+     if is_dumb_sz:
+         expected = "a null >" # dumb strings are \0 terminated.
+     else:
+         expected = val
+     test_attribute(ob, attr_name, expected_init, val, expected, expected_type=expected_type)
+-    test_attribute(ob, attr_name, expected_init, u"", expected_type=expected_type)
++    test_attribute(ob, attr_name, expected_init, "", expected_type=expected_type)
+     test_attribute(ob, attr_name, expected_init, really_big_wstring, expected_type=expected_type)
+     if not ascii_only:
+         test_attribute(ob, attr_name, expected_init, extended_unicode_string, expected_type=expected_type)
+@@ -137,10 +140,10 @@
+ 
+ def test_method(method, args, expected_results, expected_type = None):
+     if xpcom.verbose:
+-        print "Testing %s%s" % (method.__name__, `args`)
++        print("Testing %s%s" % (method.__name__, repr(args)))
+     try:
+         ret = method(*args)
+-    except Exception, ex:
++    except Exception as ex:
+         print_error("calling method %s with %r - exception:" %
+                     (method.__name__, args))
+         traceback.print_exc(None, sys.stdout)
+@@ -188,17 +191,17 @@
+ 
+     test_attribute(c, "short_value", 3, 10, expected_type=int)
+     test_attribute(c, "short_value", 3, -1, expected_type=int) # 16 bit signed
+-    test_attribute(c, "short_value", 3, 0L, expected_type=int)
+-    test_attribute(c, "short_value", 3, 1L, expected_type=int)
+-    test_attribute(c, "short_value", 3, -1L, expected_type=int)
++    test_attribute(c, "short_value", 3, 0, expected_type=int)
++    test_attribute(c, "short_value", 3, 1, expected_type=int)
++    test_attribute(c, "short_value", 3, -1, expected_type=int)
+     test_attribute_failure(c, "short_value", 0xFFFF, OverflowError) # 16 bit signed
+     test_attribute_failure(c, "short_value", "boo", ValueError)
+ 
+     test_attribute(c, "ushort_value",  4, 5, expected_type=int)
+     test_attribute(c, "ushort_value",  4, 0, expected_type=int)
+     test_attribute(c, "ushort_value",  4, 0xFFFF, expected_type=int) # 16 bit signed
+-    test_attribute(c, "ushort_value",  4, 0L, expected_type=int)
+-    test_attribute(c, "ushort_value",  4, 1L, expected_type=int)
++    test_attribute(c, "ushort_value",  4, 0, expected_type=int)
++    test_attribute(c, "ushort_value",  4, 1, expected_type=int)
+     test_attribute_failure(c, "ushort_value",  -1, OverflowError) # 16 bit signed
+     test_attribute_failure(c, "ushort_value", "boo", ValueError)
+ 
+@@ -206,17 +209,17 @@
+     test_attribute(c, "long_value",  5, 0, expected_type=int)
+     test_attribute(c, "long_value",  5, -1, -1, expected_type=int) # 32 bit signed.
+     test_attribute(c, "long_value",  5, -1, expected_type=int) # 32 bit signed.
+-    test_attribute(c, "long_value",  5, 0L, expected_type=int)
+-    test_attribute(c, "long_value",  5, 1L, expected_type=int)
+-    test_attribute(c, "long_value",  5, -1L, expected_type=int)
+-    test_attribute_failure(c, "long_value", 0xFFFFL * 0xFFFF, OverflowError) # long int too long to convert
++    test_attribute(c, "long_value",  5, 0, expected_type=int)
++    test_attribute(c, "long_value",  5, 1, expected_type=int)
++    test_attribute(c, "long_value",  5, -1, expected_type=int)
++    test_attribute_failure(c, "long_value", 0xFFFF * 0xFFFF, OverflowError) # long int too long to convert
+     test_attribute_failure(c, "long_value", "boo", ValueError)
+ 
+     test_attribute(c, "ulong_value", 6, 7, expected_type=int)
+     test_attribute(c, "ulong_value", 6, 0, expected_type=int)
+-    test_attribute(c, "ulong_value", 6, 0x80004004L) # should fit 32 bits on 32 bit machines
++    test_attribute(c, "ulong_value", 6, 0x80004004) # should fit 32 bits on 32 bit machines
+     test_attribute_failure(c, "ulong_value", -1, OverflowError) # 32 bit signed.
+-    test_attribute_failure(c, "ulong_value", 0x100010002L, OverflowError) # Needs 33 bits
++    test_attribute_failure(c, "ulong_value", 0x100010002, OverflowError) # Needs 33 bits
+     test_attribute_failure(c, "ulong_value", "boo", ValueError)
+     
+     # don't check type on long long; they are int on 64-bit systems, and long on 32-bit
+@@ -224,59 +227,59 @@
+     test_attribute(c, "long_long_value", 7, 0)
+     test_attribute(c, "long_long_value", 7, -1)
+     test_attribute(c, "long_long_value", 7, 0xFFFF)
+-    test_attribute(c, "long_long_value", 7, 0xFFFFL * 2)
+-    test_attribute_failure(c, "long_long_value", 0xFFFFL * 0xFFFF * 0xFFFF * 0xFFFF, OverflowError) # long int too long to convert
++    test_attribute(c, "long_long_value", 7, 0xFFFF * 2)
++    test_attribute_failure(c, "long_long_value", 0xFFFF * 0xFFFF * 0xFFFF * 0xFFFF, OverflowError) # long int too long to convert
+     test_attribute_failure(c, "long_long_value", "boo", ValueError)
+     
+     test_attribute(c, "ulong_long_value", 8, 9)
+     test_attribute(c, "ulong_long_value", 8, 0)
+     if not isJS:
+-        test_attribute(c, "ulong_long_value", 8, 0x8000700060005000L) # 64-bit unsigned int should fit 64 bits
++        test_attribute(c, "ulong_long_value", 8, 0x8000700060005000) # 64-bit unsigned int should fit 64 bits
+     test_attribute_failure(c, "ulong_long_value", "boo", ValueError)
+     test_attribute_failure(c, "ulong_long_value", -1, UnsignedMismatchException) # can't convert negative value to unsigned long)
+-    test_attribute_failure(c, "ulong_long_value", 0x10001000200030004L, OverflowError) # Needs 65 bits
++    test_attribute_failure(c, "ulong_long_value", 0x10001000200030004, OverflowError) # Needs 65 bits
+     
+     test_attribute(c, "float_value", 9.0, 10.2, expected_type=float)
+     test_attribute(c, "float_value", 9.0, 0, expected_type=float)
+     test_attribute(c, "float_value", 9.0, -1, expected_type=float)
+-    test_attribute(c, "float_value", 9.0, 1L, expected_type=float)
++    test_attribute(c, "float_value", 9.0, 1, expected_type=float)
+     test_attribute_failure(c, "float_value", "boo", ValueError)
+ 
+     test_attribute(c, "double_value", 10.0, 9.0, expected_type=float)
+     test_attribute(c, "double_value", 10.0, 0, expected_type=float)
+     test_attribute(c, "double_value", 10.0, -1, expected_type=float)
+-    test_attribute(c, "double_value", 10.0, 1L, expected_type=float)
++    test_attribute(c, "double_value", 10.0, 1, expected_type=float)
+     test_attribute_failure(c, "double_value", "boo", ValueError)
+     
+     test_attribute(c, "char_value", "a", "b", expected_type=str)
+     test_attribute(c, "char_value", "a", "\0", expected_type=str)
+     test_attribute_failure(c, "char_value", "xy", ValueError)
+-    test_attribute(c, "char_value", "a", u"c", expected_type=str)
+-    test_attribute(c, "char_value", "a", u"\0", expected_type=str)
+-    test_attribute_failure(c, "char_value", u"xy", ValueError)
++    test_attribute(c, "char_value", "a", "c", expected_type=str)
++    test_attribute(c, "char_value", "a", "\0", expected_type=str)
++    test_attribute_failure(c, "char_value", "xy", ValueError)
+     
+-    test_attribute(c, "wchar_value", "b", "a", expected_type=unicode)
+-    test_attribute(c, "wchar_value", "b", "\0", expected_type=unicode)
++    test_attribute(c, "wchar_value", "b", "a", expected_type=str)
++    test_attribute(c, "wchar_value", "b", "\0", expected_type=str)
++    test_attribute_failure(c, "wchar_value", "hi", ValueError)
++    test_attribute(c, "wchar_value", "b", "a", expected_type=str)
++    test_attribute(c, "wchar_value", "b", "\0", expected_type=str)
+     test_attribute_failure(c, "wchar_value", "hi", ValueError)
+-    test_attribute(c, "wchar_value", "b", u"a", expected_type=unicode)
+-    test_attribute(c, "wchar_value", "b", u"\0", expected_type=unicode)
+-    test_attribute_failure(c, "wchar_value", u"hi", ValueError)
+     
+     test_string_attribute(c, "string_value", "cee", is_dumb_sz = True, ascii_only = True, expected_type=str)
+-    test_string_attribute(c, "wstring_value", "dee", is_dumb_sz = True, expected_type=unicode)
+-    test_string_attribute(c, "astring_value", "astring", expected_type=unicode)
++    test_string_attribute(c, "wstring_value", "dee", is_dumb_sz = True, expected_type=str)
++    test_string_attribute(c, "astring_value", "astring", expected_type=str)
+     test_string_attribute(c, "acstring_value", "acstring", ascii_only = True, expected_type=str)
+ 
+     # Test NULL astring values are supported.
+     # https://bugzilla.mozilla.org/show_bug.cgi?id=450784
+     c.astring_value = None
+-    test_string_attribute(c, "astring_value", None, expected_type=(type(None), unicode))
++    test_string_attribute(c, "astring_value", None, expected_type=(type(None), str))
+     c.astring_value = "astring"
+-    test_string_attribute(c, "astring_value", "astring", expected_type=unicode)
++    test_string_attribute(c, "astring_value", "astring", expected_type=str)
+ 
+-    test_string_attribute(c, "utf8string_value", "utf8string", expected_type=unicode)
++    test_string_attribute(c, "utf8string_value", "utf8string", expected_type=str)
+     # Test a string already encoded gets through correctly.
+-    test_attribute(c, "utf8string_value", "utf8string", extended_unicode_string.encode("utf8"), extended_unicode_string, expected_type=unicode)
++    test_attribute(c, "utf8string_value", "utf8string", extended_unicode_string.encode("utf8"), extended_unicode_string, expected_type=str)
+ 
+     # This will fail internal string representation :(  Test we don't crash
+     try:
+@@ -318,12 +321,12 @@
+     test_method(c.do_wchar, ("A", "\0"), ("A", "\0","A") )
+ 
+     test_method(c.do_string, ("Hello from ", "Python"), ("Hello from Python", "Hello from ", "Python") )
+-    test_method(c.do_string, (u"Hello from ", u"Python"), ("Hello from Python", "Hello from ", "Python") )
+-    test_method(c.do_string, (None, u"Python"), ("Python", None, "Python") )
++    test_method(c.do_string, ("Hello from ", "Python"), ("Hello from Python", "Hello from ", "Python") )
++    test_method(c.do_string, (None, "Python"), ("Python", None, "Python") )
+     test_method(c.do_string, (None, really_big_string), (really_big_string, None, really_big_string) )
+     test_method(c.do_string, (None, really_big_wstring), (really_big_string, None, really_big_string) )
+     test_method(c.do_wstring, ("Hello from ", "Python"), ("Hello from Python", "Hello from ", "Python") )
+-    test_method(c.do_wstring, (u"Hello from ", u"Python"), ("Hello from Python", "Hello from ", "Python") )
++    test_method(c.do_wstring, ("Hello from ", "Python"), ("Hello from Python", "Hello from ", "Python") )
+     test_method(c.do_string, (None, really_big_wstring), (really_big_wstring, None, really_big_wstring) )
+     test_method(c.do_string, (None, really_big_string), (really_big_wstring, None, really_big_wstring) )
+     test_method(c.do_nsIIDRef, (component_iid, new_iid), (component_iid, component_iid, new_iid))
+@@ -366,40 +369,40 @@
+     test_method(c.UpString, (val,), val.upper(), expected_type=str)
+     test_method(c.UpString2, (val,), val.upper(), expected_type=str)
+     test_method(c.GetFixedString, (20,), "A"*20, expected_type=str)
+-    val = u"Hello\0there"
++    val = "Hello\0there"
+     expected = val * 2
+     if not isJS:
+         # Don't test from JS, it can't deal with nulls in |string|s
+         # (it _can_ deal with nulls in AStrings/ACStrings)
+-        test_method(c.DoubleWideString, (val,), expected, expected_type=unicode)
+-        test_method(c.DoubleWideString2, (val,), expected, expected_type=unicode)
+-        test_method(c.DoubleWideString3, (val,), expected, expected_type=unicode)
+-        test_method(c.DoubleWideString4, (val,), expected, expected_type=unicode)
+-    test_method(c.UpWideString, (val,), val.upper(), expected_type=unicode)
+-    test_method(c.UpWideString2, (val,), val.upper(), expected_type=unicode)
+-    test_method(c.GetFixedWideString, (20,), u"A"*20, expected_type=unicode)
++        test_method(c.DoubleWideString, (val,), expected, expected_type=str)
++        test_method(c.DoubleWideString2, (val,), expected, expected_type=str)
++        test_method(c.DoubleWideString3, (val,), expected, expected_type=str)
++        test_method(c.DoubleWideString4, (val,), expected, expected_type=str)
++    test_method(c.UpWideString, (val,), val.upper(), expected_type=str)
++    test_method(c.UpWideString2, (val,), val.upper(), expected_type=str)
++    test_method(c.GetFixedWideString, (20,), "A"*20, expected_type=str)
+     val = extended_unicode_string
+-    test_method(c.CopyUTF8String, ("foo",), u"foo", expected_type=unicode)
+-    test_method(c.CopyUTF8String, (u"foo",), u"foo", expected_type=unicode)
+-    test_method(c.CopyUTF8String, (val,), val, expected_type=unicode)
+-    test_method(c.CopyUTF8String, (val.encode("utf8"),), val, expected_type=unicode)
+-    test_method(c.CopyUTF8String2, ("foo",), u"foo", expected_type=unicode)
+-    test_method(c.CopyUTF8String2, (u"foo",), u"foo", expected_type=unicode)
+-    test_method(c.CopyUTF8String2, (val,), val, expected_type=unicode)
+-    test_method(c.CopyUTF8String2, (val.encode("utf8"),), val, expected_type=unicode)
++    test_method(c.CopyUTF8String, ("foo",), "foo", expected_type=str)
++    test_method(c.CopyUTF8String, ("foo",), "foo", expected_type=str)
++    test_method(c.CopyUTF8String, (val,), val, expected_type=str)
++    test_method(c.CopyUTF8String, (val.encode("utf8"),), val, expected_type=str)
++    test_method(c.CopyUTF8String2, ("foo",), "foo", expected_type=str)
++    test_method(c.CopyUTF8String2, ("foo",), "foo", expected_type=str)
++    test_method(c.CopyUTF8String2, (val,), val, expected_type=str)
++    test_method(c.CopyUTF8String2, (val.encode("utf8"),), val, expected_type=str)
+     items = [1,2,3,4,5]
+-    test_method(c.MultiplyEachItemInIntegerArray, (3, items,), map(lambda i:i*3, items))
++    test_method(c.MultiplyEachItemInIntegerArray, (3, items,), [i*3 for i in items])
+ 
+-    test_method(c.MultiplyEachItemInIntegerArrayAndAppend, (3, items), items + map(lambda i:i*3, items))
++    test_method(c.MultiplyEachItemInIntegerArrayAndAppend, (3, items), items + [i*3 for i in items])
+     items = "Hello from Python".split()
+-    expected = map( lambda x: x*2, items)
++    expected = [x*2 for x in items]
+     test_method(c.DoubleStringArray, (items,), expected)
+ 
+-    test_method(c.CompareStringArrays, (items, items), cmp(items, items))
++    test_method(c.CompareStringArrays, (items, items), _cmp(items, items))
+     # Can we pass lists and tuples correctly?
+-    test_method(c.CompareStringArrays, (items, tuple(items)), cmp(items, items))
++    test_method(c.CompareStringArrays, (items, tuple(items)), _cmp(items, items))
+     items2 = ["Not", "the", "same"]
+-    test_method(c.CompareStringArrays, (items, items2), cmp(items, items2))
++    test_method(c.CompareStringArrays, (items, items2), _cmp(items, items2))
+ 
+     expected = items[:]
+     expected.reverse()
+@@ -410,7 +413,7 @@
+ 
+     val = "Hello\0there"
+     test_method(c.UpOctetArray, (val,), val.upper(), expected_type=bytes)
+-    test_method(c.UpOctetArray, (unicode(val),), val.upper(), expected_type=bytes)
++    test_method(c.UpOctetArray, (str(val),), val.upper(), expected_type=bytes)
+     # Passing Unicode objects here used to cause us grief.
+     test_method(c.UpOctetArray2, (val,), val.upper(), expected_type=bytes)
+ 
+@@ -444,7 +447,7 @@
+     test_method(c.CopyVariant, (-1,), -1)
+     test_method(c.CopyVariant, ((1 << 31) - 1,), (1 << 31) - 1)
+     test_method(c.CopyVariant, ("foo",), "foo")
+-    test_method(c.CopyVariant, (u"foo",), u"foo")
++    test_method(c.CopyVariant, ("foo",), "foo")
+     test_method(c.CopyVariant, (c,), c)
+     test_method(c.CopyVariant, (component_iid,), component_iid)
+     test_method(c.CopyVariant, ((1,2),), [1,2])
+@@ -474,15 +477,15 @@
+         c = c.queryInterface(xpcom.components.interfaces.nsIPythonTestInterfaceDOMStrings)
+ # NULL DOM strings don't work yet.
+ #    test_method(c.GetDOMStringResult, (-1,), None)
+-    test_method(c.GetDOMStringResult, (3,), "PPP", expected_type=unicode)
++    test_method(c.GetDOMStringResult, (3,), "PPP", expected_type=str)
+ #    test_method(c.GetDOMStringOut, (-1,), None)
+-    test_method(c.GetDOMStringOut, (4,), "yyyy", expected_type=unicode)
++    test_method(c.GetDOMStringOut, (4,), "yyyy", expected_type=str)
+     val = "Hello there"
+     test_method(c.GetDOMStringLength, (val,), len(val), expected_type=int)
+     test_method(c.GetDOMStringRefLength, (val,), len(val), expected_type=int)
+     test_method(c.GetDOMStringPtrLength, (val,), len(val), expected_type=int)
+-    test_method(c.ConcatDOMStrings, (val,val), val+val, expected_type=unicode)
+-    test_attribute(c, "domstring_value", "dom", "new dom", expected_type=unicode)
++    test_method(c.ConcatDOMStrings, (val,val), val+val, expected_type=str)
++    test_attribute(c, "domstring_value", "dom", "new dom", expected_type=str)
+     if c.domstring_value_ro != "dom":
+         print_error("Read-only DOMString not correct - got %s" % (c.domstring_ro,))
+     try:
+@@ -499,11 +502,11 @@
+     c = xpcom.client.Component(contractid, xpcom.components.interfaces.nsIPythonTestInterfaceExtra)
+     try:
+         ret = c.do_nsISupportsIs( xpcom._xpcom.IID_nsIInterfaceInfoManager )
+-        print "*** got", ret, "***"
+-        raise RuntimeError, "We worked when using an IID we don't support!?!"
+-    except xpcom.Exception, details:
++        print("*** got", ret, "***")
++        raise RuntimeError("We worked when using an IID we don't support!?!")
++    except xpcom.Exception as details:
+         if details.errno != xpcom.nsError.NS_ERROR_NO_INTERFACE:
+-            raise RuntimeError, "Wrong COM exception type: %r" % (details,)
++            raise RuntimeError("Wrong COM exception type: %r" % (details,))
+ 
+ def test_failures():
+     # This extra stack-frame ensures Python cleans up sys.last_traceback etc
+@@ -532,11 +535,11 @@
+     assert c._object_name_ == contractid
+ 
+ def test_all():
+-    print "Testing Python -> Python"
++    print("Testing Python -> Python")
+     try:
+         test_component(contractid)
+     finally:
+-        print "End testing Python -> Python"
++        print("End testing Python -> Python")
+     test_failures()
+     test_from_js()
+     test_from_python_to_js()
+@@ -551,24 +554,24 @@
+ from pyxpcom_test_tools import getmemusage
+ 
+ def test_from_js():
+-    print "Testing JS -> Python:"
++    print("Testing JS -> Python:")
+     try:
+         c = Cc["JavaScript.TestComponent"].createInstance(Ci.nsIRunnable)
+         c.run() # throws on failure
+     finally:
+-        print "End testing JS -> Python"
++        print("End testing JS -> Python")
+ 
+ def test_from_python_to_js():
+-    print "Testing Python -> JS:"
++    print("Testing Python -> JS:")
+     try:
+         test_component("JavaScript.TestComponent", isJS=True)
+     finally:
+-        print "End testing Python -> JS"
++        print("End testing Python -> JS")
+ 
+ def doit(num_loops = -1):
+     # Do the test lots of times - can help shake-out ref-count bugs.
+     if num_loops == -1: num_loops = 5
+-    for i in xrange(num_loops):
++    for i in range(num_loops):
+         test_all()
+ 
+         if i==0:
+@@ -593,7 +596,7 @@
+     # This can't indicate a real leak, as we have looped
+     # more than twice!
+     if abs(lost)>3: # 2 or 3 :)
+-        print "*** Lost %d references" % (lost,)
++        print("*** Lost %d references" % (lost,))
+ 
+     # sleep to allow the OS to recover
+     time.sleep(1)
+@@ -607,7 +610,7 @@
+     # worried, bump the counter to a huge value, and if there is a leak it will
+     # show.
+     if mem_lost > 3000000:
+-        print "*** Lost %.6f MB of memory" % (mem_lost/1000000.0,)
++        print("*** Lost %.6f MB of memory" % (mem_lost/1000000.0,))
+ 
+     assert num_errors==0, "There were %d errors testing the Python component" % (num_errors,)
+ 
+@@ -623,10 +626,10 @@
+     if "-v" in sys.argv: # Hack the verbose flag for the server
+         xpcom.verbose = 1
+ 
+-    print "Testing the Python.TestComponent component"
++    print("Testing the Python.TestComponent component")
+     doit(num_iters)
+-    print "The Python test component worked."
++    print("The Python test component worked.")
+     xpcom._xpcom.NS_ShutdownXPCOM()
+     ni = xpcom._xpcom._GetInterfaceCount()
+     ng = xpcom._xpcom._GetGatewayCount()
+-    print "test completed with %d interfaces and %d objects." % (ni, ng)
++    print("test completed with %d interfaces and %d objects." % (ni, ng))
+diff -ruN a/xpcom/test/test_weakreferences.py b/xpcom/test/test_weakreferences.py
+--- a/xpcom/test/test_weakreferences.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/test/test_weakreferences.py	2026-11-13 00:13:51.475096852 -0500
+@@ -62,36 +62,36 @@
+ def test():
+     ob = xpcom.server.WrapObject( koTestSimple(), components.interfaces.nsIInputStream)
+ 
+-    if num_alive != 1: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
++    if num_alive != 1: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
+ 
+     # Check we can create a weak reference to our object.
+     wr = xpcom.client.WeakReference(ob)
+-    if num_alive != 1: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
++    if num_alive != 1: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
+ 
+     # Check we can call methods via the weak reference.
+-    if wr() is None: raise RuntimeError, "Our weak-reference is returning None before it should!"
++    if wr() is None: raise RuntimeError("Our weak-reference is returning None before it should!")
+     wr().close()
+ 
+     ob  = None # This should kill the object.    
+-    if num_alive != 0: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
+-    if wr() is not None: raise RuntimeError, "Our weak-reference is not returning None when it should!"
++    if num_alive != 0: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
++    if wr() is not None: raise RuntimeError("Our weak-reference is not returning None when it should!")
+ 
+     # Now a test that we can get a _new_ interface from the weak reference - ie,
+     # an IID the real object has never previously been queried for
+     # (this behaviour previously caused a bug - never again ;-)
+     ob = xpcom.server.WrapObject( koTestSimple(), components.interfaces.nsISupports)
+-    if num_alive != 1: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
++    if num_alive != 1: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
+     wr = xpcom.client.WeakReference(ob, components.interfaces.nsIInputStream)
+-    if num_alive != 1: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
++    if num_alive != 1: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
+     wr() # This would die once upon a time ;-)
+     ob  = None # This should kill the object.    
+-    if num_alive != 0: raise RuntimeError, "Eeek - there are %d objects alive" % (num_alive,)
+-    if wr() is not None: raise RuntimeError, "Our weak-reference is not returning None when it should!"
++    if num_alive != 0: raise RuntimeError("Eeek - there are %d objects alive" % (num_alive,))
++    if wr() is not None: raise RuntimeError("Our weak-reference is not returning None when it should!")
+ 
+ def test_refcount(num_loops=-1):
+     # Do the test lots of times - can help shake-out ref-count bugs.
+     if num_loops == -1: num_loops = 10
+-    for i in xrange(num_loops):
++    for i in range(num_loops):
+         test()
+ 
+         if i==0:
+@@ -104,7 +104,7 @@
+     # This can't indicate a real leak, as we have looped
+     # more than twice!
+     if abs(lost)>2:
+-        print "*** Lost %d references" % (lost,)
++        print("*** Lost %d references" % (lost,))
+ 
+ # Make this test run under our std test suite
+ def suite():
+diff -ruN a/xpcom/tools/count_trace.py b/xpcom/tools/count_trace.py
+--- a/xpcom/tools/count_trace.py	2026-11-13 00:39:08.166544149 -0500
++++ b/xpcom/tools/count_trace.py	2026-11-13 00:13:51.559957303 -0500
+@@ -72,15 +72,15 @@
+         obj[t].add(supports)
+ 
+ for bucket in interfaces, gateways:
+-    for iid, iface in bucket.items():
++    for iid, iface in list(bucket.items()):
+         if "name" in iface:
+             del bucket[iid]
+             iid = iface["name"]
+             bucket[iid] = iface
+             del iface["name"]
+-        if not bucket[iid].keys():
++        if not list(bucket[iid].keys()):
+             del bucket[iid] # no leaks
+-        for ptr, pyobj in iface.items():
++        for ptr, pyobj in list(iface.items()):
+             if isinstance(pyobj, dict) and "name" in pyobj:
+                 del iface[ptr]
+                 ptr = "%s=%s" % (pyobj["name"], ptr.split("=", 1)[-1])
+@@ -89,19 +89,19 @@
+ 
+ def cast(obj):
+     if isinstance(obj, defaultdict):
+-        return dict((k, cast(v)) for k, v in obj.items())
++        return dict((k, cast(v)) for k, v in list(obj.items()))
+     if isinstance(obj, set):
+         return list(obj)
+     return obj
+ 
+ if gateways:
+-    print "gateways:"
++    print("gateways:")
+     pprint(cast(gateways))
+ else:
+-    print "No gateways leaked"
++    print("No gateways leaked")
+ 
+ if interfaces:
+-    print "interfaces:"
++    print("interfaces:")
+     pprint(cast(interfaces))
+ else:
+-    print "No interfaces leaked"
++    print("No interfaces leaked")
+diff -ruN a/xpcom/tools/nsError_generate.py b/xpcom/tools/nsError_generate.py
+--- a/xpcom/tools/nsError_generate.py	2026-11-13 00:39:08.167206849 -0500
++++ b/xpcom/tools/nsError_generate.py	2026-11-13 00:13:51.582952337 -0500
+@@ -23,7 +23,7 @@
+ import re, subprocess, sys
+ 
+ if len(sys.argv) < 3:
+-    print "Usage: %s nsError.h nsError.py" % (sys.argv[0])
++    print("Usage: %s nsError.h nsError.py" % (sys.argv[0]))
+     sys.exit(1)
+ 
+ for compiler in "clang", "gcc":
+@@ -84,8 +84,8 @@
+     for name, value in sorted(literals.items()):
+         stmt = "%s = %s\n" % (name, value)
+         try:
+-            exec stmt in env
+-        except Exception, ex:
++            exec(stmt, env)
++        except Exception as ex:
+             pass # we might depend on things not there yet
+         else:
+             out.write(stmt)
+@@ -95,7 +95,7 @@
+ hardcoded = ["def NS_LIKELY(x): return bool(x)\n",
+              "def NS_UNLIKELY(x): return bool(x)\n"]
+ for stmt in hardcoded:
+-    exec stmt in env
++    exec(stmt, env)
+     out.write(stmt)
+ 
+ # next, print out functions
+@@ -108,8 +108,8 @@
+         value = value[:match.start()] + value[match.end():]
+     stmt = "def %s: return %s\n" % (name, value)
+     try:
+-        exec stmt in env
+-    except Exception, ex:
++        exec(stmt, env)
++    except Exception as ex:
+         sys.stderr.write("Failed: %s: %s\n" % (stmt, ex))
+     else:
+         out.write(stmt)
+@@ -118,8 +118,8 @@
+     for name, value in sorted(literals.items()):
+         stmt = "%s = %s\n" % (name, value)
+         try:
+-            exec stmt in env
+-        except Exception, ex:
++            exec(stmt, env)
++        except Exception as ex:
+             sys.stderr.write("Failed: %s: %s\n" % (stmt, ex))
+         else:
+             out.write(stmt)
+diff -ruN a/xpcom/tools/regxpcom.py b/xpcom/tools/regxpcom.py
+--- a/xpcom/tools/regxpcom.py	2026-11-13 00:39:08.167206849 -0500
++++ b/xpcom/tools/regxpcom.py	2026-11-13 00:13:51.589469088 -0500
+@@ -55,10 +55,10 @@
+         spec.initWithPath(os.path.abspath(arg))
+         if arg == "-u":
+             registrar.autoUnregister(spec)
+-            print "Successfully unregistered", spec.path
++            print("Successfully unregistered", spec.path)
+         else:
+             registrar.autoRegister(spec)
+-            print "Successfully registered", spec.path
++            print("Successfully registered", spec.path)
+ 
+ if len(sys.argv) < 2:
+     registrar.autoRegister( None)
+diff -ruN a/xpcom/tools/tracer_demo.py b/xpcom/tools/tracer_demo.py
+--- a/xpcom/tools/tracer_demo.py	2026-11-13 00:39:08.167206849 -0500
++++ b/xpcom/tools/tracer_demo.py	2026-11-13 00:13:51.602450151 -0500
+@@ -76,7 +76,7 @@
+                 getters[attr] = getters.setdefault(attr,0) + 1
+             return ret
+     def __setattr__(self, attr, val):
+-        if self.__dict__.has_key(attr):
++        if attr in self.__dict__:
+             self.__dict__[attr] = val
+             return
+         setters[attr] = setters.setdefault(attr,0) + 1
+@@ -99,15 +99,15 @@
+         c.boolean_value = 0
+         a = c.boolean_value
+         c.do_boolean(0,1)
+-    print "Finshed"
++    print("Finshed")
+     p.print_stats()
+-    print "%-30s%s" % ("Attribute Gets", "Number")
+-    print "-" * 36
+-    for name, num in getters.items():
+-        print "%-30s%d" % (name, num)
+-    print "%-30s%s" % ("Attribute Sets", "Number")
+-    print "-" * 36
+-    for name, num in setters.items():
+-        print "%-30s%d" % (name, num)
++    print("%-30s%s" % ("Attribute Gets", "Number"))
++    print("-" * 36)
++    for name, num in list(getters.items()):
++        print("%-30s%d" % (name, num))
++    print("%-30s%s" % ("Attribute Sets", "Number"))
++    print("-" * 36)
++    for name, num in list(setters.items()):
++        print("%-30s%d" % (name, num))
+ 
+ test()
+diff -ruN a/xpcom/xpt.py b/xpcom/xpt.py
+--- a/xpcom/xpt.py	2026-11-13 00:39:08.167206849 -0500
++++ b/xpcom/xpt.py	2026-11-13 00:26:55.222720663 -0500
+@@ -67,16 +67,21 @@
+ 
+ """
+ 
+-import string, sys
++import sys
+ import xpcom
+-import xpcom._xpcom
+ 
+-from xpcom_consts import *
++from .xpcom_consts import *
++
++def _xpcom():
++    # Imported lazily to avoid a circular import while the xpcom package is
++    # being initialized.
++    import xpcom._xpcom
++    return xpcom._xpcom
+ 
+ class Interface:
+     def __init__(self, iid):
+-        iim = xpcom._xpcom.XPTI_GetInterfaceInfoManager()
+-        if isinstance(iid, basestring):
++        iim = _xpcom().XPTI_GetInterfaceInfoManager()
++        if isinstance(iid, str):
+             item = iim.GetInfoForName(iid)
+         else:
+             item = iim.GetInfoForIID(iid)
+@@ -99,12 +104,12 @@
+             # Parent interface is probably not scriptable - assume nsISupports.
+             if xpcom.verbose:
+                 # The user may be confused as to why this is happening!
+-                print "The parent interface of IID '%s' can not be located - assuming nsISupports"
+-            return Interface(xpcom._xpcom.IID_nsISupports)
++                print("The parent interface of IID '%s' can not be located - assuming nsISupports")
++            return Interface(_xpcom().IID_nsISupports)
+ 
+     def Describe_Python(self):
+         method_reprs = []
+-        methods = filter(lambda m: not m.IsNotXPCOM(), self.methods)
++        methods = [m for m in self.methods if not m.IsNotXPCOM()]
+         for m in methods:
+             method_reprs.append(m.Describe_Python())
+         method_joiner = "\n"
+@@ -130,7 +135,7 @@
+         else: word = 'FALSE'
+         s = s + '         Scriptable: ' + word + '\n'
+         s = s + '      Methods:\n'
+-        methods = filter(lambda m: not m.IsNotXPCOM(), self.methods)
++        methods = [m for m in self.methods if not m.IsNotXPCOM()]
+         if len(methods):
+             for m in methods:
+                 s = s + '   ' + m.Describe() + '\n'
+@@ -153,7 +158,7 @@
+             self.items = [None] * interface_info.GetMethodCount()
+         except xpcom.Exception:
+             if xpcom.verbose:
+-                print "** GetMethodCount failed?? - assuming no methods"
++                print("** GetMethodCount failed?? - assuming no methods")
+             self.items = []
+     def __len__(self):
+         return len(self.items)
+@@ -252,10 +257,10 @@
+             C = ' '
+ 
+         def desc(a): return a.Describe()
+-        method_desc = string.join(map(desc, self.params), ', ')
++        method_desc = ', '.join(list(map(desc, self.params)))
+         result_type = TypeDescriber(self.result_desc[0], None)
+         return_desc = result_type.Describe()
+-        i = string.find(return_desc, 'retval ')
++        i = return_desc.find('retval ')
+         if i != -1:
+             return_desc = return_desc[:i] + return_desc[i+len('retval '):]
+         return G+S+H+N+C+' '+return_desc+' '+self.name + '('+ method_desc + ');'
+@@ -323,7 +328,7 @@
+         t = TypeDescriber(self.type_desc[0], self)
+         type_str = t.Describe()
+         parts.append(type_str)
+-        return string.join(parts)
++        return ''.join(parts)
+ 
+ # A class that allows caching and iterating of constants.
+ class Constants:
+@@ -333,14 +338,20 @@
+             self.items = [None] * interface_info.GetConstantCount()
+         except xpcom.Exception:
+             if xpcom.verbose:
+-                print "** GetConstantCount failed?? - assuming no constants"
++                print("** GetConstantCount failed?? - assuming no constants")
+             self.items = []
+     def __len__(self):
+         return len(self.items)
+     def __getitem__(self, index):
+         ret = self.items[index]
+         if ret is None:
+-            ci = self.interface_info.GetConstant(index)
++            try:
++                ci = self.interface_info.GetConstant(index)
++            except (xpcom.Exception, NotImplementedError):
++                if xpcom.verbose:
++                    print("** GetConstant unavailable - assuming no constants")
++                self.items = []
++                raise IndexError(index)
+             ret = self.items[index] = Constant(ci)
+         return ret
+ 
+@@ -361,7 +372,7 @@
+             iid = i_info.GetIIDForParam(param.method_index, param.param_index)
+         except xpcom.Exception:
+             # IID not available (probably not scriptable) - just use nsISupports.
+-            iid = xpcom._xpcom.IID_nsISupports
++            iid = _xpcom().IID_nsISupports
+         return param.type_desc[0], 0, 0, str(iid)
+     elif tag == T_ARRAY:
+         i_info = param.interface_info
+@@ -464,13 +475,13 @@
+     if mode is not None:
+         describer_name = describer_name + "_" + mode.capitalize()
+     describer = getattr(interface, describer_name)
+-    print describer()
++    print(describer())
+ 
+ if __name__=='__main__':
+     if len(sys.argv) == 1:
+-        print "Usage: xpt.py [-xptinfo] interface_name, ..."
+-        print "  -info: Dump in a style similar to the xptdump tool"
+-        print "Dumping nsISupports and nsIInterfaceInfo"
++        print("Usage: xpt.py [-xptinfo] interface_name, ...")
++        print("  -info: Dump in a style similar to the xptdump tool")
++        print("Dumping nsISupports and nsIInterfaceInfo")
+         sys.argv.append('nsIInterfaceInfo')
+         sys.argv.append('-xptinfo')
+         sys.argv.append('nsISupports')

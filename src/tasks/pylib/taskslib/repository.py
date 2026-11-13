@@ -63,7 +63,7 @@ class Repository(object):
             try:
                 os.remove(db_path)
             except EnvironmentError as ex:
-                log.warn("error removing repo database `%s': %s", db_path, ex)
+                log.warning("error removing repo database `%s': %s", db_path, ex)
     
     def add_task(self, data):
         """Add a task to the repository.

@@ -58,7 +58,7 @@ def server_from_registry(session_name, session_key):
         port, type = winreg.QueryValueEx(session_key, "PortNumber")
         return PuTTYServer(alias, hostname, port, username=username)
     except EnvironmentError as ex:
-        log.warn("error extracting server info for '%s' PuTTY session: %s",
+        log.warning("error extracting server info for '%s' PuTTY session: %s",
                  session_name, ex)
         return None
 

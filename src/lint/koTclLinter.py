@@ -301,7 +301,7 @@ class KoTclCompileLinter:
                 # But if too many lines aren't matching, then we must have
                 # unrecognizable input
                 if i > 8:
-                    log.warn("couldn't recognize Tcl linter output format")
+                    log.warning("couldn't recognize Tcl linter output format")
                     break
                 continue
             if i+2 >= numLines:
@@ -315,7 +315,7 @@ class KoTclCompileLinter:
                     return
                 col = lOutput[i+3].find('^')
                 if col == -1:
-                    log.warn("No column indicator following line %d:%r", i, lOutput[i])
+                    log.warning("No column indicator following line %d:%r", i, lOutput[i])
                     i += 1
                     continue
                 cmd = lOutput[i+2].rstrip()

@@ -148,7 +148,7 @@ for more information.
                     srcFile = os.path.join(parentPath, srcFile)
                 ext = os.path.splitext(srcFile)[1]
                 if not ext == ".sublime-snippet":
-                    log.warn("Skipping non Sublime tool: %s", srcFile)
+                    log.warning("Skipping non Sublime tool: %s", srcFile)
                 else:
                     data = self.convertSnippet(srcFile)
                     path = os.path.join(destPath, data["name"] + ".komodotool")
@@ -175,7 +175,7 @@ for more information.
             try:
                 xmlContent = ElementTree.fromstring(fileContent.read())
             except ParseError as pe:
-                log.warn("Can not parse file contents '%s': %r", os.path.basename(srcFile), pe)
+                log.warning("Can not parse file contents '%s': %r", os.path.basename(srcFile), pe)
                 return
         # Extract the relevant fields
         snippet = json.loads(self.komodoToolStr)
@@ -185,12 +185,12 @@ for more information.
         if xmlContent.find("content") is not None:
             code = xmlContent.find("content").text
         else:
-            log.warn("No content to import from snippet.")
+            log.warning("No content to import from snippet.")
             return
         if xmlContent.find("tabTrigger") is not None:
             snippet["name"]  = xmlContent.find("tabTrigger").text
         else:
-            log.warn("No trigger to import from snippet.")
+            log.warning("No trigger to import from snippet.")
             return
         if xmlContent.find("scope") is not None:
             snippet["language"] = self._extractLanguage(xmlContent.find("scope").text)

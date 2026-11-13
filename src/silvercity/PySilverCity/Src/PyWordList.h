@@ -6,6 +6,7 @@
 #define PYWORDLIST_H_
 
 #include <Python.h>
+#include "py3compat.h"
 
 #include <SC_PropSet.h>
 
@@ -16,7 +17,7 @@ typedef struct {
     PyObject *wordListAsString;
 } PyWordList;
 
-#define PyWordList_Check(op) ((op)->ob_type == &PyWordListType)
+#define PyWordList_Check(op) (Py_TYPE(op) == &PyWordListType)
 
 PyObject*
 PyWordList_new(PyObject *, PyObject* args);

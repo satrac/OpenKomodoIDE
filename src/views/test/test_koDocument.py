@@ -406,7 +406,7 @@ console.log(event.name);
             # Could not find node interpreter.
             import logging
             log = logging.getLogger("test")
-            log.warn("No node interpreter was found on the path")
+            log.warning("No node interpreter was found on the path")
             lang = "JavaScript"
         for name, content in manifest:
             path = join(self.data_dir, name)

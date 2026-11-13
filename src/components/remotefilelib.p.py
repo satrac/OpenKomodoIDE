@@ -342,7 +342,7 @@ class koRFConnection:
             try:
                 address_info = socket.getaddrinfo(self.server, self.port, af_type, socket.SOCK_STREAM)
             except socket.error as msg:
-                self.log.warn("socket.getaddrinfo raised exception: %r", msg)
+                self.log.warning("socket.getaddrinfo raised exception: %r", msg)
                 continue
             for res in address_info:
                 af, socktype, proto, canonname, sa = res
@@ -863,7 +863,7 @@ class koRemoteSSH(koRFConnection):
             # Likely if this type of authentication isn't allowed by the server
             # or it was just a bad username/password
             e = self._connection.get_exception() or e
-            self.log.warn("do_authenticateWithPassword::paramiko.BadAuthenticationType: %s", e)
+            self.log.warning("do_authenticateWithPassword::paramiko.BadAuthenticationType: %s", e)
             for auth_type in e.allowed_types:
                 self.log.debug("SSH server allows authorizaton using: %s", auth_type)
             if 'keyboard-interactive' not in e.allowed_types and \
@@ -874,7 +874,7 @@ class koRemoteSSH(koRFConnection):
         except paramiko.SSHException as e:
             # Username/Password failed
             e = self._connection.get_exception() or e
-            self.log.warn("do_authenticateWithPassword:: SSHException: %s", e)
+            self.log.warning("do_authenticateWithPassword:: SSHException: %s", e)
             # If it's problem reading the SSH protocol banner, it's likely
             # because the user has specified the wrong details:
             # http://bugs.activestate.com/show_bug.cgi?id=47047
@@ -885,7 +885,7 @@ class koRemoteSSH(koRFConnection):
                                                     self.protocol.upper())
                 self._raiseServerException(error_message)
             # else, problem logging in
-        self.log.warn("SSH error: Invalid username/password")
+        self.log.warning("SSH error: Invalid username/password")
         return 0
 
     def do_openSocket(self):

@@ -103,7 +103,7 @@ class HgTestCaseBase(unittest.TestCase):
                     break
                 except Exception as ex:
                     if try_num < total_tries - 1:
-                        log.warn("Failed deleting, retrying: %s", ex)
+                        log.warning("Failed deleting, retrying: %s", ex)
                         t = Cc["@mozilla.org/thread-manager;1"].getService().currentThread
                         end = time.time() + 1
                         while time.time() < end:

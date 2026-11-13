@@ -97,7 +97,7 @@ class KoCollectionFindContext(KoFindContext):
                 elif part_type == "livefolder":
                     bits.append(basename(item.liveDirectory))
                 else:
-                    log.warn("unexpected container koIPart type: %r",
+                    log.warning("unexpected container koIPart type: %r",
                              part_type)
         return ", ".join(bits)
     

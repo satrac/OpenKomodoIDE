@@ -440,7 +440,7 @@ class koRemoteConnectionService:
         except COMException as ex:
             # TODO: Check if this is a testing environment, if it's not then
             #       this should be an exception.
-            log.warn("Could not obtain logins from the nsILoginManager")
+            log.warning("Could not obtain logins from the nsILoginManager")
             logins = []
         #print "_getServerInfoList:: logins: %r" % (logins, )
         if logins:

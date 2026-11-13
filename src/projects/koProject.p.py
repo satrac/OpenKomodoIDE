@@ -1249,7 +1249,7 @@ class koProject(koLiveFolderPart):
             self.prefset.prefObserverService.removeObserver(self, "")
         if prefset is not None:
             if prefset.preftype != 'project':
-                log.warn("prefset is not a koIProjectPreferenceSet %r", prefset)
+                log.warning("prefset is not a koIProjectPreferenceSet %r", prefset)
             prefset.id = "project"
             prefset.idref = self.id
             prefset.chainNotifications = 1
@@ -1387,7 +1387,7 @@ class koProject(koLiveFolderPart):
                                 prompt.alert("Project Upgrade Warning", msg)
                             _level = log.level
                             log.setLevel(logging.WARNING)
-                            log.warn(msg)
+                            log.warning(msg)
                             log.setLevel(_level)
                             self.lastErrorSvc.setLastError(0, msg)
 
@@ -1458,7 +1458,7 @@ class koProject(koLiveFolderPart):
                                 partName = _owning_part.get_name()
                             except:
                                 partName = "<?unknown name>"
-                            log.warn("While loading %s, skipping assigning legacy prefset to type %s %s",
+                            log.warning("While loading %s, skipping assigning legacy prefset to type %s %s",
                                        projectName, typeName, partName)
 
                 elif node.tagName == 'files':
