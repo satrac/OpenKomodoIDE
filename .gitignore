@@ -37,3 +37,6 @@ src/modules/codeintel/tools
 /src/silvercity/*.egg-info/
 /src/apsw/build/
 /src/apsw/*.egg-info/
+
+# Generated CodeIntel seed database
+/src/modules/codeintel/server/codeintel.db

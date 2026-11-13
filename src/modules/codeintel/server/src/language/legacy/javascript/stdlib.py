@@ -224,7 +224,8 @@ def scan(stdlib_file):
         # TODO: mochikit is composed of separate files; need to handle them separately
         f = open(os.path.join(os.path.dirname(__file__), "catalogs", catalogs[stdlib_file]))
         stdlib_scope = Scope()
-        stdlib_scope.members.update(list(Cix(f.read()).parse().values())[0].members.values()[0].members)
+        parsed = list(Cix(f.read()).parse().values())[0]
+        stdlib_scope.members.update(list(parsed.members.values())[0].members)
         f.close()
 
     # Store scope in database.

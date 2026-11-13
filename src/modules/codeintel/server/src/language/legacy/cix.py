@@ -173,7 +173,7 @@ class Cix:
         if elem.get("citdl", None):
             typeValue = elem.get("citdl")
 
-        if not elem.getchildren():
+        if not list(elem):
             return eval(className)(
                 name = elem.get("name"),
                 type = typeValue

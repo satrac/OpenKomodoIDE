@@ -84,7 +84,8 @@ def scan(stdlib_file):
         }
         # Import the catalog.
         f = open(os.path.join(os.path.dirname(__file__), "catalogs", catalogs[stdlib_file]))
-        stdlib_scope = list(Cix(f.read()).parse().values())[0].members.values()[0]
+        parsed = list(Cix(f.read()).parse().values())[0]
+        stdlib_scope = list(parsed.members.values())[0]
         f.close()
 
     # Store scope in database.

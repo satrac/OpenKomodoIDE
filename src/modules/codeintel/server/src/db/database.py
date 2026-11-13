@@ -47,7 +47,7 @@ class Database:
         ) ))
 
         Database.conn.load_extension(closure_ext)
-        Database.conn.create_tables([File, Symbol, SymbolClosure, Doc, Meta], True)
+        Database.conn.create_tables([File, Symbol, SymbolClosure, Doc, Meta], safe=True)
 
         Database.update(isExistingDb)
 

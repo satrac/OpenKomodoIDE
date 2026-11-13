@@ -67,7 +67,8 @@ def scan(stdlib_file):
         # Import the catalog.
         f = open(os.path.join(os.path.dirname(__file__), "catalogs", "rails.cix"))
         stdlib_scope = Scope()
-        stdlib_scope.members.update(list(Cix(f.read()).parse().values())[0].members.values()[0].members)
+        parsed = list(Cix(f.read()).parse().values())[0]
+        stdlib_scope.members.update(list(parsed.members.values())[0].members)
         f.close()
     else:
         raise RuntimeError("Unknown Ruby stdlib or catalog file: '%s'" % stdlib_file)
