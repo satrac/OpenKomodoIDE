@@ -98,6 +98,7 @@ import preprocess
 import platinfo
 import patchtree
 import sh
+import version_compat
 del sys.path[0]
 
 
@@ -457,9 +458,22 @@ def _setupMozillaEnv():
         os.environ["PATH"] = binDir + os.pathsep + os.environ["PATH"]
 
         # Add prebuilt Python to PATH so mozilla's build system can find python2.7.
+        # The prebuilt interpreter only locates its stdlib when invoked via its
+        # absolute path, so put small wrappers first on PATH.
         prebuiltPythonDir = dirname(config.python)
-        os.environ["PATH"] = prebuiltPythonDir + os.pathsep + os.environ["PATH"]
         prebuiltPythonLibDir = abspath(join(prebuiltPythonDir, "..", "lib"))
+        pybinDir = join(config.buildDir, "pybin")
+        if not exists(pybinDir):
+            os.makedirs(pybinDir)
+        for pyName in ("python2.7", "python2", "python"):
+            wrapperPath = join(pybinDir, pyName)
+            with open(wrapperPath, "w") as wrapper:
+                wrapper.write('#!/bin/sh\n'
+                              'export LD_LIBRARY_PATH="%s:$LD_LIBRARY_PATH"\n'
+                              'exec "%s" "$@"\n'
+                              % (prebuiltPythonLibDir, config.python))
+            os.chmod(wrapperPath, 0o755)
+        os.environ["PATH"] = pybinDir + os.pathsep + prebuiltPythonDir + os.pathsep + os.environ["PATH"]
         os.environ["LD_LIBRARY_PATH"] = prebuiltPythonLibDir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
         
         # Ensure have the required autoconf version (use our own).
@@ -836,6 +850,18 @@ def target_regmozbuild(argv=["regmozbuild"]):
         del sys.path[0]
     regmozbuild.register_build(gConfigFileName)
     return argv[1:]
+
+
+# Modern GCC defaults to C23/C++20 and promotes several former warnings to
+# errors.  Firefox 35 / PyXPCOM predate all of that, so pin the standards and
+# downgrade the diagnostics that old third-party code trips over.
+_MODERN_C_EXTRA_FLAGS = (' -Wno-error=implicit-int'
+                         ' -Wno-error=implicit-function-declaration'
+                         ' -Wno-error=int-conversion'
+                         ' -Wno-error=incompatible-pointer-types'
+                         ' -Wno-error=return-mismatch'
+                         ' -fcommon')
+_MODERN_CXX_EXTRA_FLAGS = ' -Wno-error=incompatible-pointer-types -fcommon'
 
 
 def target_configure(argv):
@@ -1238,10 +1264,15 @@ def target_configure(argv):
                 log.warn("Using outdated gcc %s", version)
         config["gcc"] = gcc
         config["gxx"] = gxx
-        mozRawOptions.append("export CC=%s" % gcc)
-        mozRawOptions.append("export CXX=%s" % gxx)
-        # Try to enable gold linker where available.
-        mozBuildOptions.append('enable-gold')
+        mozRawOptions.append(
+            'export CC="%s -std=gnu17%s"' % (gcc, _MODERN_C_EXTRA_FLAGS))
+        mozRawOptions.append(
+            'export CXX="%s -std=gnu++11%s"' % (gxx, _MODERN_CXX_EXTRA_FLAGS))
+        mozRawOptions.append('export CFLAGS="%s"' % _MODERN_C_EXTRA_FLAGS)
+        mozRawOptions.append('export CXXFLAGS="%s"' % _MODERN_CXX_EXTRA_FLAGS)
+        # Gold is deprecated and modern binutils' gold no longer links this
+        # old object set cleanly; use the default BFD linker instead.
+        # mozBuildOptions.append('enable-gold')
 
     config["changenum"] = _getChangeNum()
     if sys.platform == "win32":
@@ -1596,7 +1627,8 @@ def _disablePythonUserSiteFeature(site_filepath):
     """Turn off the ENABLE_USER_SITE (PEP 370) feature (bug 85725)."""
 
     log.info("Disabling user site feature in: %r", site_filepath)
-    contents = open(site_filepath, "rb").read()
+    with open(site_filepath, "r", encoding="utf-8") as f:
+        contents = f.read()
     assert "ENABLE_USER_SITE = None" in contents
     contents = contents.replace("ENABLE_USER_SITE = None",
                                 "ENABLE_USER_SITE = False")
@@ -1606,7 +1638,8 @@ def _disablePythonUserSiteFeature(site_filepath):
         assert contents.count('if sys.platform == "darwin":') == 1
         contents = contents.replace('if sys.platform == "darwin":', 'if 0: # disabled for KOMODO')
 
-    open(site_filepath, "wb").write(contents)
+    with open(site_filepath, "w", encoding="utf-8") as f:
+        f.write(contents)
 
 
 def target_silo_python(argv=["silo_python"]):
@@ -1750,14 +1783,14 @@ def target_silo_python(argv=["silo_python"]):
         # relocating.
 
         mozbinPythonSoPath = join(mozBinDir, libpythonSo)
-        _run('ln -s ./%s %s' % (libpythonSoVer, mozbinPythonSoPath), log.info)
+        _run('ln -sf ./%s %s' % (libpythonSoVer, mozbinPythonSoPath), log.info)
         # Also symlink into the lib dir, to aid in linking - bug 95668.
         mozlibPythonSoPath = join(mozLibDir, libpythonSo)
-        _run('ln -s ../bin/%s %s' % (libpythonSo, mozlibPythonSoPath), log.info)
+        _run('ln -sf ../bin/%s %s' % (libpythonSo, mozlibPythonSoPath), log.info)
 
         # Need a mozpython executable in the mozBin dir for "bk start mozpython"
         # to work with PyXPCOM -- for testing, etc.
-        _run('ln -s ../python/bin/python%s %s/mozpython' % (config.pyVer, mozBinDir, ),
+        _run('ln -sf ../python/bin/python%s %s/mozpython' % (config.pyVer, mozBinDir, ),
              log.info)
 
         siteFile = join(siloDir, "lib", "python%s" % (config.pyVer), "site.py")
@@ -1790,15 +1823,10 @@ def target_src_pyxpcom(argv=["src_pyxpcom"]):
                            "extensions", "python")
     if not exists(pyxpcom_src_dir):
         # Checkout pyxpcom - ensure we use the matching version to mozilla.
-        repo_url = "http://hg.mozilla.org/pyxpcom/"
-        repo_rev = None
-        if int(config.mozVer) <= 31:
-            # Requires the matching branch.
-            repo_rev = "TAG_MOZILLA_%d" % (int(config.mozVer), )
-        cmd = "hg clone"
-        if repo_rev is not None:
-            cmd += " -r %s" % (repo_rev, )
-        cmd += " %s python" % (repo_url, )
+        # hg.mozilla.org/pyxpcom is gone; the Komodo project mirror (also
+        # used by the vendored mozilla-35.0 source snapshot) is current.
+        repo_url = "https://github.com/thereisonlyxul/pyxpcom.git"
+        cmd = "git clone --depth 1 %s python" % (repo_url,)
         _run_in_dir(cmd, dirname(pyxpcom_src_dir), log.info)
     return argv[1:]
 
@@ -1858,16 +1886,20 @@ def target_pyxpcom(argv=["pyxpcom"]):
         # otherwise Linux-x86_64 builds will complain about needing to
         # recompile with -fPIC.
         if config.gcc:
-            configure_flags += " CC=%s" % (config.gcc)
+            configure_flags += ' CC="%s -std=gnu17%s"' % (
+                config.gcc, _MODERN_C_EXTRA_FLAGS)
         if config.gxx:
-            configure_flags += " CXX=%s" % (config.gxx)
+            configure_flags += ' CXX="%s -std=gnu++11%s"' % (
+                config.gxx, _MODERN_CXX_EXTRA_FLAGS)
     elif sys.platform == "darwin":
-        configure_flags += " CC=%s" % (config.gcc or "gcc",)
-        configure_flags += " CXX=%s" % (config.gxx or "g++",)
+        configure_flags += ' CC="%s%s"' % (
+            config.gcc or "gcc", _MODERN_C_EXTRA_FLAGS)
+        configure_flags += ' CXX="%s%s"' % (
+            config.gxx or "g++", _MODERN_CXX_EXTRA_FLAGS)
 
     # Add any custom build FLAGS using the command line args - bug 91389.
-    cflags = os.environ.get('CFLAGS', '')
-    cxxflags = os.environ.get('CXXFLAGS', '')
+    cflags = os.environ.get('CFLAGS', '') + _MODERN_C_EXTRA_FLAGS
+    cxxflags = os.environ.get('CXXFLAGS', '') + _MODERN_CXX_EXTRA_FLAGS
     ldflags = os.environ.get('LDFLAGS', '')
 
     # Support for PGO.
@@ -2244,6 +2276,17 @@ def _get_make_command(config, srcDir):
         return "mozmake"
     return "make"
 
+def _applyModernGccFixes(mozillaSrcDir):
+    """Apply the compatibility edits required by a modern compiler.
+
+    These edits used to be part of a source patch, but they are much easier
+    to keep idempotent as a script that is run after the Komodo patch set.
+    """
+    script = join(dirname(__file__), "support", "modern-gcc-fixes.py")
+    _run('"%s" "%s" "%s"' % (sys.executable, script, mozillaSrcDir),
+         log.info)
+
+
 def target_configure_mozilla(argv=["configure_mozilla"]):
     """configure the patched mozilla source tree"""
     log.info("target: configure_mozilla")
@@ -2270,6 +2313,7 @@ def target_configure_mozilla(argv=["configure_mozilla"]):
     os.environ["MOZCONFIG"] = os.path.abspath(mozconfig)
     
     _setupMozillaEnv()
+    _applyModernGccFixes(buildDir)
 
     autoconf_path = _get_exe_path("autoconf-2.13")
     if sys.platform == "win32":
@@ -2315,6 +2359,7 @@ def target_mozilla(argv=["mozilla"]):
         raise BuildError("There is no mozilla source at '%s'. (landmark='%s')"\
                          % (buildDir, landmark))
 
+    _applyModernGccFixes(buildDir)
     _validatePython(config)
 
     if len(argv) > 1 and os.path.isdir(os.path.join(native_objdir, argv[1])):
@@ -2359,8 +2404,7 @@ def target_mozilla(argv=["mozilla"]):
         if exists(binDepPath):
             shutil.move(binDepPath, resDepPath)
 
-        argv = argv[1:]
-    return argv
+    return argv[1:]
 
 def target_symbols(argv=["symbols"]):
     """collect the crash reporter symbols"""
@@ -2391,10 +2435,11 @@ def target_komodoapp_distclean(argv=["komodoapp_distclean"]):
 def target_komodoapp(argv=["komodoapp"]):
     """add the komodo bits and build them"""
     config = _importConfig()
+    _setupMozillaEnv()
     target_patch(patch_target='komodoapp', logFilename="__patchlog_komodoapp__.py")
     topsrcdir = os.path.join(config.buildDir, config.srcTreeName, "mozilla")
     log.info("building komodo app")
-    _run_in_dir("python mach --log-file %s build komodo" % (join(buildDir, "mach.log")),
+    _run_in_dir("python mach --log-file %s build" % (join(topsrcdir, "mach.log")),
                 topsrcdir, log.info)
     return argv[1:]
 
