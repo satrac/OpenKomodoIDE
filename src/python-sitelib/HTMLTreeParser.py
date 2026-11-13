@@ -121,10 +121,54 @@ html_cannot_contain_block_tags = set([
 
 html_close_tag_unnecessary = html_no_close_tags.union(html_optional_close_tags)
 
-class HTMLTreeBuilder(ElementTree.TreeBuilder):
+class _Element(ElementTree.Element):
+    """Element that allows the extra HTMLTreeParser attributes."""
+
+
+class _CompatTreeBuilder(object):
+    """Small pure-Python replacement for the old ElementTree.TreeBuilder.
+
+    Python 3's C TreeBuilder does not expose the ``_elem`` stack that
+    HTMLTreeBuilder relies on, so keep the equivalent bookkeeping here.
+    """
+
+    def __init__(self):
+        self._elem = []
+        self._last = None
+        self._tail = 0
+
+    def start(self, tag, attrib):
+        el = _Element(tag, attrib)
+        if self._elem:
+            self._elem[-1].append(el)
+        self._elem.append(el)
+        self._tail = 0
+        return el
+
+    def end(self, tag):
+        el = self._elem.pop()
+        self._last = el
+        self._tail = 1
+        return el
+
+    def data(self, data):
+        if self._tail and self._last is not None:
+            self._last.tail = (self._last.tail or '') + data
+        elif self._elem:
+            self._elem[-1].text = (self._elem[-1].text or '') + data
+
+    def _flush(self):
+        # Text is appended as it arrives by data(); nothing is buffered.
+        pass
+
+    def close(self):
+        return self._last
+
+
+class HTMLTreeBuilder(_CompatTreeBuilder):
 
     def __init__(self, encoding="iso-8859-1"):
-        ElementTree.TreeBuilder.__init__(self)
+        _CompatTreeBuilder.__init__(self)
         self.encoding = encoding
         self.nodes = []
         self.nodemap = {} # {child_elem: parent_elem, ... }
@@ -167,7 +211,7 @@ class HTMLTreeBuilder(ElementTree.TreeBuilder):
         attrib = {}
         for attr in attrs:
             attrib[attr[0]] = strip_quotes(attr[1])
-        ElementTree.TreeBuilder.start(self, tag, attrib)
+        _CompatTreeBuilder.start(self, tag, attrib)
         el = self._elem[-1]
         self.current = el
         el.ns = None
@@ -233,7 +277,7 @@ class HTMLTreeBuilder(ElementTree.TreeBuilder):
         if isinstance(data, type('')) and is_not_ascii(data):
             # convert to unicode, but only if necessary
             data = str(data, self.encoding, "ignore")
-        ElementTree.TreeBuilder.data(self, data)
+        _CompatTreeBuilder.data(self, data)
 
     def close(self):
         if self._elem:

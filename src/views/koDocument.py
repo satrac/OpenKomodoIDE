@@ -9,6 +9,15 @@ import xpcom
 import logging
 from hashlib import md5
 import re
+
+
+def _md5_data(data):
+    """Return the md5 digest of document data (str or bytes)."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    return md5(data).digest()
+
+
 import sys
 import io
 import stat, os, time
@@ -592,7 +601,7 @@ class koDocumentBase(object):
         else:
             data = ''
             self._lastModifiedTime = None
-        self._lastmd5 = md5(data).digest()
+        self._lastmd5 = _md5_data(data)
         buffer = self.set_buffer(data,0)
         self.ondisk_lines = buffer.splitlines(True)
         self.setSavePoint()
@@ -679,7 +688,7 @@ class koDocumentBase(object):
                 try:
                     try:
                         ondisk = self.file.read(-1)
-                        newmd5 = md5(ondisk).digest()
+                        newmd5 = _md5_data(ondisk)
                     except Exception as ex:
                         errmsg = "File differentOnDisk check failed: %s" % ex
                         log.error(errmsg)
@@ -751,7 +760,7 @@ class koDocumentBase(object):
     def get_languageObj(self):
         if self._language is None:
             log.error('Asked to get language Object with no language')
-        if self._languageObj == None:
+        if self._languageObj is None:
             self._languageObj = self.langRegistrySvc.getLanguage(self._language)
         return self._languageObj
 
@@ -1683,7 +1692,7 @@ class koDocumentBase(object):
                               self.get_displayPath())
                 raise ServerException(nsError.NS_ERROR_FAILURE, str(ex))
 
-            self._lastmd5 = md5(data).digest()
+            self._lastmd5 = _md5_data(data)
             self._lastModifiedTime = self.file.lastModifiedTime
             self.set_isDirty(0)
             self.setSavePoint()
@@ -2166,7 +2175,7 @@ class koDocumentBase(object):
         self.set_isDirty(1)
         # fix the file content md5
         data = self._get_buffer_from_file(self.file)
-        self._lastmd5 = md5(data).digest()
+        self._lastmd5 = _md5_data(data)
         self._lastModifiedTime = self.file.lastModifiedTime
 
     # Methods for maintaining the state of tabstop insertion
@@ -2233,7 +2242,7 @@ class koDocumentBase(object):
         rxs = []
         for s in search:
             s = re.escape(s)
-            s = re.sub(r'(\\\s)+', r"\s*", s) # match whitespace at all lengths
+            s = re.sub(r'(\\\s)+', r"\\s*", s) # match whitespace at all lengths
             rxs.append(re.compile("^%s%s" % (r"\s*", s)))
 
         for lineNo, lineValue in enumerate(buf.splitlines()):

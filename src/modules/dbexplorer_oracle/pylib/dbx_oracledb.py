@@ -9,7 +9,7 @@ Oracledb library
 
 import os, sys, re
 import logging
-import sqlite3
+from sqlite3_compat import sqlite3
 from contextlib import contextmanager
 
 log = logging.getLogger("dbx_oracledb")

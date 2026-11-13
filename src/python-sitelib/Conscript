@@ -68,6 +68,8 @@ $cons->InstallPythonUtility('langinfo_template.py');
 $cons->InstallPythonUtility('langinfo_tiny.py');
 $cons->InstallPythonUtility('textinfo.py');
 $cons->InstallPythonUtility('pythonVersionUtils.py');
+$cons->InstallPythonUtility('sqlite3_compat.py');
+$cons->InstallPythonUtility('version_compat.py');
 
 
 if ($platform eq "win") {

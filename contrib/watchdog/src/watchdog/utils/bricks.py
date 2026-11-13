@@ -36,7 +36,10 @@ Classes
 """
 
 import sys
-import collections
+try:
+    from collections.abc import MutableSet
+except ImportError:
+    from collections import MutableSet
 try:
     import queue
 except ImportError:
@@ -107,10 +110,10 @@ class OrderedSetQueue(queue.Queue):
 
 
 
-if not sys.version < (2, 6, 0):
+if sys.version_info >= (2, 6, 0):
     KEY, PREV, NEXT = range(3)
 
-    class OrderedSet(collections.MutableSet):
+    class OrderedSet(MutableSet):
         """
         Implementation based on a doubly-linked link and an internal dictionary.
         This design gives :class:`OrderedSet` the same big-Oh running times as

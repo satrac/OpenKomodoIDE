@@ -2634,6 +2634,76 @@ def GetScintillaSource(cfg, argv):
                 log.debug)
 
 
+def _install_extension_xpis(cfg, xpi_dir, dest_root):
+    """Unpack the .xpi files in `xpi_dir` below `dest_root`.
+
+    The target directory is named after the extension ID from install.rdf,
+    which is what Mozilla's add-on manager expects.  Existing installs are
+    left alone unless their XPI is newer.
+    """
+    import re
+    import zipfile
+
+    if not isdir(xpi_dir):
+        return
+    for name in sorted(os.listdir(xpi_dir)):
+        if not name.endswith(".xpi"):
+            continue
+        xpi = join(xpi_dir, name)
+        try:
+            with zipfile.ZipFile(xpi) as zf:
+                rdf = zf.read("install.rdf").decode("utf-8", "replace")
+                match = re.search(r"<em:id>\s*([^<]+?)\s*</em:id>", rdf)
+                if not match:
+                    continue
+                dest = join(dest_root, match.group(1))
+                marker = join(dest, "install.rdf")
+                if exists(marker) and (os.path.getmtime(marker)
+                                       >= os.path.getmtime(xpi)):
+                    continue
+                if exists(dest):
+                    shutil.rmtree(dest)
+                os.makedirs(dest)
+                zf.extractall(dest)
+        except Exception as ex:
+            sys.stderr.write("warning: could not install %s: %s\n"
+                             % (xpi, ex))
+
+
+def _InstallCoreExtensions(cfg):
+    """Restore core extensions after a Mozilla rebuild.
+
+    A Mozilla rebuild replaces the dist tree, which drops the extensions
+    and distribution/bundles directories that ``koinstall``/``kodistinstall``
+    had populated.  Cons then considers the XPI targets up to date and does
+    not reinstall them, so chrome packages, language definitions, icons and
+    SDK modules go missing.  Restore any missing (or stale) extensions from
+    the XPIs that were built by Cons.
+    """
+    exts_dir = join(cfg.mozBin, "extensions")
+    bundles_dir = join(cfg.mozBin, "distribution", "bundles")
+    modules_dir = join(cfg.buildAbsDir, "modules")
+
+    if isdir(modules_dir):
+        for module_name in sorted(os.listdir(modules_dir)):
+            module_dir = join(modules_dir, module_name)
+            if not isdir(module_dir):
+                continue
+            candidates = [join(module_dir, p) for p in os.listdir(module_dir)
+                          if p.endswith(".xpi")]
+            if not candidates and isdir(join(module_dir, "build", "xpi")):
+                xpi_dir = join(module_dir, "build", "xpi")
+                candidates = [join(xpi_dir, p) for p in os.listdir(xpi_dir)
+                              if p.endswith(".xpi")]
+            if not candidates:
+                continue
+            xpi = sorted(candidates)[0]
+            _install_extension_xpis(cfg, dirname(xpi), exts_dir)
+
+    # UDL language packs are distribution bundles, not visible add-ons.
+    _install_extension_xpis(cfg, join(cfg.buildAbsDir, "udl"), bundles_dir)
+
+
 def _BuildKomodo(cfg, argv):
     if "jarxtk" in argv:
         return JarChrome("xtk", cfg, argv)
@@ -2680,7 +2750,18 @@ def _BuildKomodo(cfg, argv):
                             #XXX should escape args with spaces
                             " ".join(argv[1:])) ]
             )
+    if not retval:
+        _InstallCoreExtensions(cfg)
     if not retval and sys.platform not in ("win32", "darwin"):
+        # mozilla/build.py creates this symlink, but a dist tree refreshed by
+        # a plain Mozilla rebuild may not have it.  It is needed by the
+        # command-line PyXPCOM tests (make check) and bk test.
+        mozpython = join(cfg.mozBin, "mozpython")
+        if not exists(mozpython):
+            try:
+                os.symlink(join("..", "python", "bin", "python3"), mozpython)
+            except OSError:
+                pass
         # Cons' Install preserves the old mode of an existing target; make
         # sure the development-tree launcher is executable.
         stub = os.path.join(cfg.stubDir, "komodo")

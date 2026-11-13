@@ -410,6 +410,32 @@ def main(argv):
         "nsViewManager constructor body")
 
     # ---- HarfBuzz assumes a null C++ this pointer is harmless -----------
+    # hb_object_destroy uses obj->header.destroy(), whose !this check GCC can
+    # remove when inlined.  Guard the pointer before the member call so a
+    # null hb_font_t/hb_buffer_t is a no-op during shutdown.
+    replace_once(
+        root, "gfx/harfbuzz/src/hb-object-private.hh",
+        "template <typename Type>\n"
+        "static inline bool hb_object_destroy (Type *obj)\n"
+        "{\n"
+        "  hb_object_trace (obj, HB_FUNC);\n"
+        "  return obj->header.destroy ();\n"
+        "}\n",
+        "template <typename Type>\n"
+        "static inline bool hb_object_destroy (Type *obj)\n"
+        "{\n"
+        "  /* Do not rely on the null-\"this\" check in "
+        "hb_object_header_t::destroy:\n"
+        "   * GCC assumes a C++ member function has a non-null this pointer "
+        "and can\n"
+        "   * remove that check when inlining. */\n"
+        "  if (unlikely (!obj))\n"
+        "    return false;\n"
+        "  hb_object_trace (obj, HB_FUNC);\n"
+        "  return obj->header.destroy ();\n"
+        "}\n",
+        "HarfBuzz null object destroy")
+    # ---- HarfBuzz assumes a null C++ this pointer is harmless -----------
     # hb_buffer_t::reset() destroys a null unicode funcs pointer on a newly
     # calloc'd buffer.  GCC 16 removes the null-"this" check in the inlined
     # hb_object_destroy, so make the null case explicit.

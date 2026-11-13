@@ -16,6 +16,7 @@
 # limitations under the License.
 
 
+from functools import reduce
 from watchdog.utils import platform
 
 if platform.is_windows():

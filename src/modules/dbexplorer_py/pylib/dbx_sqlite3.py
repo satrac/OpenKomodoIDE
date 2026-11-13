@@ -12,7 +12,7 @@ other parts of sql statements, like table names.
 
 import os, sys, re
 import logging
-import sqlite3
+from sqlite3_compat import sqlite3
 from contextlib import contextmanager
 
 import dbxlib

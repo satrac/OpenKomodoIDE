@@ -114,10 +114,11 @@ def _handleCommandment(commandment):
         for f in filenames:
             # "open_file" notification allows position/selection optional
             # argument after the filename (tab-separated).
-            try:
-                f = f.decode("utf-8")
-            except UnicodeDecodeError:
-                pass # eh, assume Latin1
+            if isinstance(f, bytes):
+                try:
+                    f = f.decode("utf-8")
+                except UnicodeDecodeError:
+                    f = f.decode("latin-1")
             if selection:
                 f += "\t" + selection
             try:
@@ -356,24 +357,25 @@ else:
                 # passed by a separate mechanism.
                 cmds = open(self._firstCommandmentsFileName, 'r').read()
                 os.remove(self._firstCommandmentsFileName)
-                os.write(self._pipe, cmds)
+                os.write(self._pipe, cmds.encode("utf-8"))
     
         def run(self):
-            buf = ""
+            buf = b""
             while 1:
                 text = os.read(self._pipe, 4096)
+                if not text:
+                    break
                 buf += text
-                lines = buf.splitlines(1)
                 # parse out commands
                 cmds = []
-                for line in buf.splitlines(1):
-                    if line.endswith('\n'):
-                        cmds.append( line[:-1] )
+                for line in buf.splitlines(True):
+                    if line.endswith(b'\n'):
+                        cmds.append(line[:-1].decode("utf-8", "replace"))
                     else:
                         buf = line
                         break
                 else:
-                    buf = ""
+                    buf = b""
                 # handle each command
                 exit = 0
                 for cmd in cmds:
@@ -389,7 +391,7 @@ else:
                     break
     
         def exit(self):
-            os.write(self._pipe, "__exit__\n")
+            os.write(self._pipe, b"__exit__\n")
             self.join()
             os.close(self._pipe)
             try:

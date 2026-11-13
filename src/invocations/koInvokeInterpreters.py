@@ -6,7 +6,15 @@ import sys
 import os
 import string
 import re, urllib.request, urllib.parse, urllib.error
-import urllib.parse, mimetools, mimetypes
+import urllib.parse, mimetypes
+try:
+    import mimetools
+except ImportError:
+    class mimetools(object):
+        """Minimal stand-in for the removed mimetools module."""
+        @staticmethod
+        def choose_boundary():
+            return uuid.uuid4().hex
 import threading
 import tempfile
 

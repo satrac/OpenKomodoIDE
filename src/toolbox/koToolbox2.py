@@ -16,7 +16,7 @@ import sys
 import shutil
 import logging
 from contextlib import contextmanager
-import sqlite3
+from sqlite3_compat import sqlite3
 from pprint import pprint, pformat
 import time
 from functools import cmp_to_key
@@ -2156,6 +2156,15 @@ class ToolboxLoader(object):
 
         return self._testAndAddItem(True, dirname, fname, parent_id, existing_child_paths)
 
+    def _walk(self, directory, notifyNow):
+        """Python 3 replacement for the removed os.path.walk()."""
+        for root, dirs, files in os.walk(directory):
+            names = dirs + files
+            self.walkFunc(notifyNow, root, names)
+            # walkFunc clears the list for excluded folders; do not descend
+            # into those directories.
+            dirs[:] = [d for d in dirs if d in names]
+
     def walkFunc(self, notifyNow, dirname, fnames):
         if os.path.basename(dirname) in self._excludedFolders:
             # See if we should remove this item, and its children
@@ -2182,7 +2191,7 @@ class ToolboxLoader(object):
                 # Add the children here
                 fp = open(metadataPath, 'r')
                 try:
-                    data = json.load(fp, encoding="utf-8")
+                    data = json.load(fp)
                     self.upgradeItem(data, metadataPath)
                 except ValueError:
                     log.error("Couldn't process json file %s", metadataPath)
@@ -2199,7 +2208,7 @@ class ToolboxLoader(object):
                         try:
                             fp = open(child_path, 'r')
                             try: 
-                                data2 = json.load(fp, encoding="utf-8")
+                                data2 = json.load(fp)
                             finally:
                                 fp.close()
                             complain = data2['type'] != 'file'
@@ -2237,7 +2246,7 @@ class ToolboxLoader(object):
                 new_id = self.db.addFolder(actualToolboxDir, toolboxName, None)
                 result_list = [new_id]
                     
-            os.path.walk(actualToolboxDir, self.walkFunc, False)
+            self._walk(actualToolboxDir, False)
             # Check the name of the item
             res = self.db.getValuesFromTableByKey('paths',
                                                    ['id'],
@@ -2270,7 +2279,7 @@ class ToolboxLoader(object):
             if not result_list:
                 new_id = self.db.addFolder(dstPath, toolboxName, parent_id)
                 result_list = [new_id]
-            os.path.walk(dstPath, self.walkFunc, True)
+            self._walk(dstPath, True)
         finally:
             self.db.releaseConnection()
         return result_list[0]
@@ -2337,7 +2346,7 @@ class ToolboxLoader(object):
     def reloadToolsDirectory(self, toolDir):
         self.db.establishConnection()
         try:
-            os.path.walk(toolDir, self.walkFunc, True) #notifyNow
+            self._walk(toolDir, True) #notifyNow
         finally:
             self.db.releaseConnection()            
         
@@ -2372,7 +2381,7 @@ class DataParser:
     @staticmethod
     def readJsonData(fp):
         try:
-            return json.load(fp, encoding="utf-8")
+            return json.load(fp)
         except ValueError:
             # For some reason some .komodotool files have an extra closing
             # bracket at the end, no idea why, not wasting cycles on finding out.
@@ -2382,11 +2391,11 @@ class DataParser:
             offset = -1
             if s[-1] == "\n":
                 offset -= 1
-            return json.loads(s[:offset], encoding="utf-8")
+            return json.loads(s[:offset])
 
     @staticmethod
     def writeJsonData(fp, data):
-        json.dump(data, fp, encoding="utf-8", indent=2)
+        json.dump(data, fp, indent=2)
 
     @staticmethod
     def readCleanData(fp):
@@ -2404,7 +2413,8 @@ class DataParser:
             .getService(components.interfaces.koILanguageRegistryService)
 
         for num, line in enumerate(fp, 1):
-            line = line.decode()
+            if isinstance(line, bytes):
+                line = line.decode()
             # Check if we are past the meta start info (TOOL_META_START)
             # and before the meta info (pastMetaStartPending)
             # This strips the --- line

@@ -14,7 +14,10 @@ from xpcom import components
 from xpcom.server import UnwrapObject
 from findlib2 import paths_from_path_patterns
 import json
-import scandir
+try:
+    import scandir
+except ImportError:  # Python 3.5+ provides os.scandir
+    pass
 import re
 import os
 import logging

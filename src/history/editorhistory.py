@@ -20,7 +20,7 @@ import sys
 import shutil
 import logging
 from contextlib import contextmanager
-import sqlite3
+from sqlite3_compat import sqlite3
 from collections import deque
 from itertools import islice
 from pprint import pprint, pformat

@@ -10,7 +10,7 @@ import os
 from os.path import exists, expanduser, join, dirname, isdir
 import logging
 from contextlib import contextmanager
-import sqlite3
+from sqlite3_compat import sqlite3
 from pprint import pprint, pformat
 import json
 import socket

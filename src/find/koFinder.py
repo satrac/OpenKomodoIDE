@@ -656,7 +656,7 @@ class _ConfirmReplacerInFiles(threading.Thread, TreeView):
                     num_rows_changed)
 
     def commit(self, resultsMgr):
-        if self.isAlive():
+        if self.is_alive():
             msg = "cannot commit replacements until done finding them all"
             gLastErrorSvc.setLastError(0, msg)
             raise ServerException(nsError.NS_ERROR_INVALID_ARG, msg)
@@ -2085,7 +2085,7 @@ class KoFindService(object):
     def stopfindreplaceinfiles(self, id):
         #XXX Do I need a lock-guard around usage of self._threadMap?
         if id in self._threadMap:
-            isAlive = self._threadMap[id].isAlive()
+            isAlive = self._threadMap[id].is_alive()
             self._threadMap[id].stop()
             del self._threadMap[id]
             return isAlive

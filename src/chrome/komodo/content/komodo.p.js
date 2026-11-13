@@ -24,7 +24,8 @@ let auth = require("ko/auth");
 var _savedWorkspace = false;
 
 function authenticateUser(){
-    auth.authenticated((authenticated) => { if ( ! authenticated) openLoginDialog();});
+    // This experimental fork does not require an ActiveState Platform account.
+    return;
 }
 
 function openLoginDialog(){

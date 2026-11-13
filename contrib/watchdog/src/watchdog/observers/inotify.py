@@ -68,6 +68,7 @@ Some extremely useful articles and documentation:
 """
 
 from __future__ import with_statement
+from functools import reduce
 from watchdog.utils import platform
 
 if platform.is_linux():
@@ -655,7 +656,7 @@ if platform.is_linux():
                 Event bit mask.
             """
             wd = inotify_add_watch(self._inotify_fd,
-                                   path,
+                                   os.fsencode(path),
                                    mask)
             if wd == -1:
                 Inotify._raise_error()
@@ -715,10 +716,11 @@ if platform.is_linux():
             IN_MOVED_TO event.
             """
             i = 0
-            while i + 16 < len(event_buffer):
+            while i + 16 <= len(event_buffer):
                 wd, mask, cookie, length =\
                 struct.unpack_from('iIII', event_buffer, i)
-                name = event_buffer[i + 16:i + 16 + length].rstrip('\0')
+                raw_name = event_buffer[i + 16:i + 16 + length]
+                name = raw_name.rstrip(b'\0').decode('utf-8', 'replace')
                 i += 16 + length
                 yield wd, mask, cookie, name
 

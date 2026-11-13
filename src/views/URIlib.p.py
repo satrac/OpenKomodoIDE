@@ -438,7 +438,7 @@ class URIParser(object):
 
     #readonly attribute string md5name; 
     def get_md5name(self):
-        return md5(self.get_encodedURI()).hexdigest()
+        return md5(self.get_encodedURI().encode("utf-8")).hexdigest()
     md5name = property(get_md5name)
 
     def updateStats(self):
