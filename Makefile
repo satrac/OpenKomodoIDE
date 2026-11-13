@@ -287,6 +287,8 @@ deps: silo-python python3-deps pyxpcom
 mozilla:
 > cd "$(MOZ)" && $(PYTHON) build.py mozilla
 > cd "$(MOZ)" && $(PYTHON) build.py pyxpcom
+> cd "$(MOZ)" && $(PYTHON) build.py silo_python --force
+> cd "$(MOZ)" && $(PYTHON) build.py python3_deps
 
 mozilla-all:
 > cd "$(MOZ)" && $(PYTHON) build.py all
