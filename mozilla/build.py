@@ -1956,7 +1956,7 @@ def target_src_pyxpcom(argv=["src_pyxpcom"]):
         # Checkout pyxpcom - ensure we use the matching version to mozilla.
         # hg.mozilla.org/pyxpcom is gone; the Komodo project mirror (also
         # used by the vendored mozilla-35.0 source snapshot) is current.
-        repo_url = "https://github.com/thereisonlyxul/pyxpcom.git"
+        repo_url = "https://github.com/satrac/pyxpcom.git"
         cmd = "git clone --depth 1 %s python" % (repo_url,)
         _run_in_dir(cmd, dirname(pyxpcom_src_dir), log.info)
     return argv[1:]

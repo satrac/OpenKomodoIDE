@@ -72,7 +72,7 @@ $consLocal->Command(
         cd %1:d && $siloedPython %1:f build -b $baseDir/pylib/codeintel --build-purelib $baseDir/pylib/codeintel/lib --pyexe $siloedPython
         cd $baseDir && find . -name "*.cix" -type f -delete
         rm -Rf $targetDir
-        cd $baseDir && $siloedPython $koextPy build --unjarred
+        cd $baseDir && $unsiloedPythonExe $koextPy build --unjarred
         cd $baseDir && unzip -q codeintel-3.0-ko.xpi -d $targetDir
     )
 );

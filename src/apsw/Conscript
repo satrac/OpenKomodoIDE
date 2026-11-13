@@ -14,9 +14,18 @@ Import(
     "version",
     "buildType",
     "siloedPython",
+    "siloedPythonVersion",
 );
 
 my $consLocal = $cons;
+
+# The vendored APSW 3.8 sources use the Python 2 C API.  For the Python 3
+# port the modern APSW wheel is installed by
+# mozilla/support/install-py3-python-deps.py.
+if ($siloedPythonVersion =~ /^3\./) {
+    warn "Skipping vendored apsw build for Python 3; modern APSW is installed separately\n";
+    return;
+}
 my $landmark = "$komodoPythonUtilsDir/apsw/apsw.pyd";
 
 if ($platform eq "win") {

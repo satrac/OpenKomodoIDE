@@ -240,6 +240,7 @@ class _Logger:
         self.log(self.INFO, msg, *args)
     def warn(self, msg, *args):
         self.log(self.WARN, msg, *args)
+    warning = warn
     def error(self, msg, *args):
         self.log(self.ERROR, msg, *args)
     def fatal(self, msg, *args):

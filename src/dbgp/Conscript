@@ -4,6 +4,7 @@
 Import(
     'cons',
     'komodoPythonUtilsDir',
+    'ranRegxpcomStateFileName',
 );
 
 $cons->InstallPythonUtilityPackage('__init__.py', 'dbgp');

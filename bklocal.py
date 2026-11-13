@@ -475,7 +475,7 @@ class SiloedDistutilsLibDirName(black.configure.Datum):
         ld_path_list = black.configure.items["LD_LIBRARY_PATH"].Get()
 
         # the distutils platform name
-        cmd = [siloedPython, '-c', "from distutils.util import get_platform; print get_platform()"]
+        cmd = [siloedPython, '-c', "import sysconfig; print(sysconfig.get_platform())"]
         # Ensure we use the correct LD_LIBRARY_PATH required by the siloed
         # Python executable.
         env = os.environ.copy()
@@ -1499,11 +1499,30 @@ class UnsiloedPythonExe(black.configure.Datum):
         self.applicable = 1
         # The build system itself runs under Python 3, but the legacy
         # Mozilla build tools (xpidl.py, header.py, buildlist.py, ...) are
-        # Python 2.7 code.  Prefer the siloed Python 2.7 when available.
-        try:
-            self.value = black.configure.items["siloedPython"].Get()
-        except Exception:
-            self.value = None
+        # Python 2.7 code.  Use the prebuilt Python 2.7 tree when present,
+        # independently of the (now Python 3) application silo.
+        repoDir = dirname(abspath(__file__))
+        platform = black.configure.items["platform"].Get()
+        arch = black.configure.items["architecture"].Get()
+        if platform == "linux":
+            platDir = "linux-%s" % (arch,)
+        elif platform == "win":
+            platDir = "win32-%s" % (arch,)
+        elif platform == "darwin":
+            platDir = "macosx"
+        else:
+            platDir = platform
+        candidates = [
+            join(repoDir, "mozilla", "prebuilt", "python2.7", platDir,
+                 "bin", "python"),
+            join(repoDir, "mozilla", "prebuilt", "python2.7", platDir,
+                 "bin", "python.exe"),
+        ]
+        self.value = None
+        for candidate in candidates:
+            if exists(candidate):
+                self.value = candidate
+                break
         if not self.value:
             # We are already running python; it's the best fallback we have.
             self.value = sys.executable
@@ -1587,10 +1606,10 @@ class UnsiloedPythonBinDir(black.configure.Datum):
 
     def _Determine_Do(self):
         self.applicable = 1
-        pythonExeName = "python"
-        if sys.platform.startswith("win"):
-            pythonExeName = "python.exe"
-        pythonExe = tmShUtil.WhichFollowSymLinks(pythonExeName)
+        try:
+            pythonExe = black.configure.items["unsiloedPythonExe"].Get()
+        except Exception:
+            pythonExe = None
         if pythonExe:
             self.value = os.path.dirname(pythonExe)
         else:

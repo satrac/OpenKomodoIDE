@@ -1,10 +1,17 @@
-#!/usr/bin/env python3 
- 
-from distutils.core import setup, Extension 
+#!/usr/bin/env python3
+
+from distutils.core import setup, Extension
 from distutils.command.build_ext import build_ext
 from distutils.command.install_data import install_data
-import sys 
+import sys
 import os
+
+# Mozilla build flags disable exceptions; SilverCity needs them.
+for _var in ("CFLAGS", "CXXFLAGS"):
+    if _var in os.environ:
+        os.environ[_var] = os.environ[_var].replace("-fno-exceptions", "")
+if os.environ.get("CXXFLAGS") is not None:
+    os.environ["CXXFLAGS"] += " -fexceptions"
 
 class komodo_build_ext(build_ext):
     def build_extensions(self):

@@ -1,19 +1,19 @@
 [submodule "src/modules/trackchanges"]
 	path = src/modules/trackchanges
-	url = https://github.com/Komodo/trackchanges.git
+	url = https://github.com/satrac/trackchanges.git
 	branch = master
 [submodule "src/modules/golang"]
 	path = src/modules/golang
-	url = https://github.com/Komodo/komodo-go
+	url = https://github.com/satrac/komodo-go.git
 	branch = master
 [submodule "src/modules/editorconfig"]
 	path = src/modules/editorconfig
-	url = https://github.com/Komodo/komodo-editorconfig.git
+	url = https://github.com/satrac/komodo-editorconfig.git
 [submodule "src/modules/focusmode"]
 	path = src/modules/focusmode
-	url = https://github.com/Komodo/Focus-Mode.git
+	url = https://github.com/satrac/Focus-Mode.git
 [submodule "src/modules/codeintel/server"]
 	path = src/modules/codeintel/server
-	url = git@github.com:Komodo/codeintel.git
+	url = https://github.com/satrac/komodo-codeintel2.git
 	branch = master
 

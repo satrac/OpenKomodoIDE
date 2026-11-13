@@ -2554,6 +2554,11 @@ def ExtractPrebuiltPython(cfg, argv):
     
     This is required for some of the Mozilla build parts (komodo/app/xre).
     """
+    # Python 3 uses the system/symlinked silo created by
+    # mozilla/build.py; there is no prebuilt python3.x zip to unpack.
+    if tuple(map(int, cfg.siloedPyVer.split('.')[:2])) >= (3, 0):
+        return
+
     if sys.platform == "win32":
         zip_basename = "win32-%s-%s" % (cfg.architecture, cfg.compiler)
     elif sys.platform.startswith("darwin"):

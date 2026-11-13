@@ -25,6 +25,7 @@ Import(
     'withJSLib',
     'ranRegxpcomStateFileName',
     'siloedPython',
+    'siloedPythonVersion',
     'readmeDir',
     'sdkDir',
     'universal',
@@ -50,27 +51,9 @@ if ($buildType eq 'debug') {
 
 my $consLocal = $cons;
 
-#---- Komodo's schema-based autocomplete and other parts of the
-#     codeintel system use ElementTree.
-# Python ElementTree (cElementTree depends upon this)
-my $landmark = "$komodoPythonUtilsDir/elementtree/__init__.py";
-$consLocal->Command($landmark,
-               "elementtree/setup.py",
-               qq(
-                cd %1:d && $siloedPython %1:f build $debugFlags
-                cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
-               ));
-$consLocal->DependsRecursive($landmark, "elementtree", ("build", '\.svn'));
-# cElementTree
-my $pydExt = ($platform eq "win" ? ".pyd" : ".so");
-my $landmark = "$komodoPythonUtilsDir/cElementTree$pydExt";
-$consLocal->Command($landmark,
-                    "cElementTree/setup.py",
-                    qq(
-                     cd %1:d && $siloedPython %1:f build $debugFlags
-                     cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
-                    ));
-$consLocal->DependsRecursive($landmark, "cElementTree", ("build", '\.svn'));
+#---- ElementTree: Python 3 uses the stdlib xml.etree.ElementTree
+#     implementation, so the old vendored elementtree/cElementTree
+#     Python 2 extensions are not built.
 
 #---- sgmlop (used for HTML parsing for HTML autocomplete)
 my $pydExt = ($platform eq "win" ? ".pyd" : ".so");
@@ -91,17 +74,9 @@ $consLocal->InstallRecursive("$supportDir/catalogs",
                         ('\.svn'));
 
 
-#---- Komodo's SFTP support uses 'paramiko' which, in turn, uses PyCrypto and
-#     ecdsa.
-# PyCrypto (http://www.amk.ca/python/code/crypto)
-my $landmark = "$komodoPythonUtilsDir/Crypto/__init__.py";
-$consLocal->Command($landmark,
-               "pycrypto/setup.py",
-               qq(
-                cd %1:d && $siloedPython %1:f build $debugFlags
-                cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
-               ));
-$consLocal->DependsRecursive($landmark, "pycrypto", ("build", '\.svn'));
+#---- Komodo's SFTP support uses 'paramiko', which uses PyCryptodome.
+#     PyCryptodome is installed by mozilla/support/install-py3-python-deps.py;
+#     the old vendored pycrypto tree is Python 2 only and is not built.
 
 # ecdsa (http://github.com/warner/python-ecdsa)
 my $landmark = "$komodoPythonUtilsDir/ecdsa";
@@ -246,7 +221,7 @@ if ($platform eq "win") {
 
 
 #---- Komodo's HTTP Inspector uses Twisted.
-if ($withHTTPInspector) {
+if ($withHTTPInspector && $siloedPythonVersion !~ /^3\./) {
     # Install twisted (http://twistedmatrix.com/)
     my $landmark = "$komodoPythonUtilsDir/twisted/__init__.py";
     my $build_env = "";
@@ -270,6 +245,8 @@ if ($withHTTPInspector) {
                    ));
     $consLocal->DependsRecursive($landmark, "twisted", ("build", ('\.svn')));
 }
+# For Python 3, Twisted is installed by
+# mozilla/support/install-py3-python-deps.py instead of the vendored 2.x tree.
 
 
 
