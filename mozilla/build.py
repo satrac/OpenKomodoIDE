@@ -1771,10 +1771,17 @@ def target_silo_python(argv=["silo_python"]):
             activestate_py_path = join(siloDir, "lib", "python"+config.pyVer,
                                        "site-packages", "activestate.py")
             if not exists(activestate_py_path):
-                # It might be located in the main lib directory.
-                activestate_py_path = join(siloDir, "lib",
-                                           "python"+config.pyVer,
-                                           "activestate.py")
+                # It might be located in the main lib directory.  Copy it into
+                # site-packages so its --relocate mode computes the correct
+                # prefix (it walks up four levels from its own location).
+                fallback_path = join(siloDir, "lib",
+                                     "python"+config.pyVer,
+                                     "activestate.py")
+                if exists(fallback_path):
+                    site_packages_dir = dirname(activestate_py_path)
+                    if not exists(site_packages_dir):
+                        os.makedirs(site_packages_dir)
+                    shutil.copy(fallback_path, activestate_py_path)
             cmd = "%s %s --relocate" % (config.python, activestate_py_path)
             _run(cmd, log.info)
 
