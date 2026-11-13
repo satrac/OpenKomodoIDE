@@ -1682,6 +1682,50 @@ def _disablePythonUserSiteFeature(site_filepath):
         f.write(contents)
 
 
+# System site-packages entries that the Python 3 runtime (or its build-time
+# setup.py invocations) may import.  The silo deliberately does not expose the
+# whole system site-packages tree: symlinking the stdlib used to pull in
+# unrelated packages (torch, ansible, scipy, ...), which made the install
+# image several gigabytes larger than the original Komodo distribution.
+_OPTIONAL_SILO_SITE_PACKAGES = (
+    # text/encoding and network helpers used by Komodo at runtime
+    "chardet", "chardet-*",
+    "websocket", "websocket-*", "websocket_client-*",
+    "requests", "requests-*", "urllib3", "urllib3-*",
+    "certifi", "certifi-*", "idna", "idna-*",
+    "charset_normalizer", "charset_normalizer-*",
+    "httplib2", "httplib2-*",
+    # SFTP/paramiko dependencies
+    "cryptography", "cryptography-*",
+    "cffi", "cffi-*", "pycparser", "pycparser-*", "_cffi_backend*",
+    "bcrypt", "bcrypt-*", "nacl", "pynacl-*",
+    # optional CodeIntel / watchdog / date helpers
+    "django", "django-*", "asgiref", "asgiref-*", "sqlparse", "sqlparse-*",
+    "yaml", "PyYAML-*", "_yaml*",
+    "dateutil", "python_dateutil-*", "pytz", "pytz-*",
+    # setup.py / distutils shim used by `make silvercity`/`make sgmlop`
+    "setuptools", "setuptools-*", "pkg_resources", "pkg_resources-*",
+    "_distutils_hack", "_distutils_hack-*", "distutils-precedence.pth",
+    "packaging", "packaging-*", "typing_extensions", "typing_extensions-*",
+    "wheel", "wheel-*", "six", "six-*",
+    "importlib_metadata", "importlib_metadata-*", "zipp", "zipp-*",
+    "tomli", "tomli-*", "more_itertools", "more_itertools-*",
+    "jaraco", "jaraco.*", "jaraco_*", "platformdirs", "platformdirs-*",
+    "websockets", "websockets-*",
+)
+
+
+def _silo_optional_site_packages(siteSrc, siteDst):
+    """Expose only the whitelisted system site-packages in the silo."""
+    if not isdir(siteSrc):
+        return
+    for pattern in _OPTIONAL_SILO_SITE_PACKAGES:
+        for src in glob.glob(join(siteSrc, pattern)):
+            dst = join(siteDst, basename(src))
+            if not exists(dst):
+                os.symlink(src, dst)
+
+
 def _silo_system_python3(config, siloDir, mozBinDir, mozLibDir):
     """Create a Python 3 "silo" in the Komodo dist using symlinks.
 
@@ -1689,6 +1733,10 @@ def _silo_system_python3(config, siloDir, mozBinDir, mozLibDir):
     Komodo dist at the system Python 3 installation, while still keeping
     PYTHONHOME inside the dist so the application and its build scripts
     find a consistent prefix.
+
+    The stdlib is linked entry-by-entry so the system site-packages tree is
+    not pulled in.  A small whitelist of optional packages that Komodo may
+    import is linked into the silo's own site-packages directory.
     """
     py = config.python
     pyver = config.pyVer
@@ -1710,10 +1758,35 @@ def _silo_system_python3(config, siloDir, mozBinDir, mozLibDir):
         if not exists(path):
             os.makedirs(path)
 
-    # stdlib and development headers are large; link them rather than copy.
+    # Earlier Python 3 porting experiments linked the app package's lib/
+    # directory at the system stdlib.  Those stale links make ImageKomodo
+    # copy the entire system site-packages tree a second time.
+    staleBinLib = join(mozBinDir, "python", "lib")
+    for name in ("python" + pyver,
+                 "libpython" + pyver + ".so",
+                 "libpython" + pyver + ".so.1.0"):
+        stale = join(staleBinLib, name)
+        if os.path.islink(stale):
+            os.unlink(stale)
+
+    # Link the stdlib entry-by-entry, excluding the system site-packages.
+    # A single symlink to the stdlib directory would include every package
+    # installed on the host, which is wrong for a redistributable image.
     stdlib_dst = join(siloDir, "lib", "python" + pyver)
+    if exists(stdlib_dst) and os.path.islink(stdlib_dst):
+        os.unlink(stdlib_dst)
     if not exists(stdlib_dst):
-        os.symlink(stdlib, stdlib_dst)
+        os.makedirs(stdlib_dst)
+        for entry in sorted(os.listdir(stdlib)):
+            if entry == "site-packages":
+                continue
+            os.symlink(join(stdlib, entry), join(stdlib_dst, entry))
+    site_packages_dst = join(stdlib_dst, "site-packages")
+    if not exists(site_packages_dst):
+        os.makedirs(site_packages_dst)
+    _silo_optional_site_packages(join(stdlib, "site-packages"),
+                                  site_packages_dst)
+
     include_dst = join(siloDir, "include", "python" + pyver)
     if not exists(include_dst):
         os.symlink(include, include_dst)

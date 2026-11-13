@@ -1026,6 +1026,17 @@ def ImageKomodo(cfg, argv):
     from os.path import join, isdir, exists, dirname, basename
     print(("creating install image in '%s'..." % cfg.installRelDir))
 
+    # Start from a clean image.  Copying over an existing image leaves stale
+    # files behind (for example a previous Python silo with the full system
+    # site-packages), which makes the resulting image much larger than the
+    # current build inputs.
+    if exists(cfg.installAbsDir):
+        print(("removing old install image '%s'..." % cfg.installAbsDir))
+        if sys.platform == "win32":
+            _run('rd /s/q "%s"' % cfg.installAbsDir)
+        else:
+            _run('rm -rf "%s"' % cfg.installAbsDir)
+
     # Handy (and platform-independent) path factory functions.
     def mozdistpath(*parts):
         return join(cfg.mozDist, *parts)
@@ -1469,6 +1480,13 @@ def ImageKomodo(cfg, argv):
     # size.
     # Note: This will still leave in the necessary crash-reporter information
     #       when build with "--with-crashreport-symbols".
+    # shutil.copy2 preserves the source mode.  The Linux stub script is not
+    # executable in the source tree, so make the installed launcher executable.
+    if sys.platform != "win32":
+        komodoStub = iicorebinpath("komodo")
+        if exists(komodoStub):
+            os.chmod(komodoStub, 0o755)
+
     StripBinaries(iicorepath())
 
     UpdateSentinel(iimozresourcespath("components"))
