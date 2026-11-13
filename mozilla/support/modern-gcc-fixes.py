@@ -314,7 +314,7 @@ def main(argv):
         "  void* operator new(size_t sz) CPP_THROW_NEW { \\\n"
         "    void* rv = ::operator new(sz);              \\\n"
         "    if (rv) {                                   \\\n"
-        "      memset(rv, 0, sz);                         \\\n"
+        "      memset(rv, 0, sz);                        \\\n"
         "    }                                           \\\n"
         "    return rv;                                  \\\n"
         "  }                                             \\\n"

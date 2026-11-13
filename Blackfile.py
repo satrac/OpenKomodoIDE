@@ -1472,7 +1472,8 @@ def ImageKomodo(cfg, argv):
 
         for path in (iicorepath("lib", "mozilla", "libpython%s.so" % cfg.siloedPyVer),
                      iicorepath("lib", "mozilla", "libpython%s.so.1.0" % cfg.siloedPyVer)):
-            os.unlink(path)
+            if os.path.lexists(path):
+                os.unlink(path)
             os.symlink("../python/lib/%s.1.0" % basename(libpythonXYso), path)
             log.debug("image:: symlinking %r => %r", path, "../python/lib/%s.1.0" % basename(libpythonXYso))
 
