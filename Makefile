@@ -37,6 +37,10 @@ BK := $(ROOT)/util/black/bk
 MOZ := $(ROOT)/mozilla
 MOZ_SRC ?= $(MOZ)/build/35.0-ko12.10
 PYTHON27 ?= $(ROOT)/mozilla/prebuilt/python2.7/linux-x86_64/bin/python
+# The legacy Mozilla IDL tools need Python 2.7.  The tree is shipped as a
+# zip in the repository and is ignored after extraction.
+PYTHON27_DIR ?= $(patsubst %/bin,%,$(patsubst %/,%,$(dir $(PYTHON27))))
+PYTHON27_ZIP ?= $(PYTHON27_DIR).zip
 KOMODO_VERSION ?= 12.10.0
 KOMODO_BUILDNUM ?= 1
 CONFIGURE_ARGS ?= --ide --dev
@@ -54,6 +58,16 @@ BUILD_STAGE := $(ROOT)/build/release
 IMAGE_DIR ?= $(shell cd $(ROOT) && $(PYTHON) -c 'import bkconfig; print(bkconfig.installAbsDir)' 2>/dev/null)
 IMAGE_INSTALLDIR := $(if $(IMAGE_DIR),$(IMAGE_DIR)/INSTALLDIR,)
 
+# Set CCACHE=1 to route C/C++ compilation through ccache.  This mainly helps
+# repeated clean rebuilds of Scintilla/SciMoz/SilverCity/sgmlop; incremental
+# Cons builds do not recompile unchanged files.
+CCACHE ?= 0
+ifeq ($(CCACHE),1)
+export CC := ccache $(CC)
+export CXX := ccache $(CXX)
+export CCACHE_DIR ?= $(HOME)/.cache/ccache
+endif
+
 PREFIX ?= /usr/local
 LOCAL_PREFIX ?= $(HOME)/.local
 DESTDIR ?=
@@ -61,7 +75,8 @@ INSTALL_NAME ?= komodo-12.10
 PACKAGE ?= std
 CIX_DIR ?=
 
-.PHONY: help all configure register-mozbuild build app run test \
+.PHONY: help all doctor prebuilt-python modules configure register-mozbuild \
+        build app run test \
         silo-python pyxpcom python3-deps deps mozilla mozilla-all full \
         image package package-installer package-remotedebugging package-updates \
         install install-local uninstall uninstall-local \
@@ -85,8 +100,11 @@ help:
 > @echo "  make status           Show the resolved build paths"
 > @echo ""
 > @echo "Full/bootstrap:"
+> @echo "  make doctor           Check build prerequisites and report gaps"
+> @echo "  make modules          Clone the optional Komodo module sources"
+> @echo "  make prebuilt-python  Extract the bundled Python 2.7 build tool"
 > @echo "  make mozilla-all      Build Mozilla + PyXPCOM + Python silo + deps"
-> @echo "  make full             mozilla-all, then the Komodo app build"
+> @echo "  make full             Bootstrap, configure, then build the IDE"
 > @echo ""
 > @echo "Parts:"
 > @echo "  make silo-python      Refresh the Python 3 silo at dist/python"
@@ -137,10 +155,99 @@ help:
 > @echo "  IMAGE_DIR=$(IMAGE_DIR)"
 > @echo "  PREFIX=$(PREFIX)  LOCAL_PREFIX=$(LOCAL_PREFIX)"
 > @echo "  PACKAGE=$(PACKAGE)  CIX_DIR=$(CIX_DIR)"
+> @echo "  CCACHE=$(CCACHE)      (set CCACHE=1 for clean-rebuild caching)"
 
 all: build
 
-configure:
+# Check the host-side prerequisites for a from-scratch build.  This is
+# intentionally read-only; install missing system packages yourself.
+doctor:
+> @fail=0; \
+> for cmd in gcc g++ make perl git patch hg unzip zip pkg-config; do \
+>   if command -v "$$cmd" >/dev/null 2>&1; then \
+>     echo "ok    $$cmd"; \
+>   else \
+>     echo "MISS  $$cmd"; fail=1; \
+>   fi; \
+> done; \
+> if $(PYTHON) -c 'import sys; sys.exit(0 if sys.version_info[:2] >= (3, 14) else 1)' 2>/dev/null; then \
+>   echo "ok    $(PYTHON) >= 3.14"; \
+> else \
+>   echo "MISS  $(PYTHON) >= 3.14"; fail=1; \
+> fi; \
+> if $(PYTHON) -c 'import os, sys, sysconfig; sys.exit(0 if os.path.exists(os.path.join(sysconfig.get_paths()["include"], "Python.h")) else 1)' 2>/dev/null; then \
+>   echo "ok    Python.h"; \
+> else \
+>   echo "MISS  Python.h (install the Python development headers)"; fail=1; \
+> fi; \
+> if pkg-config --exists gtk+-2.0 2>/dev/null; then \
+>   echo "ok    gtk+-2.0"; \
+> else \
+>   echo "MISS  gtk+-2.0 (install the GTK2 development package)"; fail=1; \
+> fi; \
+> if [ -x "$(PYTHON27)" ]; then \
+>   echo "ok    prebuilt Python 2.7"; \
+> else \
+>   echo "MISS  prebuilt Python 2.7 (run 'make prebuilt-python')"; fail=1; \
+> fi; \
+> if [ -x "$(MOZ)/support/autoconf-2.13/bin/autoconf" ]; then \
+>   echo "ok    bundled autoconf 2.13"; \
+> else \
+>   echo "MISS  bundled autoconf 2.13"; fail=1; \
+> fi; \
+> if [ -f "$(MOZ_DIST)/bin/xpcshell" ]; then \
+>   echo "ok    Mozilla build"; \
+> else \
+>   echo "note  Mozilla build not present (run 'make mozilla-all')"; \
+> fi; \
+> for d in trackchanges golang editorconfig focusmode; do \
+>   if [ -d "$(ROOT)/src/modules/$$d" ]; then \
+>     echo "ok    module $$d"; \
+>   else \
+>     echo "note  module $$d missing (run 'make modules')"; \
+>   fi; \
+> done; \
+> exit $$fail
+
+# Extract the bundled Python 2.7 used by the legacy Mozilla IDL/build tools.
+prebuilt-python:
+> @if [ -x "$(PYTHON27)" ]; then \
+>   echo "prebuilt Python 2.7 already present: $(PYTHON27)"; \
+> elif [ ! -f "$(PYTHON27_ZIP)" ]; then \
+>   echo "error: prebuilt Python zip not found: $(PYTHON27_ZIP)"; exit 1; \
+> else \
+>   echo "extracting $(PYTHON27_ZIP) -> $(PYTHON27_DIR)"; \
+>   mkdir -p "$(PYTHON27_DIR)"; \
+>   if command -v unzip >/dev/null 2>&1; then \
+>     unzip -q -o "$(PYTHON27_ZIP)" -d "$(PYTHON27_DIR)"; \
+>   else \
+>     $(PYTHON) -m zipfile -e "$(PYTHON27_ZIP)" "$(PYTHON27_DIR)"; \
+>   fi; \
+>   test -x "$(PYTHON27)" || { \
+>     echo "error: extraction did not create $(PYTHON27)"; exit 1; \
+>   }; \
+> fi
+
+# Optional Komodo modules that are not part of the main source tree.  The
+# repository's .gitmodules file documents the upstream/fork remotes; these
+# directories are absent from a fresh checkout.
+modules:
+> @set -e; \
+> for spec in \
+>   "src/modules/trackchanges https://github.com/satrac/trackchanges.git" \
+>   "src/modules/golang https://github.com/satrac/komodo-go.git" \
+>   "src/modules/editorconfig https://github.com/satrac/komodo-editorconfig.git" \
+>   "src/modules/focusmode https://github.com/satrac/Focus-Mode.git"; do \
+>   set -- $$spec; dir="$(ROOT)/$$1"; url="$$2"; \
+>   if [ -d "$$dir" ]; then \
+>     echo "present: $$1"; \
+>   else \
+>     echo "cloning $$url"; \
+>     git clone --depth 1 "$$url" "$$dir"; \
+>   fi; \
+> done
+
+configure: prebuilt-python
 > @test -x "$(BK)" || { echo "error: missing $(BK)"; exit 1; }
 > @if [ -x "$(MOZ_DIST)/bin/xpcshell" ]; then \
 >   cd "$(MOZ)" && $(PYTHON) build.py regmozbuild; \
@@ -183,7 +290,9 @@ mozilla:
 mozilla-all:
 > cd "$(MOZ)" && $(PYTHON) build.py all
 
-full: mozilla-all
+full: modules prebuilt-python
+> $(MAKE) mozilla-all
+> $(MAKE) configure
 > $(MAKE) build
 
 image:

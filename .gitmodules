@@ -1,3 +1,5 @@
+# These are not gitlinks in this tree; `make modules` clones them into place
+# from the forked repositories when a full build is wanted.
 [submodule "src/modules/trackchanges"]
 	path = src/modules/trackchanges
 	url = https://github.com/satrac/trackchanges.git
@@ -12,8 +14,6 @@
 [submodule "src/modules/focusmode"]
 	path = src/modules/focusmode
 	url = https://github.com/satrac/Focus-Mode.git
-[submodule "src/modules/codeintel/server"]
-	path = src/modules/codeintel/server
-	url = https://github.com/satrac/komodo-codeintel2.git
-	branch = master
+# The CodeIntel server is vendored under src/modules/codeintel/server (its
+# original Komodo/codeintel repository is gone), so it is not listed here.
 

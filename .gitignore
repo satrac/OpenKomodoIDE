@@ -21,7 +21,7 @@ qbtable.pik
 nohup.out
 /*.komodoproject
 /.komodotools/
-./install/
+/install/
 packages/
 /test
 /src/codeintel/test2
