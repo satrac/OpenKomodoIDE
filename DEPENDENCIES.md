@@ -16,7 +16,9 @@ into the `satrac` account and cloned under:
 ~/Projects/komodo-forks/
 ```
 
-The main working tree remains `~/Projects/OpenKomodoIDE`.
+The main working tree remains `~/Projects/OpenKomodoIDE`.  The mirror
+currently contains 42 clones with 42 distinct remotes; there are no duplicate
+Komodo project clones.
 
 ## Active build/runtime dependencies
 
