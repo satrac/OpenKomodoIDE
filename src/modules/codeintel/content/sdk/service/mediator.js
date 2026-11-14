@@ -268,7 +268,7 @@ else
     this.getMediatorMenu = (view) =>
     {
         var mediators = this.getMediatorsForLanguage(view.language);
-        if (mediators.length <= 1)
+        if ( ! mediators || mediators.length <= 1)
             return false;
 
         var engineMenu = require("ko/ui/menu").create(
@@ -445,9 +445,33 @@ else
         }
 
         if (opts.cache)
+        {
             inProgress[requestId] = true;
 
-        var request = mediator.request(method, args, opts);
+            // Do not let a dropped response block every future request with
+            // the same id.  Symbol/completion requests are fast, so anything
+            // older than 30 seconds is stale.
+            timers.setTimeout(() =>
+            {
+                if (requestId in inProgress)
+                {
+                    log.warn("Clearing stuck in-progress request: " + requestId);
+                    delete inProgress[requestId];
+                }
+            }, 30000);
+        }
+
+        var request;
+        try
+        {
+            request = mediator.request(method, args, opts);
+        }
+        catch (e)
+        {
+            if (opts.cache)
+                delete inProgress[requestId];
+            throw e;
+        }
 
         // Handle callbacks for additional requests
         var callbackHandler = (type, args) =>

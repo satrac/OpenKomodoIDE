@@ -351,9 +351,18 @@
 
         var view = views.current().get();
 
+        if ( ! view)
+        {
+            log.debug("Cancelling, there is no current view");
+            return;
+        }
+
         if ( ! view.prefs)
         {
-            log.debug("Cancelling, view.prefs is not defined (probably shutting down)");
+            // The view is still being initialized.  Try again shortly rather
+            // than leaving the spinner running forever.
+            log.debug("View prefs are not ready yet, retrying");
+            timers.setTimeout(() => this.update(), 250);
             return;
         }
 
@@ -384,7 +393,7 @@
             return;
         }
 
-        service.getSymbolsInBuffer(
+        var request = service.getSymbolsInBuffer(
         {
             buf: editor.getValue(),
             line: editor.getLineNumber(),
@@ -392,9 +401,36 @@
             indentString: indentString,
             language: view.language,
             sortType: sortType
-        })
+        });
+
+        if ( ! request || typeof request.then != "function")
+        {
+            log.debug("No service available for language: " + view.language);
+            updateDeck(DECK_ERROR);
+            return;
+        }
+
+        var requestFinished = false;
+        var requestTimeout = timers.setTimeout(() =>
+        {
+            if (requestFinished)
+                return;
+            requestFinished = true;
+            log.warn("Symbol browser request timed out");
+            updateDeck(DECK_ERROR);
+        }, 15000);
+
+        var requestDone = () =>
+        {
+            requestFinished = true;
+            timers.clearTimeout(requestTimeout);
+        };
+
+        request
         .then((members) =>
         {
+            requestDone();
+
             // Stop if we're in a race condition
             if (uuid != _update.uuid)
             {
@@ -504,6 +540,7 @@
         })
         .catch((data) =>
         {
+            requestDone();
             updateDeck(DECK_ERROR);
             log.error(data.message);
         });
