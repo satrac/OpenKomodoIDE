@@ -1046,28 +1046,9 @@
     this.getEnv = getEnv;
 
     this.load = () => {
-        let savePrivKey = () => {
-            this.exportPrivKey({
-                onSuccess: (result) => {
-                    platformAuth.saveSecret(platformAuth.privkeyUrlForPWM, result);
-                },
-                onFail: (code, err) => {
-                    log.error("Could not save private key, code: " + code + "\nerror: " + err);
-                    notify.send("Saving private key failed with: " + err, "state",
-                    {
-                        id: "save-state-private-key",
-                        duration: 10000,
-                        priority: "error",
-                        command: () => focusNotification("save-state-private-key"),
-                    });
-                }
-            });
-        };
-        if ( ! this.installed()) {
-            install(savePrivKey);
-        } else if ( ! platformAuth.getCredentials(platformAuth.privkeyUrlForPWM)) {
-            savePrivKey();
-        }
+        // This experimental fork does not use the ActiveState Platform.
+        // Do not install the State Tool or try to export/save private keys
+        // on startup; both require an authenticated account.
         loadStatePrefs();
         w.addEventListener("project_opened", activationHandler);
         w.addEventListener('project_opened', onProjectOpenedHandler_promptCreate, false);

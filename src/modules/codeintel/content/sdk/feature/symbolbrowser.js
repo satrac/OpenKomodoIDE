@@ -254,6 +254,25 @@
         var view = views.current().get();
         if ( ! view )
             return;
+
+        // Show the tab when a supported editor view becomes current.  This
+        // also covers the common case where Komodo was started without a
+        // file and the user opens one later.
+        try
+        {
+            if (prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
+                ! prefs.getBoolean("codeintel.symbolbrowser.hidden", false) &&
+                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language) &&
+                ! legacy.uilayout.isTabShown(id))
+            {
+                legacy.uilayout.ensureTabShown(id);
+            }
+        }
+        catch (e)
+        {
+            log.exception(e, "Could not show the symbol browser tab");
+        }
+
         if ( ! force && onViewChange.lastUid == view.uid)
         {
             textbox.value(view._symbolBrowserFilter || "");
