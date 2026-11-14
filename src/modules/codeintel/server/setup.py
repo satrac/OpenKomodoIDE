@@ -55,6 +55,19 @@ def main(argv=None):
     os.makedirs(dest, exist_ok=True)
     shutil.copytree(src, dest, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns("*.pyc", "__pycache__"))
+
+    # Config searches for the SQLite closure extension in the parent of the
+    # package directory (pylib/codeintel/closure.so).  It is a build artifact,
+    # so it is not part of src/ and must be copied separately.
+    closure = os.path.join(here, "closure.so")
+    if os.path.exists(closure):
+        closure_dest = os.path.join(os.path.dirname(dest), "closure.so")
+        shutil.copy2(closure, closure_dest)
+        print("codeintel: copied %s -> %s" % (closure, closure_dest))
+    else:
+        print("codeintel: warning: closure.so is missing: %s" % (closure,),
+              file=sys.stderr)
+
     print("codeintel: copied %s -> %s" % (src, dest))
     return 0
 

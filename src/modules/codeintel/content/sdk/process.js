@@ -67,7 +67,13 @@ else
         envLibDir = koFile.join(addonPath, 'pylib', 'codeintel', 'env', envLibDir);
     
         var env = shell.getEnv();
-        env.PYTHONPATH = [pythonLib, koDirSvc.pythonDBGPDir, libDir, envLibDir].join(pathsep);
+        // komodoPythonLibDir holds the Python 3 packages installed for
+        // Komodo itself (peewee, apsw, zope, ...).  The CodeIntel
+        // server is a separate process, so it does not inherit Komodo's
+        // in-process sys.path.
+        var komodoLibDir = koDirSvc.komodoPythonLibDir;
+        env.PYTHONPATH = [pythonLib, koDirSvc.pythonDBGPDir, komodoLibDir,
+                          libDir, envLibDir].join(pathsep);
         
         log.debug("PYTHONPATH: " +  env.PYTHONPATH);
         

@@ -61,6 +61,7 @@ my $landmark = "$baseDir/pylib/codeintel/lib/server.py";
 $consLocal->Command(
     $landmark,
     "server/setup.py",
+    "server/closure.so",
 
     "bootstrap.js",
     "install.rdf",

@@ -45,6 +45,15 @@ KOMODO_VERSION ?= 12.10.0
 KOMODO_BUILDNUM ?= 1
 CONFIGURE_ARGS ?= --ide --dev
 
+# Some GTK2 themes reference engines that are not shipped by every distro
+# (for example Breeze-Dark uses the "adwaita" engine, which Arch's gtk2
+# package does not provide).  That produces:
+#   Gtk-WARNING: Unable to locate theme engine in module_path: "adwaita"
+# Point Komodo at a theme that only uses the built-in pixmap engine to
+# silence it, e.g.:
+#   make run GTK2_RC_FILES=/usr/share/themes/Raleigh/gtk-2.0/gtkrc
+GTK2_RC_FILES ?=
+
 # Paths are read from the generated bkconfig.py when it exists.  Override any
 # of these on the command line if needed:
 #   make build MOZ_DIST=/path/to/dist
@@ -277,7 +286,7 @@ app: build
 
 run:
 > @test -x "$(BK)" || { echo "error: missing $(BK)"; exit 1; }
-> $(BK) run $(RUN_ARGS)
+> $(if $(GTK2_RC_FILES),GTK2_RC_FILES="$(GTK2_RC_FILES)" )$(BK) run $(RUN_ARGS)
 
 test:
 > @test -x "$(BK)" || { echo "error: missing $(BK)"; exit 1; }
@@ -330,7 +339,7 @@ install-local: image
 > install -d "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" "$(LOCAL_PREFIX)/bin"
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/"
 > printf '%s\n' '#!/bin/sh' \
->   'exec "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
+>   '$(if $(GTK2_RC_FILES),GTK2_RC_FILES="$(GTK2_RC_FILES)" )exec "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
 >   > "$(LOCAL_PREFIX)/bin/komodo"
 > chmod +x "$(LOCAL_PREFIX)/bin/komodo"
 > @echo "installed to $(LOCAL_PREFIX)/lib/$(INSTALL_NAME)"
@@ -342,7 +351,7 @@ install: image
 > install -d "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)" "$(DESTDIR)$(PREFIX)/bin"
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/"
 > printf '%s\n' '#!/bin/sh' \
->   'exec "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
+>   '$(if $(GTK2_RC_FILES),GTK2_RC_FILES="$(GTK2_RC_FILES)" )exec "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
 >   > "$(DESTDIR)$(PREFIX)/bin/komodo"
 > chmod +x "$(DESTDIR)$(PREFIX)/bin/komodo"
 > @echo "installed to $(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)"

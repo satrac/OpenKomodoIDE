@@ -133,7 +133,7 @@ class JsonRPC:
         try:
             data = json.dumps(ob)
             log.debug("Responding: %s" % data)
-            data = base64.b64encode(data)
+            data = base64.b64encode(data.encode("utf-8"))
         except Exception as e:
             log.exception("Failed to encode data as JSON, id: %d" % identifier)
             return
@@ -152,7 +152,7 @@ class JsonRPC:
 
         try:
             data = json.dumps(ob)
-            data = base64.b64encode(data)
+            data = base64.b64encode(data.encode("utf-8"))
         except Exception as e:
             log.exception("Failed to encode error data as JSON, error code: %d, id: %d" % (code, identifier))
             return

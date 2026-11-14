@@ -54,8 +54,8 @@ def PerlWarnsToLintResults(warns, perlfilename, actualFileName, perlcode):
     warns = newwarns
 
     results = []
-    if type(perlfilename) == str:
-        perlfilename = perlfilename.encode('utf-8')
+    if isinstance(perlfilename, bytes):
+        perlfilename = perlfilename.decode('utf-8', 'replace')
     escPerlName = re.escape(perlfilename)
     # Fix bug 96303 (again): Replace any runs of non-ascii characters with unescaped '.*'
     # The other parts of the filename do get escaped.
@@ -297,6 +297,8 @@ class _CommonPerlLinter(object):
         return self.appInfoEx.getPerlCriticVersion()
 
     def _writeTempFile(self, cwd, text):
+        if isinstance(text, str):
+            text = text.encode("utf-8")
         tmpFileName = None
         if cwd:
             # Try to create the tempfile in the same directory as the perl
@@ -392,6 +394,9 @@ class KoPerlCompileLinter(_CommonPerlLinter):
         return self.lint_with_text(request, text)
 
     def lint_with_text(self, request, text):
+        if isinstance(text, bytes):
+            encoding = getattr(request.encoding, "python_encoding_name", None) or "utf-8"
+            text = text.decode(encoding, "replace")
         cwd = request.cwd
         prefset = request.prefset
         # Remove a possible "-d" in the shebang line, this will tell Perl to
@@ -441,6 +446,8 @@ class KoPerlCompileLinter(_CommonPerlLinter):
 
             p = process.ProcessOpen(argv, cwd=cwd, env=env, stdin=None)
             _, stderr = p.communicate()
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode("utf-8", "replace")
             lintResults = PerlWarnsToLintResults(stderr.splitlines(1),
                                                  tmpFileName, 
                                                  request.koDoc.displayPath,
@@ -464,6 +471,9 @@ class KoPerlCriticLinter(_CommonPerlLinter):
         return self.lint_with_text(request, text)        
         
     def lint_with_text(self, request, text):
+        if isinstance(text, bytes):
+            encoding = getattr(request.encoding, "python_encoding_name", None) or "utf-8"
+            text = text.decode(encoding, "replace")
         prefset = request.prefset
         criticLevel = prefset.getStringPref('perl_lintOption_perlCriticLevel')
         if criticLevel == 'off':
@@ -538,6 +548,8 @@ class KoPerlCriticLinter(_CommonPerlLinter):
 
             p = process.ProcessOpen(argv, cwd=cwd, env=env, stdin=None)
             _, stderr = p.communicate()
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode("utf-8", "replace")
             lintResults = PerlWarnsToLintResults(stderr.splitlines(1),
                                                  tmpFileName,
                                                  request.koDoc.displayPath,

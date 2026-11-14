@@ -47,6 +47,8 @@
 
     var onLoadWidget = () =>
     {
+        if (wrapper)
+            return;
         log.debug("Widget loaded, initializing document");
 
         wrapper = require("ko/ui/column").create({ attributes: { flex: 1 } });
@@ -648,13 +650,60 @@
             });
 
             widget = legacy.widgets.getWidget(id);
-            widget.contentWindow.addEventListener("load", onLoadWidget);
+        }
+
+        // The widget may already exist when the layout was restored from a
+        // previous session; make sure its content is initialized either way.
+        if (widget && ! widget._symbolbrowserWired)
+        {
+            widget._symbolbrowserWired = true;
+            var wireWidget = () => onLoadWidget();
+            try
+            {
+                if (widget.contentWindow &&
+                    widget.contentWindow.document.readyState == "complete")
+                {
+                    wireWidget();
+                }
+                else
+                {
+                    widget.contentWindow.addEventListener("load", wireWidget, {once: true});
+                }
+            }
+            catch (e)
+            {
+                widget.contentWindow.addEventListener("load", wireWidget, {once: true});
+            }
+        }
+
+        // A fresh profile starts with the right pane collapsed.  The widget
+        // is registered with show:true, but that only adds it to the pane, so
+        // explicitly show the tab when the current language supports it.  Do
+        // this only before a layout has been saved, so a user who hides the
+        // pane keeps it hidden on subsequent starts.
+        try
+        {
+            let savedLayout = prefs.getString("ui.tabs.sidepanes.state", "");
+            let view = views.current().get();
+            if (prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
+                ! savedLayout &&
+                view &&
+                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language) &&
+                ! legacy.uilayout.isTabShown(id))
+            {
+                legacy.uilayout.ensureTabShown(id);
+            }
+        }
+        catch (e)
+        {
+            log.exception(e, "Could not show the symbol browser tab");
         }
     };
     
     this.stop = () =>
     {
-        widget.contentWindow.removeEventListener("load", onLoadWidget);
+        if (widget && widget.contentWindow)
+            widget.contentWindow.removeEventListener("load", onLoadWidget);
 
         w.removeEventListener('editor_view_opened', onViewChange);
         w.removeEventListener('current_view_changed', onViewChange);

@@ -47,7 +47,7 @@ class RequestHandler(BaseSocketServer.BaseRequestHandler):
     lastRequestTime = None
     
     def __init__(self, request, client_address, server):
-        self.queue = ""
+        self.queue = b""
         self.processor = JsonRPC(self.process_response)
         
         self.request = request
@@ -87,12 +87,12 @@ class RequestHandler(BaseSocketServer.BaseRequestHandler):
                 else:
                     continue
             
-            chunks = data.split("\x00")
+            chunks = data.split(b"\x00")
             
             for index, chunk in enumerate(chunks):
                 self.queue += chunk
                 
-                if index < len(chunks)-1 or data[-1:] == "\x00":
+                if index < len(chunks)-1 or data[-1:] == b"\x00":
                     self.process_queue()
     
     def finish(self):
@@ -104,9 +104,10 @@ class RequestHandler(BaseSocketServer.BaseRequestHandler):
         
         #log.debug("Received: %s" % self.queue)
         self.processor.process(self.queue)
-        self.queue = ""
+        self.queue = b""
         
     def process_response(self, message):
         #log.debug("Responding: %s" % message)
-        
-        self.request.sendall("%s\x00" % message)
+        if isinstance(message, str):
+            message = message.encode("utf-8")
+        self.request.sendall(message + b"\x00")

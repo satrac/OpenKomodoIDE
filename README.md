@@ -269,6 +269,28 @@ should be a lot faster as much of the compiled data is cached.
 <br />
 <br />
 
+#### Linux runtime notes
+
+- **GTK2 theme warning.** Some GTK2 themes reference engines that are not
+  packaged by every distribution.  For example Breeze-Dark uses the `adwaita`
+  engine, which Arch's `gtk2` package does not provide, producing
+  `Gtk-WARNING: Unable to locate theme engine in module_path: "adwaita"`.
+  Run Komodo with a theme that only uses the built-in pixmap engine to silence
+  it:
+
+  ```
+  make run GTK2_RC_FILES=/usr/share/themes/Raleigh/gtk-2.0/gtkrc
+  ```
+
+  The variable is also used by `make install-local` and `make install` when
+  generating the launcher script.
+
+- **Symbol Browser / CodeIntel.** The CodeIntel server is started
+  automatically.  Perl, PHP, Ruby, JavaScript, Tcl, HTML, CSS and the UDL
+  languages have working symbol browsers.  The Python scanner still depends on
+  the removed Python 2 `compiler` module, so Python symbol browsing is
+  disabled until that scanner is ported to `ast`.
+
 ### Building with Docker
 
 The easiest way to get started is to use our Docker image, this will basically

@@ -1,4 +1,12 @@
-from language.legacy.python.scanner import PythonScanner, Python3Scanner
+# The legacy Python scanner still depends on the removed Python 2 "compiler"
+# module.  Do not let that prevent the other language scanners (Perl, PHP,
+# Ruby, ...) from loading; Python code intelligence is disabled until the
+# scanner is ported to the "ast" module.
+try:
+    from language.legacy.python.scanner import PythonScanner, Python3Scanner
+except ImportError:
+    PythonScanner = Python3Scanner = None
+
 from language.legacy.python import stdlib as python_stdlib
 from language.legacy.javascript.scanner import JavaScriptScanner, NodeJSScanner
 from language.legacy.javascript import stdlib as javascript_stdlib
@@ -101,6 +109,9 @@ class Languages:
 
         @property
         def scanner(self):
+            if PythonScanner is None:
+                raise NotImplementedError(
+                    "The Python scanner is not available on Python 3 yet")
             Parent = Languages.Python
             if not Parent._scanner:
                 Parent._scanner = PythonScanner(self.cix)
@@ -124,6 +135,9 @@ class Languages:
 
         @property
         def scanner(self):
+            if Python3Scanner is None:
+                raise NotImplementedError(
+                    "The Python scanner is not available on Python 3 yet")
             Parent = Languages.Python3
             if not Parent._scanner:
                 Parent._scanner = Python3Scanner(self.cix)
