@@ -2017,6 +2017,7 @@ SSL_CLIENT_I_C=
   <boolean id="codeintel.symbollist.enabled">1</boolean>
   <boolean id="codeintel.symbolbrowser.enabled">1</boolean>
   <boolean id="codeintel.symbolbrowser.auto_show">1</boolean>
+  <boolean id="codeintel.symbolbrowser.hidden">0</boolean>
   <boolean id="codeintel.symbolscope.enabled">1</boolean>
   <boolean id="codeintel.scanner.enabled">1</boolean>
   <boolean id="codeintel.gotodef.enabled">1</boolean>

@@ -49,10 +49,10 @@ CONFIGURE_ARGS ?= --ide --dev
 # (for example Breeze-Dark uses the "adwaita" engine, which Arch's gtk2
 # package does not provide).  That produces:
 #   Gtk-WARNING: Unable to locate theme engine in module_path: "adwaita"
-# Point Komodo at a theme that only uses the built-in pixmap engine to
-# silence it, e.g.:
-#   make run GTK2_RC_FILES=/usr/share/themes/Raleigh/gtk-2.0/gtkrc
-GTK2_RC_FILES ?=
+# Default to Raleigh, which only uses the built-in pixmap engine, when it is
+# available.  Override with e.g. GTK2_RC_FILES=/path/to/gtkrc (or set it to an
+# empty value to use the desktop theme).
+GTK2_RC_FILES ?= $(wildcard /usr/share/themes/Raleigh/gtk-2.0/gtkrc)
 
 # Paths are read from the generated bkconfig.py when it exists.  Override any
 # of these on the command line if needed:
@@ -339,7 +339,8 @@ install-local: image
 > install -d "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" "$(LOCAL_PREFIX)/bin"
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/"
 > printf '%s\n' '#!/bin/sh' \
->   '$(if $(GTK2_RC_FILES),GTK2_RC_FILES="$(GTK2_RC_FILES)" )exec "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
+>   'if [ -z "$$GTK2_RC_FILES" ] && [ -f "$(GTK2_RC_FILES)" ]; then GTK2_RC_FILES="$(GTK2_RC_FILES)"; export GTK2_RC_FILES; fi' \
+>   'exec "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
 >   > "$(LOCAL_PREFIX)/bin/komodo"
 > chmod +x "$(LOCAL_PREFIX)/bin/komodo"
 > @echo "installed to $(LOCAL_PREFIX)/lib/$(INSTALL_NAME)"
@@ -351,7 +352,8 @@ install: image
 > install -d "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)" "$(DESTDIR)$(PREFIX)/bin"
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/"
 > printf '%s\n' '#!/bin/sh' \
->   '$(if $(GTK2_RC_FILES),GTK2_RC_FILES="$(GTK2_RC_FILES)" )exec "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
+>   'if [ -z "$$GTK2_RC_FILES" ] && [ -f "$(GTK2_RC_FILES)" ]; then GTK2_RC_FILES="$(GTK2_RC_FILES)"; export GTK2_RC_FILES; fi' \
+>   'exec "$(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \
 >   > "$(DESTDIR)$(PREFIX)/bin/komodo"
 > chmod +x "$(DESTDIR)$(PREFIX)/bin/komodo"
 > @echo "installed to $(DESTDIR)$(PREFIX)/lib/$(INSTALL_NAME)"

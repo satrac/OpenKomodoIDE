@@ -275,21 +275,24 @@ should be a lot faster as much of the compiled data is cached.
   packaged by every distribution.  For example Breeze-Dark uses the `adwaita`
   engine, which Arch's `gtk2` package does not provide, producing
   `Gtk-WARNING: Unable to locate theme engine in module_path: "adwaita"`.
-  Run Komodo with a theme that only uses the built-in pixmap engine to silence
-  it:
+  `make run`, `make install-local` and `make install` default
+  `GTK2_RC_FILES` to Raleigh when it exists, which only uses the built-in
+  pixmap engine.  Override it to use another theme:
 
   ```
-  make run GTK2_RC_FILES=/usr/share/themes/Raleigh/gtk-2.0/gtkrc
+  make run GTK2_RC_FILES=/usr/share/themes/Breeze-Dark/gtk-2.0/gtkrc
   ```
 
-  The variable is also used by `make install-local` and `make install` when
-  generating the launcher script.
+  Set `GTK2_RC_FILES=` (empty) to use the desktop's normal GTK2 theme.
 
 - **Symbol Browser / CodeIntel.** The CodeIntel server is started
-  automatically.  Perl, PHP, Ruby, JavaScript, Tcl, HTML, CSS and the UDL
-  languages have working symbol browsers.  The Python scanner still depends on
-  the removed Python 2 `compiler` module, so Python symbol browsing is
-  disabled until that scanner is ported to `ast`.
+  automatically and the Symbol Browser tab is shown for supported languages.
+  If you hide it, reopen it with **View > Tabs > Symbol Browser** or
+  `Ctrl+Shift+K` and search for `symbol browser`.  Perl, PHP, Ruby,
+  JavaScript, Tcl, HTML, CSS and the UDL languages have working symbol
+  browsers.  The Python scanner still depends on the removed Python 2
+  `compiler` module, so Python symbol browsing is disabled until that scanner
+  is ported to `ast`.
 
 ### Building with Docker
 

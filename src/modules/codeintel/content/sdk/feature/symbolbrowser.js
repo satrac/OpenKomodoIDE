@@ -626,7 +626,16 @@
 
     this.start = () =>
     {
-        commands.register("viewSymbolBrowser", () => {require("ko/windows").getMain().ko.uilayout.toggleTab("symbolbrowser-widget");},
+        commands.register("viewSymbolBrowser", () =>
+        {
+            let uilayout = require("ko/windows").getMain().ko.uilayout;
+            let wasShown = uilayout.isTabShown(id);
+            uilayout.toggleTab(id);
+
+            // Remember an explicit hide so the pane is not reopened on the
+            // next start; showing it clears the flag again.
+            prefs.setBoolean("codeintel.symbolbrowser.hidden", wasShown);
+        },
         {
             isEnabled: () => {},
             label: l.get("symbolbrowser.command_label")
@@ -676,17 +685,15 @@
             }
         }
 
-        // A fresh profile starts with the right pane collapsed.  The widget
-        // is registered with show:true, but that only adds it to the pane, so
-        // explicitly show the tab when the current language supports it.  Do
-        // this only before a layout has been saved, so a user who hides the
-        // pane keeps it hidden on subsequent starts.
+        // The right pane often starts collapsed, and registerWidget's
+        // show:true only adds the widget to the pane.  Explicitly show the
+        // tab when the current language supports it, unless the user has
+        // explicitly hidden it.
         try
         {
-            let savedLayout = prefs.getString("ui.tabs.sidepanes.state", "");
             let view = views.current().get();
             if (prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
-                ! savedLayout &&
+                ! prefs.getBoolean("codeintel.symbolbrowser.hidden", false) &&
                 view &&
                 service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language) &&
                 ! legacy.uilayout.isTabShown(id))
