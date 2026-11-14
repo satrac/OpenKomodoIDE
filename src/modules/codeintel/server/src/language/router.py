@@ -5,7 +5,10 @@
 try:
     from language.legacy.python.scanner import PythonScanner, Python3Scanner
 except ImportError:
-    PythonScanner = Python3Scanner = None
+    # The legacy scanner needs the removed Python 2 "compiler" module.
+    # Fall back to the ast-based scanner, which covers the Symbol Browser.
+    from language.legacy.python.ast_scanner import PythonASTScanner
+    PythonScanner = Python3Scanner = PythonASTScanner
 
 from language.legacy.python import stdlib as python_stdlib
 from language.legacy.javascript.scanner import JavaScriptScanner, NodeJSScanner
@@ -110,8 +113,9 @@ class Languages:
         @property
         def scanner(self):
             if PythonScanner is None:
-                raise NotImplementedError(
-                    "The Python scanner is not available on Python 3 yet")
+                # Scan summaries walk whole directories; report "no scanner"
+                # for Python rather than aborting the entire request.
+                return None
             Parent = Languages.Python
             if not Parent._scanner:
                 Parent._scanner = PythonScanner(self.cix)
@@ -136,8 +140,7 @@ class Languages:
         @property
         def scanner(self):
             if Python3Scanner is None:
-                raise NotImplementedError(
-                    "The Python scanner is not available on Python 3 yet")
+                return None
             Parent = Languages.Python3
             if not Parent._scanner:
                 Parent._scanner = Python3Scanner(self.cix)

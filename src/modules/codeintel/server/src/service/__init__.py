@@ -271,9 +271,13 @@ class Service:
                     queue.append([parent[idx]["members"], member.members])
 
             if sortType == "organic":
-                parent[:] = sorted(parent, key=lambda k: k['line'])
+                parent[:] = sorted(parent,
+                                   key=lambda k: (k.get('line') is None,
+                                                  k.get('line') or 0))
             else:
-                parent[:] = sorted(parent, key=lambda k: k['name'])
+                parent[:] = sorted(parent,
+                                   key=lambda k: (k.get('name') is None,
+                                                  k.get('name') or ""))
 
 
         return result

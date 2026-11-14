@@ -48,7 +48,22 @@
     var onLoadWidget = () =>
     {
         if (wrapper)
-            return;
+        {
+            // Re-initialize if the pane was rebuilt and our wrapper belongs
+            // to a different document now.
+            try
+            {
+                if (wrapper.element &&
+                    wrapper.element.ownerDocument &&
+                    wrapper.element.ownerDocument.defaultView == widget.contentWindow)
+                {
+                    return;
+                }
+            }
+            catch (e) {}
+
+            wrapper = null;
+        }
         log.debug("Widget loaded, initializing document");
 
         wrapper = require("ko/ui/column").create({ attributes: { flex: 1 } });
@@ -739,6 +754,15 @@
             {
                 widget.contentWindow.addEventListener("load", wireWidget, {once: true});
             }
+
+            // When the widget comes from a restored layout the load event
+            // may have already been delivered before the listener is
+            // attached.  Retry shortly so the pane is never left blank.
+            timers.setTimeout(() =>
+            {
+                if ( ! wrapper)
+                    onLoadWidget();
+            }, 1500);
         }
 
         // The right pane often starts collapsed, and registerWidget's

@@ -246,7 +246,14 @@
         <parameter name="view"/>
         <body>
         <![CDATA[
-            view.parentNode._tab.label = view.title;
+            var label = view.title;
+            if ( ! label && view.koDoc) {
+                // Fall back to the file name if the view title is not
+                // available yet (some views are created before the document
+                // is attached).
+                label = view.koDoc.baseName || view.koDoc.displayPath;
+            }
+            view.parentNode._tab.label = label || '(untitled)';
             if (view.koDoc) {
                 view.parentNode._tab.setAttribute('tooltiptext',view.koDoc.displayPath);
                 this.tabbox.firstChild.scrollBoxObject.ensureElementIsVisible(this.tabbox.firstChild.selectedItem);
