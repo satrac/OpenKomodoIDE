@@ -426,6 +426,13 @@
                     if (koDoc.file.exists) {
                         var view = this.newView(viewType);
                         view.initWithDocument(koDoc);
+                        if (koDoc.language && view.language != koDoc.language) {
+                            try {
+                                view.language = koDoc.language;
+                            } catch (e) {
+                                this.log.warn("Could not sync restored view language: " + e);
+                            }
+                        }
                         xtk.domutils.fireEvent(view, 'view_opened');
                     } else {
                         fileOpenFailures.push("'" + koDoc.file.path + "' : it does not exist.");
@@ -436,6 +443,24 @@
                 ko.views.manager.batchMode = false;
             }
             var views = this.getViews();
+
+            // Views restored during setState may have been initialized before
+            // their tab was available, leaving the label empty.  Refresh the
+            // labels now that every view has a document and a tab.
+            for (let i = 0; i < views.length; i++)
+            {
+                try
+                {
+                    this.updateLeafName(views[i]);
+                    this.updateFileStatus(views[i]);
+                    this.updateDirtyStatus(views[i]);
+                }
+                catch (e)
+                {
+                    this.log.warn("Could not refresh restored tab label: " + e);
+                }
+            }
+
             var currentView = null;
             if (pref.hasPref('current_view_index')) {
                 var current_view_index = pref.getLongPref('current_view_index');

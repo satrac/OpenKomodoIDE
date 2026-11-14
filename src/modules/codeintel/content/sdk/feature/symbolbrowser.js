@@ -45,6 +45,11 @@
     var locateScope = prefs.getBoolean("codeintel.symbolbrowser.locate_scope");
     var sortType = prefs.getString("codeintel.symbolbrowser.sort");
 
+    // Restored views may still report "Text" in view.language even though
+    // the document is attached and knows its real language.
+    var getViewLanguage = (view) =>
+        (view && view.koDoc && view.koDoc.language) || (view && view.language);
+
     var onLoadWidget = () =>
     {
         if (wrapper)
@@ -264,20 +269,15 @@
         onViewChange(true);
     };
 
-    var onViewChange = (force = false) =>
+    var maybeShowTab = () =>
     {
-        var view = views.current().get();
-        if ( ! view )
-            return;
-
-        // Show the tab when a supported editor view becomes current.  This
-        // also covers the common case where Komodo was started without a
-        // file and the user opens one later.
         try
         {
-            if (prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
+            var view = views.current().get();
+            if (view &&
+                prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
                 ! prefs.getBoolean("codeintel.symbolbrowser.hidden", false) &&
-                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language) &&
+                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, getViewLanguage(view)) &&
                 ! legacy.uilayout.isTabShown(id))
             {
                 legacy.uilayout.ensureTabShown(id);
@@ -287,6 +287,18 @@
         {
             log.exception(e, "Could not show the symbol browser tab");
         }
+    };
+
+    var onViewChange = (force = false) =>
+    {
+        var view = views.current().get();
+        if ( ! view )
+            return;
+
+        // Show the tab when a supported editor view becomes current.  This
+        // also covers the common case where Komodo was started without a
+        // file and the user opens one later.
+        maybeShowTab();
 
         if ( ! force && onViewChange.lastUid == view.uid)
         {
@@ -350,13 +362,24 @@
 
         log.debug("Loading for current view");
         
-        if ( ! service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language))
+        if ( ! service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, getViewLanguage(view)))
         {
             view._symbolbrowser = false;
+
+            // On restored sessions the view may still be initializing when
+            // CodeIntel becomes ready, so retry for a few seconds.
+            var attempts = view._symbolbrowserRetries || 0;
+            if (attempts < 20)
+            {
+                view._symbolbrowserRetries = attempts + 1;
+                timers.setTimeout(() => this.loadForView(view), 250);
+            }
             return;
         }
 
+        view._symbolbrowserRetries = 0;
         view._symbolbrowser = true;
+        maybeShowTab();
         this.update();
     };
 
@@ -433,13 +456,13 @@
             line: editor.getLineNumber(),
             pos: view.scimoz.currentPos,
             indentString: indentString,
-            language: view.language,
+            language: getViewLanguage(view),
             sortType: sortType
         });
 
         if ( ! request || typeof request.then != "function")
         {
-            log.debug("No service available for language: " + view.language);
+            log.debug("No service available for language: " + getViewLanguage(view));
             updateDeck(DECK_ERROR);
             return;
         }
@@ -657,7 +680,7 @@
             buf: editor.getValue(),
             line: editor.getLineNumber(),
             pos: view.scimoz.currentPos,
-            language: view.language
+            language: getViewLanguage(view)
         })
         .then((scope) =>
         {
@@ -775,7 +798,7 @@
             if (prefs.getBoolean("codeintel.symbolbrowser.auto_show", true) &&
                 ! prefs.getBoolean("codeintel.symbolbrowser.hidden", false) &&
                 view &&
-                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, view.language) &&
+                service.supportsFeature(codeintel.FEATURE_SYMBOLBROWSER, getViewLanguage(view)) &&
                 ! legacy.uilayout.isTabShown(id))
             {
                 legacy.uilayout.ensureTabShown(id);
