@@ -420,7 +420,22 @@ codeintel-check:
 >   PYTHONPATH="$$PWD:$(APP_PKG)" $(APP_PYTHON) -c \
 >   "import config, scanner, completions, calltips, server; print('codeintel OK')"
 
-check: xpcom-check dbgp-check codeintel-check
+# Catch a truncated components/komodo.manifest, which silently disables most
+# Python XPCOM components (no window and no Python logging).
+manifest-check:
+> @f="$(APP_BIN)/components/komodo.manifest"; \
+>   test -f "$$f" || { echo "error: missing $$f; run 'make build'"; exit 1; }; \
+>   grep -q '^component .* koInitService.py$$' "$$f" || { \
+>     echo "error: $$f is incomplete (koInitService is missing)"; \
+>     echo "       delete $$f and the .manifest.landmark files in $(BUILD_STAGE)/components, then run 'make build'"; \
+>     exit 1; }; \
+>   n=$$(grep -c '^component ' "$$f"); \
+>   test "$$n" -ge 300 || { \
+>     echo "error: $$f only registers $$n components; expected >= 300"; \
+>     exit 1; }; \
+>   echo "manifest OK: $$n components"
+
+check: xpcom-check dbgp-check codeintel-check manifest-check
 
 # Each build portion below has its own clean target.  They intentionally use
 # direct rm rather than `bk clean`, because `bk clean` removes the whole app

@@ -568,6 +568,12 @@ class FileHandlerBase(object):
         raise NotImplementedError("'updateStatsAsync' not implemented for local files.")
 
     def write(self, text):
+        # koIFileEx.write takes an octet array.  PyXPCOM exposes octet
+        # arrays that are valid UTF-8 as text in Python 3, so convert it
+        # back to bytes before writing.  Non-UTF-8 octet arrays already
+        # arrive as bytes and are written unchanged.
+        if isinstance(text, str):
+            text = text.encode('utf-8')
         try:
             self._file.write(text)
         except EnvironmentError as ex:

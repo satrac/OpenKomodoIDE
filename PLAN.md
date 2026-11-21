@@ -66,6 +66,15 @@ completion import resolver.
   - The helper also handles pure-Python `build/lib` output (no platform
     suffix).
   - Core-extension reinstalls preserve an existing CodeIntel database.
+  - `chromereg.py` now locks `components/komodo.manifest` with the same
+    `<manifest>.lck` protocol as Mozilla's `buildlist.py`.  Without this,
+    parallel registration reads the manifest, then a concurrent writer
+    rewrites it and silently drops most Python component entries, which
+    leaves Komodo without a window or Python logging.
+  - `make check` runs `manifest-check` to catch a truncated manifest early.
+  - `URIlib.FileHandler.write` converts a PyXPCOM text result back to bytes,
+    so saving files no longer fails with
+    `TypeError: a bytes-like object is required, not 'str'`.
 - After `make clean-app` (or a fresh app tree) run:
 
   ```sh

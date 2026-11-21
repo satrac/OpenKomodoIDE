@@ -9,8 +9,11 @@ XPCOM registration information and modify the manifest to declare them.
 Also suppports registering XPTypeLib files.
 """
 
+import contextlib
+import os
 import re
 import sys
+import time
 try:
     from urllib.parse import quote
 except ImportError:
@@ -21,6 +24,51 @@ try:
 except ImportError:
     # Support Python 2.5
     from compiler import ast
+
+
+@contextlib.contextmanager
+def _manifest_lock(manifest_name, max_wait=600):
+    """Serialize read-modify-write access to a component manifest.
+
+    Cons can run chromereg.py concurrently for many components.  Without a
+    lock, parallel processes read the same manifest, append their own entry,
+    and the last writer wins, silently dropping every other registration.
+
+    This uses the same ``<manifest>.lck`` create/delete protocol as Mozilla's
+    buildlist.py, so the two tools also serialize against each other.
+    """
+    lock_path = manifest_name + ".lck"
+    deadline = time.time() + max_wait
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_EXCL | os.O_RDWR | os.O_CREAT, 0o644)
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - os.stat(lock_path).st_mtime
+            except FileNotFoundError:
+                continue
+            if age > max_wait:
+                # A previous writer died while holding the lock.
+                try:
+                    os.unlink(lock_path)
+                except FileNotFoundError:
+                    pass
+                continue
+            if time.time() > deadline:
+                raise RuntimeError("%s is still locked" % lock_path)
+            time.sleep(0.05)
+    try:
+        os.write(fd, ("%d\n" % os.getpid()).encode("ascii"))
+    finally:
+        os.close(fd)
+    try:
+        yield
+    finally:
+        try:
+            os.unlink(lock_path)
+        except FileNotFoundError:
+            pass
 
 # Python 3.12 removed the deprecated ast.Str/ast.Num aliases.
 _AST_CONSTANT = getattr(ast, "Constant", None)
@@ -365,20 +413,21 @@ class ChromeReg(object):
 
     def register(self):
         """Main entry point to register the component in the chrome registry"""
-        self.read_manifest()
-        extension = splitext(self.source_file)[1]
-        relname = self.relpath + basename(self.source_file)
-        if extension in (".py",):
-            self._register_python()
-        elif extension in (".xpt",):
-            self.new_lines.add("interfaces %s" % relname)
-        elif extension in (".dll", ".so", ".dylib"):
-            self.new_lines.add("binary-component %s" % relname)
-        elif extension in (".manifest",):
-            self.new_lines.add("manifest %s" % relname)
-        else:
-            assert False, "Don't know how to register %s" % self.source_file
-        self.write_manifest()
+        with _manifest_lock(self.manifest_name):
+            self.read_manifest()
+            extension = splitext(self.source_file)[1]
+            relname = self.relpath + basename(self.source_file)
+            if extension in (".py",):
+                self._register_python()
+            elif extension in (".xpt",):
+                self.new_lines.add("interfaces %s" % relname)
+            elif extension in (".dll", ".so", ".dylib"):
+                self.new_lines.add("binary-component %s" % relname)
+            elif extension in (".manifest",):
+                self.new_lines.add("manifest %s" % relname)
+            else:
+                assert False, "Don't know how to register %s" % self.source_file
+            self.write_manifest()
     
     def _register_python(self):
         """Regsiter the component, knowing that it is a python file"""
@@ -400,9 +449,10 @@ class ChromeReg(object):
 
     def add_line(self, line):
         """Add a raw line into the manifest file."""
-        self.read_manifest()
-        self.new_lines.add(line)
-        self.write_manifest()
+        with _manifest_lock(self.manifest_name):
+            self.read_manifest()
+            self.new_lines.add(line)
+            self.write_manifest()
 
 def register_category(manifest, entry):
     """Add the category entry
