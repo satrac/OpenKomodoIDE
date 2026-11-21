@@ -52,14 +52,28 @@ are parsed tolerantly so call tips still work while typing.
 The same changes removed a `Scope`-as-unhashable-key crash in the generic
 completion import resolver.
 
-## 3. Clean-build validation
+## 3. Clean-build validation (in progress)
 
-- Run `make modules` to populate optional module sources.
-- Run `make full` from a clean worktree/clone with no existing build artifacts.
-- Verify `make check` and a fresh-profile GUI launch afterwards.
+- `make clean-app` followed by `make build` now succeeds.
+- Fixed Python 3 issues exposed by rebuilding the UDL language packs from
+  scratch:
+  - `yacc.py` updated the grammar signature with text instead of bytes.
+  - `parser.py`/`lexer.py` now read legacy UDL files with a UTF-8/latin-1
+    fallback.
+- `make clean-app` removes Komodo's Python package directory and the built
+  CodeIntel extensions, so after a clean build run:
 
-Acceptance: a clean checkout builds end-to-end and launches with a working
-Symbol Browser.
+  ```sh
+  make python3-deps
+  make codeintel-db CIX_DIR=~/Projects/komodo-forks/komodo-codeintel2/stdlibs
+  make check
+  ```
+
+- Still pending: a full `make full` from a fresh clone, which also rebuilds
+  Mozilla itself.
+
+Acceptance for the app-build portion met: the app rebuilds from clean Komodo
+artifacts and launches with a working, seeded Symbol Browser.
 
 ## 4. GUI smoke-test matrix
 

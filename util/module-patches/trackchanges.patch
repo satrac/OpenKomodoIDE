@@ -1,8 +1,29 @@
 diff --git a/components/koChangeTracker.py b/components/koChangeTracker.py
-index 041eacc..29ca154 100644
+index 041eacc..6096b85 100644
 --- a/components/koChangeTracker.py
 +++ b/components/koChangeTracker.py
-@@ -305,7 +305,15 @@ class DocumentChangeTracker(object):
+@@ -154,7 +154,7 @@ class DocumentChangeTracker(object):
+                 name = 'collab'
+             else:
+                 name = self.koDoc.file.leafName
+-            deleted_lines = deleted_text_line_range.keys()
++            deleted_lines = list(deleted_text_line_range.keys())
+             inserted_lines = list(chain(*(last_insertions.items())))
+             modified_lines = list(chain(*(last_modifications.items())))
+             log.debug("changes for %r\n"
+@@ -163,7 +163,10 @@ class DocumentChangeTracker(object):
+                       "  modified_lines: %r",
+                       name, deleted_lines, inserted_lines, modified_lines)
+             try:
+-                handler.markChanges(deleted_lines, inserted_lines, modified_lines)
++                # PyXPCOM maps the IDL [array] parameters to three JS arrays,
++                # so pass the three lists (not the count+array pairs).
++                handler.markChanges(deleted_lines, inserted_lines,
++                                    modified_lines)
+             except Exception as innex:
+                 # Callback gave an error - log it.
+                 log.error("notifyChanges:: markChanges handler had an error %r", innex)
+@@ -305,7 +308,15 @@ class DocumentChangeTracker(object):
                  else:
                      self.getDiskChangesAsync(handler, koDoc, koFile)
              except Exception as ex:

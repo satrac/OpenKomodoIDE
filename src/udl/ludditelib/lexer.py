@@ -203,18 +203,20 @@ def get_input(fname, searchPath=['.']):
             for p in searchPath:
                 try:
                     fpath = p + "/" + fname
-                    fin = open(fpath, 'r')
-                    # print "**************** Opening file " + fpath + "..."
-                    break
+                    with open(fpath, 'rb') as f:
+                        data = f.read()
+                    try:
+                        s = data.decode("utf-8")
+                    except UnicodeDecodeError:
+                        s = data.decode("latin-1")
+                    return s
                 except:
                     # print "Can't open file " + fpath
                     pass
             if fin is None:
                 print("Can't find file " + fname)
                 return None
-        s = fin.read()
-        fin.close()
-        return s
+        return None
 
 
 def do_main(fname):

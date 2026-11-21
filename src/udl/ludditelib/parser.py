@@ -525,11 +525,13 @@ def _wrap_read_file(fname, include_path):
         else:
             raise LudditeError("`%s' does not exist on include path: '%s'"
                                % (fname, "', '".join(include_path)))
-        fin = open(fpath, 'r')
+        with open(fpath, 'rb') as fin:
+            data = fin.read()
         try:
-            s = fin.read()
-        finally:
-            fin.close()
+            s = data.decode("utf-8")
+        except UnicodeDecodeError:
+            # Legacy UDL files may contain Windows-1252 punctuation.
+            s = data.decode("latin-1")
     return s
 
 def _read_file(fname, include_path):

@@ -67,6 +67,13 @@ error_count = 3                # Number of symbols that must be shifted to leave
 
 import re, types, sys, io, os.path
 from hashlib import md5
+
+
+def _signature_update(value):
+    """Update the grammar signature with text or bytes."""
+    if isinstance(value, str):
+        value = value.encode("utf-8")
+    Signature.update(value)
 from functools import cmp_to_key
 
 if sys.version_info[0] < 3:
@@ -2203,10 +2210,10 @@ def yacc(method=default_lr, debug=yaccdebug, module=None, tabmodule=tab_module, 
 
     # Add starting symbol to signature
     if start:
-        Signature.update(start)
+        _signature_update(start)
 
     # Add parsing method to signature
-    Signature.update(method)
+    _signature_update(method)
     
     # If a "module" parameter was supplied, extract its dictionary.
     # Note: a module may in fact be an instance as well.
@@ -2302,7 +2309,7 @@ def yacc(method=default_lr, debug=yaccdebug, module=None, tabmodule=tab_module, 
             if not (isinstance(prec,list) or isinstance(prec,tuple)):
                 raise YaccError("precedence must be a list or tuple.")
             add_precedence(prec)
-            Signature.update(repr(prec))
+            _signature_update(repr(prec))
 
         for n in tokens:
             if n not in Precedence:
@@ -2350,7 +2357,7 @@ def yacc(method=default_lr, debug=yaccdebug, module=None, tabmodule=tab_module, 
         # Make a signature of the docstrings
         for f in symbols:
             if f.__doc__:
-                Signature.update(f.__doc__)
+                _signature_update(f.__doc__)
     
         lr_init_vars()
 
