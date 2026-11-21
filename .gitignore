@@ -42,3 +42,8 @@ src/modules/codeintel/tools
 
 # Generated CodeIntel seed database
 /src/modules/codeintel/server/codeintel.db
+/src/modules/codeintel/server/src/language/legacy/*/*.cix
+/src/modules/codeintel/server/src/language/legacy/javascript/catalogs/
+/src/modules/codeintel/server/src/language/legacy/php/catalogs/
+/src/modules/codeintel/server/src/language/legacy/python/catalogs/
+/src/modules/codeintel/server/src/language/legacy/ruby/catalogs/

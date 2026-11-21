@@ -80,6 +80,8 @@ def main(argv=None):
             "perl-5.16.cix": ("perl", "perl.cix"),
             "php5.cix": ("php", "php5.cix"),
             "php7.cix": ("php", "php7.cix"),
+            # Versioned dumps from komodo-codeintel2/stdlibs.
+            "php-5.4.cix": ("php", "php5.cix"),
             "ruby.cix": ("ruby", "ruby.cix"),
             "ruby-1.9.3.cix": ("ruby", "ruby.cix"),
             "tcl.cix": ("tcl", "tcl.cix"),
@@ -107,6 +109,12 @@ def main(argv=None):
         os.unlink(db_path)
     Database.initialize(db_path, Config.get("closure_ext_path"))
 
+    # Use PHP 7 symbols when available, otherwise the PHP 5 dump.
+    php_stdlib_attr = "PHP_7_STDLIB_FILE"
+    php7_cix = os.path.join(SRC, "language", "legacy", "php", "php7.cix")
+    if not os.path.exists(php7_cix):
+        php_stdlib_attr = "PHP_5_STDLIB_FILE"
+
     # (module, stdlib constant attribute, catalog constant attributes)
     targets = [
         ("language.legacy.python.stdlib", "PYTHON2_STDLIB_FILE",
@@ -118,7 +126,7 @@ def main(argv=None):
           "CATALOG_JQUERY_FILE", "CATALOG_MOCHIKIT_FILE",
           "CATALOG_PROTOTYPE_FILE", "CATALOG_YUI_FILE")),
         ("language.legacy.perl.stdlib", "PERL_STDLIB_FILE", ()),
-        ("language.legacy.php.stdlib", "PHP_7_STDLIB_FILE",
+        ("language.legacy.php.stdlib", php_stdlib_attr,
          ("CATALOG_DRUPAL_FILE", "CATALOG_PECL_FILE")),
         ("language.legacy.ruby.stdlib", "RUBY_STDLIB_FILE",
          ("CATALOG_RAILS_FILE",)),

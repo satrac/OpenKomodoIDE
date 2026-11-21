@@ -37,6 +37,20 @@ from symbols import (AbstractScope, AbstractSymbol, AbstractSymbolContext,
 from db.model.helpers import fileExists, fetchSymbolsInFile
 
 log = logging.getLogger("codeintel.language.common")
+
+
+def _scope_key(scope, suffix=None):
+    """Return a hashable key identifying a scope for recursion detection.
+
+    ``AbstractScope`` defines equality, which makes Scope instances
+    unhashable.  Use the class and name when available, otherwise the object
+    identity.
+    """
+    name = getattr(scope, "name", None)
+    key = (scope.__class__, name if name is not None else id(scope))
+    if suffix is not None:
+        key = (key, suffix)
+    return key
 #log.setLevel(logging.DEBUG)
 
 class Scope(AbstractScope):
@@ -663,13 +677,10 @@ class AbstractImportResolver(object, metaclass=ABCMeta):
             raise TypeError("scope must be an AbstractScope (got '%s')" % scope.__class__.__name__)
 
         log.debug("Resolving imports in %r", scope)
-        if hasattr(scope, "name"):
-            # When attempting to detect recursion, using scope as the key can be
-            # unreliable since repeated database queries return different scope
-            # objects. Key by class and name instead when possible.
-            key = (scope.__class__, scope.name)
-        else:
-            key = scope
+        # When attempting to detect recursion, using scope as the key can be
+        # unreliable since repeated database queries return different scope
+        # objects. Key by class and name instead when possible.
+        key = _scope_key(scope)
         if key in self._attempting_resolve:
             log.debug("Recursion detected. Halting.")
             return
@@ -850,10 +861,11 @@ class SymbolResolver(object):
             raise TypeError("symbol_name must be a string (got '%s')" % symbol_name.__class__.__name__)
 
         log.debug("Attempting to fully resolve symbol '%s' in %r", symbol_name, scope)
-        if (scope, symbol_name) in self._attempting_resolve:
+        resolve_key = _scope_key(scope, symbol_name)
+        if resolve_key in self._attempting_resolve:
             log.debug("Recursion detected. Halting.")
             return None
-        self._attempting_resolve[(scope, symbol_name)] = True
+        self._attempting_resolve[resolve_key] = True
         initial_scope = scope # store for later use
 
         if self._import_resolver:
@@ -941,5 +953,5 @@ class SymbolResolver(object):
             scope = scope.enclosingScope
 
         log.debug("Fully resolved symbol '%s' to %r", symbol_name, scope)
-        del self._attempting_resolve[(initial_scope, symbol_name)]
+        del self._attempting_resolve[_scope_key(initial_scope, symbol_name)]
         return scope

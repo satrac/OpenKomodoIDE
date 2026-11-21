@@ -383,6 +383,9 @@ codeintel-db:
 >   PYTHONPATH="$(APP_PKG)" $(APP_PYTHON) build_db.py \
 >   --db "$(APP_BIN)/extensions/codeintel@activestate.com/pylib/codeintel/codeintel.db" \
 >   $(if $(CIX_DIR),--cix-dir "$(CIX_DIR)",)
+> @mkdir -p "$(BUILD_STAGE)/modules/codeintel/pylib/codeintel"
+> cp "$(APP_BIN)/extensions/codeintel@activestate.com/pylib/codeintel/codeintel.db" \
+>   "$(BUILD_STAGE)/modules/codeintel/pylib/codeintel/codeintel.db"
 
 xpcom-check:
 > @test -x "$(APP_BIN)/mozpython" || { echo "error: missing $(APP_BIN)/mozpython; run 'make build'"; exit 1; }
