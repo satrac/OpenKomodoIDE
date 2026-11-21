@@ -100,6 +100,18 @@ Use a fresh profile and exercise:
 
 Acceptance: no startup exceptions that leave a pane blank or a spinner stuck.
 
+Results so far:
+
+- New file, Save and Save As work.  Save As appends the language extension
+  when the entered name already has it (`name.txt` becomes `name.txt.txt`);
+  this is cosmetic and tracked as a known minor issue.
+- Split View works from `View > Split View` (two panes share one document).
+- Notifications work: a failed Go to Definition shows
+  "Could not find definition" in the notification area.
+- Python linting works after installing `py3compile.py` and fixing
+  `tabnanny`'s Python 3 `SystemExit` on tokenization errors.
+- Debugger/DBGP still needs an end-to-end run.
+
 ## 5. Optional modules (done for the current build)
 
 - `make modules` now clones and installs `golang`, `editorconfig`,

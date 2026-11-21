@@ -106,12 +106,20 @@ def main(argv):
         import io
         o = io.StringIO()
         oldStdout = sys.stdout
+        oldStderr = sys.stderr
         sys.stdout = o
+        # tabnanny prints tokenization failures to stderr and calls sys.exit()
+        # on Python 3.  Suppress both and let compile() below report the
+        # syntax error in the normal result format.
+        sys.stderr = io.StringIO()
         try:
-            tabnanny.check(filename)
-        except IndentationError as e:
-            pass # ignore these, we'll catch them later
-        sys.stdout = oldStdout
+            try:
+                tabnanny.check(filename)
+            except (IndentationError, SystemExit):
+                pass # ignore these, we'll catch them later
+        finally:
+            sys.stdout = oldStdout
+            sys.stderr = oldStderr
         lineRe = re.compile(r"^(?P<fname>.*?) (?P<line>\d+) '(?P<content>.*)'$")
         for line in _splitlines(o.getvalue()):
             match = lineRe.match(line)
