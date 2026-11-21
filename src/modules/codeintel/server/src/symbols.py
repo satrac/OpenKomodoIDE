@@ -33,7 +33,7 @@ variable.
 
 This framework for scopes and symbols comes from "Language Implementation
 Patterns" (Parr, 2010) in Chapter 6, which describes how to track program
-symbols. The ebook can be found on the NAS: \\nas1.activestate.com\misc\ebooks.
+symbols. The ebook can be found on the NAS: \\nas1.activestate.com\\misc\\ebooks.
 
 The abstract classes contained in this module do not care about the
 implementation details for scopes and symbols -- that is left up to the

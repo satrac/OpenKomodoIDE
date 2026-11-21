@@ -191,13 +191,13 @@ class AbstractMemberCompletionContext(AbstractCompletionContext):
         members = {}
         symbol = self.symbol_resolver.resolve(self.scope, self.symbol_name)
         initially_class = isinstance(symbol, AbstractClass)
-        resolved = {}
-        while symbol and symbol.type and symbol not in resolved:
+        resolved = set()
+        while symbol and symbol.type and id(symbol) not in resolved:
             if isinstance(symbol, AbstractScope) and not isinstance(symbol, AbstractClass):
                 log.debug("Found completions from %r", symbol)
                 members.update(symbol.members)
             resolved_symbol = self.symbol_resolver.resolve(self.scope, symbol.type)
-            resolved[symbol] = True
+            resolved.add(id(symbol))
             symbol = resolved_symbol
         if isinstance(symbol, AbstractScope):
             if self.import_resolver:

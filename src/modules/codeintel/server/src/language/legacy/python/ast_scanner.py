@@ -23,11 +23,13 @@ import tokenize
 from calltips import CallTipContext
 from completions import (AbstractMemberCompletionContext,
                          AbstractScopeCompletionContext)
+from find_references import AbstractFindReferencesContext
 from goto_definition import GotoDefinitionContext
 from language.common import (AbstractScanner, AbstractScannerContext,
                              Argument, BuiltIn, Class, ClassMethod, Function,
-                             Import, Keyword, Method, Module, PrivateMethod,
-                             Scope, StaticMethod, Variable)
+                             Import, InstanceVariable, Keyword, Method, Module,
+                             PrivateMethod, Scope, SelfVariable, StaticMethod,
+                             Variable)
 
 log = logging.getLogger("codeintel.python")
 
@@ -141,6 +143,30 @@ def _annotation(node):
         return None
 
 
+def _infer_type(node):
+    """Infer a simple symbol type from an assignment value."""
+    if isinstance(node, ast.Call):
+        func = node.func
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            try:
+                return ast.unparse(func)
+            except Exception:
+                return None
+    if isinstance(node, ast.Dict):
+        return "dict"
+    if isinstance(node, (ast.List, ast.ListComp)):
+        return "list"
+    if isinstance(node, (ast.Set, ast.SetComp)):
+        return "set"
+    if isinstance(node, (ast.Tuple, ast.GeneratorExp)):
+        return "tuple"
+    if isinstance(node, ast.Constant):
+        return type(node.value).__name__
+    return None
+
+
 def _target_names(node):
     target = getattr(node, "target", None) or node.targets[0] \
         if getattr(node, "targets", None) else getattr(node, "target", None)
@@ -172,12 +198,48 @@ class PythonMemberCompletionContext(AbstractMemberCompletionContext):
         return "Python"
 
 
+class PythonFindReferencesContext(AbstractFindReferencesContext):
+    """Find references for Python symbols."""
+
+    @property
+    def projectFiles(self):
+        filenames = []
+        seen = set()
+        current = self.env.get("FILENAME")
+        if current and os.path.exists(current):
+            filenames.append(current)
+            seen.add(os.path.normcase(current))
+        for dirname in self.env.get("PYTHONPATH", "").split(os.pathsep):
+            if not dirname or not os.path.isdir(dirname):
+                continue
+            for root, dirs, files in os.walk(dirname):
+                # Keep the search bounded and skip common noise.
+                dirs[:] = [d for d in dirs
+                           if d not in (".git", ".hg", ".svn", "__pycache__",
+                                        "node_modules", ".tox", ".venv")]
+                for name in files:
+                    if not name.endswith(".py"):
+                        continue
+                    path = os.path.join(root, name)
+                    key = os.path.normcase(path)
+                    if key not in seen:
+                        seen.add(key)
+                        filenames.append(path)
+        return filenames
+
+
 class PythonASTScanner(AbstractScanner):
     """Python scanner that builds CodeIntel symbols from an ``ast`` tree."""
 
     def __init__(self, stdlib_file=None):
-        # Do not try to load a CIX stdlib; it is unavailable in this build.
-        AbstractScanner.__init__(self, None)
+        try:
+            AbstractScanner.__init__(self, stdlib_file)
+        except Exception:
+            # Unit tests and command-line use may not have the CodeIntel
+            # database initialized yet.
+            log.debug("Could not load Python stdlib %r", stdlib_file,
+                      exc_info=True)
+            AbstractScanner.__init__(self, None)
         for name in keyword.kwlist:
             self._builtInScope.define(Keyword(name))
         for name in dir(builtins):
@@ -274,7 +336,11 @@ class PythonASTScanner(AbstractScanner):
         return GotoDefinitionContext(scope, match.group(1))
 
     def getFindReferencesContext(self, filename, position, env={}):
-        return None
+        context = self.getGotoDefinitionContext(filename, position, env)
+        if not context:
+            return None
+        return PythonFindReferencesContext(context.scope, context.symbol_name,
+                                           self, env)
 
     # -- tree walking -----------------------------------------------------
 
@@ -304,23 +370,48 @@ class PythonASTScanner(AbstractScanner):
             blocks.append(handler.body)
         return blocks
 
+    def _resolve_builtin(self, dotted_name):
+        """Resolve a dotted module name in the scanned built-in stdlib."""
+        scope = self.builtInScope
+        symbol = None
+        for part in dotted_name.split("."):
+            if not part:
+                return None
+            symbol = scope.resolveMember(part)
+            if symbol is None:
+                return None
+            scope = symbol
+        return symbol
+
     def _add_import(self, node, scope, filename):
         ctx = PythonASTContext(node, filename)
         if isinstance(node, ast.Import):
             for alias in node.names:
                 name = alias.asname or alias.name.split(".")[0]
-                scope.define(Import(name, alias.name, ctx))
+                target = alias.name if alias.asname else alias.name.split(".")[0]
+                symbol = self._resolve_builtin(target)
+                if symbol is not None and not isinstance(symbol, Import):
+                    scope.define(symbol, alias=name)
+                else:
+                    scope.define(Import(name, alias.name, ctx))
         else:
             module = node.module or ""
             for alias in node.names:
                 if alias.name == "*":
                     name = module + "::*"
+                    scope.define(Import(name, module + ".*", ctx))
+                    continue
+                name = alias.asname or alias.name
+                symbol = self._resolve_builtin(module + "." + alias.name)
+                if symbol is not None and not isinstance(symbol, Import):
+                    scope.define(symbol, alias=name)
                 else:
-                    name = alias.asname or alias.name
-                scope.define(Import(name, module + "." + alias.name, ctx))
+                    scope.define(Import(name, module + "." + alias.name, ctx))
 
     def _add_assign(self, node, scope, filename, in_class, in_function):
         type_hint = _annotation(node)
+        if type_hint is None:
+            type_hint = _infer_type(getattr(node, "value", None))
         names = _target_names(node)
         for name in names:
             if in_class and not in_function and name.startswith("__"):
@@ -368,7 +459,19 @@ class PythonASTScanner(AbstractScanner):
         scope.define(symbol)
 
         last_line = getattr(node, "end_lineno", None)
-        for arg in self._argument_nodes(node.args):
+        arguments = self._argument_nodes(node.args)
+        self_name = None
+        if in_class and arguments and klass in (Method, PrivateMethod,
+                                                ClassMethod):
+            self_name = arguments[0].arg
+            # Define before the arguments so it wins over the Argument entry.
+            symbol.define(SelfVariable(self_name, scope.name,
+                                       PythonASTContext(node, filename)))
+            self._add_instance_attributes(node, scope, filename, self_name)
+
+        for arg in arguments:
+            if self_name and arg.arg == self_name:
+                continue
             arg_ctx = PythonASTContext(arg, filename)
             if last_line is not None:
                 # Argument contexts cover the function, like the legacy
@@ -377,6 +480,31 @@ class PythonASTScanner(AbstractScanner):
             symbol.define(Argument(arg.arg, _annotation(arg), arg_ctx))
 
         self._walk(node.body, symbol, filename, in_class=False, in_function=True)
+
+    def _add_instance_attributes(self, node, class_scope, filename, self_name):
+        """Record ``self.<attr> = ...`` assignments on the class scope."""
+        def walk(body):
+            for child in body:
+                if isinstance(child, ast.AnnAssign):
+                    targets = [child.target]
+                elif isinstance(child, ast.Assign):
+                    targets = child.targets
+                else:
+                    targets = []
+                for target in targets:
+                    if (isinstance(target, ast.Attribute)
+                            and isinstance(target.value, ast.Name)
+                            and target.value.id == self_name):
+                        type_hint = _annotation(child)
+                        if type_hint is None:
+                            type_hint = _infer_type(child.value)
+                        class_scope.define(
+                            InstanceVariable(target.attr, type_hint,
+                                             PythonASTContext(child, filename)))
+                for block in self._child_blocks(child):
+                    walk(block)
+
+        walk(node.body)
 
     @staticmethod
     def _argument_nodes(args):

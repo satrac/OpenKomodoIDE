@@ -36,21 +36,26 @@ standard-library symbols.
 Acceptance met for Perl and Python symbol resolution. Python's own completion
 and goto-definition contexts remain stubs (step 2).
 
-## 2. Finish Python CodeIntel (in progress)
+## 2. Finish Python CodeIntel (done)
 
-The `ast` scanner now implements symbol browsing, basic scope/member
-completions, go-to-definition and call tips. Remaining:
+The `ast` scanner now implements symbol browsing, scope/member completions,
+go-to-definition, call tips, find-references and import-aware completions.
 
-- Find-references for Python names.
-- Import-aware member completions (e.g. `os.` using the seeded database).
-- Better handling of `self.` and instance attributes.
+- Import-aware member completions: the scanner loads the seeded `:python3:`
+  stdlib into its built-in scope when the CodeIntel database is available.
+  `import os`, `import os.path as p` and `from os import path` resolve to the
+  database modules, so `os.` / `p.` / `path.` complete correctly in the UI.
+- `self.` and `cls.` resolve to the enclosing class.  `self.attr = value`
+  assignments are recorded as instance variables, and simple constructor
+  assignments (`obj = MyClass()`) infer the class type.
+- Find-references works for names in the current file and walks `.py` files
+  under `PYTHONPATH` for project-wide matches.
+- Member completion type resolution now keys its recursion guard by `id()`
+  instead of the unhashable symbol objects (Python 3).
 
-Verified directly against the scanner: `foo` and `print` appear in scope
-completions, go-to-definition resolves a local function to its line, and call
-tips show `foo(alpha, beta)` with the function docstring. Incomplete buffers
-are parsed tolerantly so call tips still work while typing.
-The same changes removed a `Scope`-as-unhashable-key crash in the generic
-completion import resolver.
+Verified directly against the scanner and in the GUI: `os.p` shows `path`,
+`pipe`, `popen`, etc., `self.` shows methods and instance attributes, and
+find-references returns the definition and call sites.
 
 ## 3. Clean-build validation (done)
 
