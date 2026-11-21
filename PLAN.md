@@ -39,16 +39,17 @@ and goto-definition contexts remain stubs (step 2).
 ## 2. Finish Python CodeIntel (in progress)
 
 The `ast` scanner now implements symbol browsing, basic scope/member
-completions and go-to-definition. Remaining:
+completions, go-to-definition and call tips. Remaining:
 
-- Call tips from function signatures.
 - Find-references for Python names.
 - Import-aware member completions (e.g. `os.` using the seeded database).
 - Better handling of `self.` and instance attributes.
 
 Verified directly against the scanner: `foo` and `print` appear in scope
-completions, and go-to-definition resolves a local function to its line.
-The same fixes also removed a `Scope`-as-unhashable-key crash in the generic
+completions, go-to-definition resolves a local function to its line, and call
+tips show `foo(alpha, beta)` with the function docstring. Incomplete buffers
+are parsed tolerantly so call tips still work while typing.
+The same changes removed a `Scope`-as-unhashable-key crash in the generic
 completion import resolver.
 
 ## 3. Clean-build validation

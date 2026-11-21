@@ -20,6 +20,7 @@ import re
 import sys
 import tokenize
 
+from calltips import CallTipContext
 from completions import (AbstractMemberCompletionContext,
                          AbstractScopeCompletionContext)
 from goto_definition import GotoDefinitionContext
@@ -75,6 +76,29 @@ class PythonASTContext(AbstractScannerContext):
         if start is None:
             return False
         return line >= start and (end is None or line <= end)
+
+
+def _parse_source(source, filename="<buffer>"):
+    """Parse source with a little tolerance for buffers being typed."""
+    try:
+        return ast.parse(source, filename)
+    except (SyntaxError, ValueError):
+        pass
+
+    for suffix in (")", "]", "}", ")", "\npass\n", "\n"):
+        try:
+            return ast.parse(source + suffix, filename)
+        except (SyntaxError, ValueError):
+            continue
+
+    # Fall back to the longest prefix of complete lines that parses.
+    lines = source.splitlines()
+    while lines:
+        try:
+            return ast.parse("\n".join(lines), filename)
+        except (SyntaxError, ValueError):
+            lines.pop()
+    return None
 
 
 def _read_source(filename):
@@ -164,10 +188,10 @@ class PythonASTScanner(AbstractScanner):
         source, filename = _read_source(filename)
         self.content = source
         self.filename = filename
-        try:
-            tree = ast.parse(source, filename if filename != ":untitled:" else "<buffer>")
-        except (SyntaxError, ValueError) as ex:
-            log.debug("Could not parse %s: %s", filename, ex)
+        tree = _parse_source(
+            source, filename if filename != ":untitled:" else "<buffer>")
+        if tree is None:
+            log.debug("Could not parse %s", filename)
             return Scope()
 
         top = Scope(self.builtInScope)
@@ -210,6 +234,26 @@ class PythonASTScanner(AbstractScanner):
         return PythonScopeCompletionContext(scope, name_part)
 
     def getCallTipContext(self, filename, position, env={}):
+        if not isinstance(position, int):
+            raise TypeError("position must be an int ('%s' received)"
+                            % position.__class__.__name__)
+
+        scope, content = self._scan_state(filename, position)
+        before = content[:position]
+        depth = 0
+        for i in range(len(before) - 1, -1, -1):
+            char = before[i]
+            if char == ")":
+                depth += 1
+            elif char == "(":
+                if depth > 0:
+                    depth -= 1
+                    continue
+                match = re.search(r'([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*$',
+                                  before[:i])
+                if match:
+                    return CallTipContext(scope, match.group(1))
+                break
         return None
 
     def getGotoDefinitionContext(self, filename, position, env={}):
