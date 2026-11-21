@@ -264,6 +264,18 @@ modules:
 >     echo "cloning $$url"; \
 >     git clone --depth 1 "$$url" "$$dir"; \
 >   fi; \
+> done; \
+> for name in golang editorconfig trackchanges; do \
+>   patch="$(ROOT)/util/module-patches/$$name.patch"; \
+>   dir="$(ROOT)/src/modules/$$name"; \
+>   if [ -f "$$patch" ] && [ -d "$$dir" ]; then \
+>     if git -C "$$dir" apply --reverse --check "$$patch" >/dev/null 2>&1; then \
+>       echo "module patch already applied: $$name"; \
+>     else \
+>       echo "applying module patch: $$name"; \
+>       git -C "$$dir" apply "$$patch"; \
+>     fi; \
+>   fi; \
 > done
 
 configure: prebuilt-python

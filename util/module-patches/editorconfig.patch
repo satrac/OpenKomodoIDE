@@ -1,0 +1,64 @@
+diff --git a/pylib/editorconfig/fnmatch.py b/pylib/editorconfig/fnmatch.py
+index 6bcef76..3b55d08 100644
+--- a/pylib/editorconfig/fnmatch.py
++++ b/pylib/editorconfig/fnmatch.py
+@@ -86,7 +86,9 @@ def fnmatch(name, pat):
+ def cached_translate(pat):
+     if not pat in _cache:
+         res, num_groups = translate(pat)
+-        regex = re.compile(res)
++        # Python 3.11+ rejects inline global flags such as ``(?ms)`` that are
++        # not at the start of the expression; pass them to compile instead.
++        regex = re.compile(res, re.MULTILINE | re.DOTALL)
+         _cache[pat] = regex, num_groups
+     return _cache[pat]
+ 
+@@ -177,7 +179,7 @@ def translate(pat, nested=False):
+                 num_range = NUMERIC_RANGE.match(pat[index:pos])
+                 if num_range:
+                     numeric_groups.append(map(int, num_range.groups()))
+-                    result += "([+-]?\d+)"
++                    result += r"([+-]?\d+)"
+                 else:
+                     inner_result, inner_groups = translate(pat[index:pos],
+                                                            nested=True)
+@@ -215,5 +217,5 @@ def translate(pat, nested=False):
+         else:
+             is_escaped = False
+     if not nested:
+-        result += '\Z(?ms)'
++        result += r'\Z'
+     return result, numeric_groups
+diff --git a/pylib/editorconfig/odict.py b/pylib/editorconfig/odict.py
+index 31a2edc..a4d6f00 100644
+--- a/pylib/editorconfig/odict.py
++++ b/pylib/editorconfig/odict.py
+@@ -549,12 +549,8 @@ class OrderedDict(dict):
+         Traceback (most recent call last):
+         StopIteration
+         """
+-        def make_iter(self=self):
+-            keys = self.iterkeys()
+-            while True:
+-                key = keys.next()
+-                yield (key, self[key])
+-        return make_iter()
++        for key in self._sequence:
++            yield (key, self[key])
+ 
+     def iterkeys(self):
+         """
+@@ -586,11 +582,8 @@ class OrderedDict(dict):
+         Traceback (most recent call last):
+         StopIteration
+         """
+-        def make_iter(self=self):
+-            keys = self.iterkeys()
+-            while True:
+-                yield self[keys.next()]
+-        return make_iter()
++        for key in self._sequence:
++            yield self[key]
+ 
+ ### Read-write methods ###
+ 

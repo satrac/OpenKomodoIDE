@@ -1,0 +1,64 @@
+diff --git a/components/koGoLanguage.py b/components/koGoLanguage.py
+index ec4919a..42d6c6c 100644
+--- a/components/koGoLanguage.py
++++ b/components/koGoLanguage.py
+@@ -52,7 +52,7 @@ class koGoLanguage(KoLanguageBase, KoLanguageBaseDedentMixin):
+     }
+     _dedenting_statements = [u'goto', u'return', u'break', u'continue']
+     
+-    namedBlockRE = "^[ \t]*?(func\s+(?:\(.*?\)\s*)?\w|package\s+\w)"
++    namedBlockRE = r"^[ \t]*?(func\s+(?:\(.*?\)\s*)?\w|package\s+\w)"
+     namedBlockDescription = 'Go functions, methods and packages'
+     supportsSmartIndent = "brace"
+     # The following sample contains embedded tabs because that's the Go way.
+@@ -146,8 +146,8 @@ class KoGolangLinter(object):
+         
+         try:
+             self._prefs.prefObserverService.addObserver(self, "golangDefaultLocation", 0)
+-        except Exception, e:
+-            print e
++        except Exception as e:
++            print(e)
+             
+     def observe(self, subject, topic, data):
+         if topic == "golangDefaultLocation":
+diff --git a/pylib/langinfo_go.py b/pylib/langinfo_go.py
+index ee4160a..042d293 100644
+--- a/pylib/langinfo_go.py
++++ b/pylib/langinfo_go.py
+@@ -20,7 +20,7 @@ log = logging.getLogger("codeintel-go")
+ 
+ lang = "Go"
+ import styles
+-if not styles.StateMap.has_key(lang):
++if lang not in styles.StateMap:
+     map = styles.StateMap['C++'].copy()
+     styles.addSharedStyles(map)
+     styles.StateMap[lang] = map
+@@ -159,7 +159,7 @@ class GoLangIntel():
+         log.debug("running [%s]", cmd)
+         try:
+             p = process.ProcessOpen(cmd, env=env)
+-        except OSError, e:
++        except OSError as e:
+             log.error("Error executing '%s': %s", cmd[0], e)
+             return
+ 
+@@ -174,7 +174,7 @@ class GoLangIntel():
+         except IndexError:
+             # exit on empty gocode output
+             return
+-        except ValueError, e:
++        except ValueError as e:
+             log.exception('Exception while parsing json')
+             return
+ 
+@@ -226,7 +226,7 @@ class GoLangIntel():
+         log.debug("running cmd %r", cmd)
+         try:
+             p = process.ProcessOpen(cmd, cwd=cwd, env=env)
+-        except OSError, e:
++        except OSError as e:
+             raise CodeIntelGoException("Error executing '%s': %s" % (cmd, e))
+         output, error = p.communicate()
+         if error:

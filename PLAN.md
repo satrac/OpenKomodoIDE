@@ -74,11 +74,19 @@ Use a fresh profile and exercise:
 
 Acceptance: no startup exceptions that leave a pane blank or a spinner stuck.
 
-## 5. Optional modules
+## 5. Optional modules (done for the current build)
 
-- Decide whether `golang`, `editorconfig`, `focusmode` and `trackchanges`
-  should be installed by default.
-- Verify `make modules` plus a rebuild installs them correctly.
+- `make modules` now clones and installs `golang`, `editorconfig`,
+  `focusmode` and `trackchanges`.
+- Fixed Python 3 issues found during the smoke test:
+  - golang: `has_key`, `except ... , e`, `print e` and regex escapes.
+  - editorconfig: Python 3.11+ inline regex flags and old `.next()` iterators.
+  - trackchanges: malformed logging call and an SCC fallback to on-disk
+    changes when the SCC backend cannot return file contents via PyXPCOM.
+- The fixes are stored as patches under `util/module-patches/` and applied by
+  `make modules` after cloning, so a fresh checkout reproduces them. The
+  clones themselves remain optional/untracked and `make modules` remains part
+  of the full-build path.
 
 ## 6. Housekeeping
 

@@ -47,3 +47,9 @@ src/modules/codeintel/tools
 /src/modules/codeintel/server/src/language/legacy/php/catalogs/
 /src/modules/codeintel/server/src/language/legacy/python/catalogs/
 /src/modules/codeintel/server/src/language/legacy/ruby/catalogs/
+
+# Optional modules cloned by `make modules`
+/src/modules/editorconfig/
+/src/modules/focusmode/
+/src/modules/golang/
+/src/modules/trackchanges/

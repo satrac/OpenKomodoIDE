@@ -1,0 +1,21 @@
+diff --git a/components/koChangeTracker.py b/components/koChangeTracker.py
+index 041eacc..29ca154 100644
+--- a/components/koChangeTracker.py
++++ b/components/koChangeTracker.py
+@@ -305,7 +305,15 @@ class DocumentChangeTracker(object):
+                 else:
+                     self.getDiskChangesAsync(handler, koDoc, koFile)
+             except Exception as ex:
+-                log.exception("Exception while trying retrieve changes", ex) 
++                log.warning("Could not retrieve SCC changes: %s", ex)
++                # Some SCC implementations cannot return file contents
++                # through PyXPCOM; fall back to on-disk changes so the
++                # track-changes view still works.
++                try:
++                    self.getDiskChangesAsync(handler, koDoc, koFile)
++                except Exception as fallback_ex:
++                    log.exception("Fallback to on-disk changes failed: %s",
++                                  fallback_ex)
+         elif "isCollab" in dir(self.koDoc) and self.koDoc.isCollab():
+             log.info("updateChangeTracker:: collab file")
+             self._notifyFileChanges(handler, self._reference_lines or [])
