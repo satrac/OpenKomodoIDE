@@ -1,14 +1,8 @@
-# The legacy Python scanner still depends on the removed Python 2 "compiler"
-# module.  Do not let that prevent the other language scanners (Perl, PHP,
-# Ruby, ...) from loading; Python code intelligence is disabled until the
-# scanner is ported to the "ast" module.
-try:
-    from language.legacy.python.scanner import PythonScanner, Python3Scanner
-except ImportError:
-    # The legacy scanner needs the removed Python 2 "compiler" module.
-    # Fall back to the ast-based scanner, which covers the Symbol Browser.
-    from language.legacy.python.ast_scanner import PythonASTScanner
-    PythonScanner = Python3Scanner = PythonASTScanner
+# The legacy Python scanner depends on the removed Python 2 "compiler"
+# module.  Use the ast-based scanner for both Python 2 and Python 3 CIX
+# groups; the language class selects the matching stdlib file.
+from language.legacy.python.ast_scanner import PythonASTScanner
+PythonScanner = Python3Scanner = PythonASTScanner
 
 from language.legacy.python import stdlib as python_stdlib
 from language.legacy.javascript.scanner import JavaScriptScanner, NodeJSScanner

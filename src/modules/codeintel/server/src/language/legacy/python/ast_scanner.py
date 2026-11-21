@@ -4,11 +4,11 @@
 """Minimal Python scanner built on the standard ``ast`` module.
 
 The original CodeIntel Python scanner used the ``compiler`` and ``parser``
-modules, which were removed in Python 3.  This replacement implements the
-parts needed by the Symbol Browser (and the scanner API in general) using
-``ast``.  Completion, call-tip, go-to-definition and find-references contexts
-are intentionally not implemented here; returning ``None`` makes the UI fall
-back gracefully instead of failing the request.
+modules, which were removed in Python 3.  This replacement implements symbol
+browsing, scope and member completions, call tips, go-to-definition and
+find-references with ``ast``.  When the seeded CodeIntel database is
+available, its Python 3 stdlib is loaded into the built-in scope so imports
+such as ``os`` and ``os.path`` resolve to real module members.
 """
 
 import ast

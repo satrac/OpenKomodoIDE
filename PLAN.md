@@ -139,7 +139,10 @@ Results so far:
 
 ## 6. Housekeeping
 
-- Consolidate the duplicate `squirt` clone (currently has an uncommitted
-  `Makefile.PL` rebrand change).
-- Refresh `DEPENDENCIES.md` with the final fork/mirror inventory.
-- Remove obsolete stubs and dead Python 2-only build paths.
+- No duplicate `squirt` clone remains; the fork inventory has 42 clones with
+  42 distinct remotes.
+- `DEPENDENCIES.md` documents the vendored PyDBGP driver and the optional
+  module build path.
+- Removed the dead legacy-scanner import in the Python language router; the
+  `ast` scanner is now the single Python scanner implementation.
+- Remaining: keep pruning unused Python 2-only files as they are encountered.

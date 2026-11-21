@@ -42,6 +42,11 @@ Python 3 packages installed by `install-py3-python-deps.py` (APSW, Twisted,
 PyCryptodome, zope.interface, peewee) are actively maintained upstream and are
 installed from PyPI rather than forked.
 
+The Python 3 DBGP target-side driver is vendored in the main tree under
+`src/dbgp/PyDBGP` (`bin/py3_dbgp` plus the pure-Python `python3lib`).  The
+PyDBGP Conscript installs it into `support/dbgp/` for development builds, so a
+separate clone of `komodo-python3-dbgp` is not required at build time.
+
 ## Preserved Komodo repositories
 
 These are not all required by the current build, but they contain Komodo
