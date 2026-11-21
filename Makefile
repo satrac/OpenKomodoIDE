@@ -370,15 +370,12 @@ uninstall-local:
 silvercity:
 > @test -x "$(APP_PYTHON)" || { echo "error: missing $(APP_PYTHON); run 'make silo-python'"; exit 1; }
 > cd "$(ROOT)/src/silvercity" && $(APP_PYTHON) setup.py build
-> cd "$(ROOT)/src/silvercity" && $(APP_PYTHON) setup.py install --skip-build \
->   --install-lib="$(APP_PKG)" --install-scripts=bitbucket \
->   --install-data=bitbucket --prefix=bitbucket
+> cd "$(ROOT)/src/silvercity" && $(APP_PYTHON) "$(ROOT)/util/install-setup-build.py" SilverCity "$(APP_PKG)"
 
 sgmlop:
 > @test -x "$(APP_PYTHON)" || { echo "error: missing $(APP_PYTHON); run 'make silo-python'"; exit 1; }
-> cd "$(ROOT)/contrib/sgmlop" && $(APP_PYTHON) setup.py install \
->   --install-lib="$(APP_PKG)" --install-scripts=bitbucket \
->   --install-data=bitbucket --prefix=bitbucket
+> cd "$(ROOT)/contrib/sgmlop" && $(APP_PYTHON) setup.py build
+> cd "$(ROOT)/contrib/sgmlop" && $(APP_PYTHON) "$(ROOT)/util/install-setup-build.py" sgmlop "$(APP_PKG)"
 
 codeintel-db:
 > @test -x "$(APP_PYTHON)" || { echo "error: missing $(APP_PYTHON); run 'make silo-python'"; exit 1; }

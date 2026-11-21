@@ -179,7 +179,7 @@ are modules to convert source code to syntax-styled HTML.""",
         
         author_email = "brian@sweetapp.com", 
         url = "http://silvercity.sourceforge.net",
-        licence = "BSD-style",
+        license = "BSD-style",
         ext_package = "SilverCity",
         cmdclass = {'install_data': fixed_install_data,
                     'build_ext': komodo_build_ext},

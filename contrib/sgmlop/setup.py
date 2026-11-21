@@ -10,7 +10,7 @@ from distutils.core import setup, Extension
 
 setup(
     name="sgmlop",
-    version="1.1.1-20040207",
+    version="1.1.1.post20040207",
     author="Fredrik Lundh",
     author_email="fredrik@pythonware.com",
     description="SGMLOP -- a small and fast SGML/XML parser",

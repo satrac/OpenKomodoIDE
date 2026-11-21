@@ -62,7 +62,7 @@ $consLocal->Command($landmark,
                "sgmlop/setup.py",
                qq(
                 cd %1:d && $siloedPython %1:f build $debugFlags
-                cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
+                cd %1:d && $siloedPython $komodoDevDir/util/install-setup-build.py sgmlop $komodoPythonUtilsDir
                ));
 $consLocal->DependsRecursive($landmark, "sgmlop", ("build", '\.svn'));
 
