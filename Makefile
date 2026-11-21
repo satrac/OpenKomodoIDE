@@ -398,6 +398,10 @@ codeintel-db:
 > @mkdir -p "$(BUILD_STAGE)/modules/codeintel/pylib/codeintel"
 > cp "$(APP_BIN)/extensions/codeintel@activestate.com/pylib/codeintel/codeintel.db" \
 >   "$(BUILD_STAGE)/modules/codeintel/pylib/codeintel/codeintel.db"
+> @if [ -d "$(BUILD_STAGE)/modules/codeintel/build/xpi/pylib/codeintel" ]; then \
+>   cp "$(APP_BIN)/extensions/codeintel@activestate.com/pylib/codeintel/codeintel.db" \
+>     "$(BUILD_STAGE)/modules/codeintel/build/xpi/pylib/codeintel/codeintel.db"; \
+> fi
 
 xpcom-check:
 > @test -x "$(APP_BIN)/mozpython" || { echo "error: missing $(APP_BIN)/mozpython; run 'make build'"; exit 1; }

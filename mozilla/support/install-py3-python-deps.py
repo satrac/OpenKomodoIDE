@@ -45,10 +45,8 @@ def main(argv=None):
 
     app_dir = os.path.abspath(args.app_dir)
     target = os.path.join(app_dir, "bin", "python", "komodo")
-    if not os.path.isdir(target):
-        print("error: Python package directory does not exist: %s" % (target,),
-              file=sys.stderr)
-        return 1
+    # On a clean full build the app tree has not been built yet.
+    os.makedirs(target, exist_ok=True)
 
     if not args.offline:
         _run([args.python, "-m", "pip", "install", "--target", target,
@@ -64,11 +62,11 @@ def main(argv=None):
         os.path.abspath(__file__))))
     sgmlop_src = os.path.join(repo_root, "contrib", "sgmlop")
     if os.path.isdir(sgmlop_src):
-        _run([silo_python, "setup.py", "install",
-              "--install-lib", target,
-              "--install-scripts", os.path.join(app_dir, "support", "dbgp", "bin"),
-              "--install-data", os.path.join(app_dir, "support", "dbgp"),
-              "--prefix", "bitbucket"], cwd=sgmlop_src)
+        # Modern setuptools deprecates setup.py install; build and copy.
+        _run([silo_python, "setup.py", "build"], cwd=sgmlop_src)
+        _run([silo_python,
+              os.path.join(repo_root, "util", "install-setup-build.py"),
+              "sgmlop", target], cwd=sgmlop_src)
 
     # zope.cachedescriptors is still vendored in contrib/.
     cached = os.path.join(repo_root, "contrib", "zope", "cachedescriptors",

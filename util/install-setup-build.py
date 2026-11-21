@@ -30,9 +30,12 @@ def main(argv=None):
 
     build_root = os.path.join(args.build_dir, "build")
     lib_dirs = sorted(glob.glob(os.path.join(build_root, "lib.*")))
+    if not lib_dirs and os.path.isdir(os.path.join(build_root, "lib")):
+        # Pure-Python packages build into build/lib (no platform suffix).
+        lib_dirs = [os.path.join(build_root, "lib")]
     if not lib_dirs:
-        print("error: no build/lib.* directory found in %s" % build_root,
-              file=sys.stderr)
+        print("error: no build/lib or build/lib.* directory found in %s"
+              % build_root, file=sys.stderr)
         return 1
 
     src = lib_dirs[-1]

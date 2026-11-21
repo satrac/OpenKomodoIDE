@@ -2661,10 +2661,28 @@ def _install_extension_xpis(cfg, xpi_dir, dest_root):
                 if exists(marker) and (os.path.getmtime(marker)
                                        >= os.path.getmtime(xpi)):
                     continue
+
+                # The generated CodeIntel database is not part of the XPI
+                # (it is built separately and can be large).  Preserve an
+                # existing one across reinstalls.
+                preserved_db = None
+                if match.group(1) == "codeintel@activestate.com":
+                    db_path = join(dest, "pylib", "codeintel",
+                                   "codeintel.db")
+                    if exists(db_path):
+                        preserved_db = db_path + ".preserve"
+                        shutil.copy2(db_path, preserved_db)
+
                 if exists(dest):
                     shutil.rmtree(dest)
                 os.makedirs(dest)
                 zf.extractall(dest)
+
+                if preserved_db:
+                    shutil.copy2(
+                        preserved_db,
+                        join(dest, "pylib", "codeintel", "codeintel.db"))
+                    os.remove(preserved_db)
         except Exception as ex:
             sys.stderr.write("warning: could not install %s: %s\n"
                              % (xpi, ex))

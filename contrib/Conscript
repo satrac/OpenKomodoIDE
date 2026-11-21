@@ -426,7 +426,7 @@ if ($withWatchdogFSNotifications) {
                    "pathtools/setup.py",
                    qq(
                     cd %1:d && $siloedPython %1:f build $debugFlags
-                    cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
+                    cd %1:d && $siloedPython $komodoDevDir/util/install-setup-build.py pathtools $komodoPythonUtilsDir
                    ));
     $consLocal->DependsRecursive($landmark, "pathtools", ("build", '\.svn', '\.consign'));
 
@@ -435,7 +435,7 @@ if ($withWatchdogFSNotifications) {
                    "watchdog/setup.py",
                    qq(
                     cd %1:d && $siloedPython %1:f build $debugFlags
-                    cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
+                    cd %1:d && $siloedPython $komodoDevDir/util/install-setup-build.py watchdog $komodoPythonUtilsDir
                    ));
     $consLocal->DependsRecursive($landmark, "watchdog", ("build", '\.svn', '\.consign'));
 }
@@ -446,7 +446,7 @@ $consLocal->Command($landmark,
                "zope/cachedescriptors/setup.py",
                qq(
                 cd %1:d && $siloedPython %1:f build $debugFlags
-                cd %1:d && $siloedPython %1:f install --skip-build --install-lib=$komodoPythonUtilsDir
+                cd %1:d && $siloedPython $komodoDevDir/util/install-setup-build.py zope $komodoPythonUtilsDir
                ));
 $consLocal->DependsRecursive($landmark, "zope/cachedescriptors", ("build", '\.svn', '\.consign'));
 

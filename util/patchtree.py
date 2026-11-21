@@ -983,6 +983,7 @@ def patch(patchesDir, sourceDir, config=None, logDir=None, dryRun=0,
                 logFileFullName = join(logDir, logFilename)
                 log.debug("full name: %s", logFileFullName)
                 with open(join(sourceDir, ".patchtree-state"), "a+") as state_file:
+                    state_file.seek(0)
                     for line in state_file:
                         parts = line.strip().rsplit(None, 1)
                         if len(parts) != 2:
@@ -1113,6 +1114,7 @@ actions = %s
             state = {}
             logFileFullName = join(logDir, logFilename)
             with open(join(sourceDir, ".patchtree-state"), "a+") as state_file:
+                state_file.seek(0)
                 for line in state_file:
                     parts = line.strip().rsplit(None, 1)
                     if len(parts) != 2:
