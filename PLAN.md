@@ -92,7 +92,7 @@ find-references returns the definition and call sites.
   still the final packaging validation, but the current full-build path is
   green.
 
-## 4. GUI smoke-test matrix
+## 4. GUI smoke-test matrix (done)
 
 Use a fresh profile and exercise:
 
@@ -109,7 +109,7 @@ Results so far:
 
 - New file, Save and Save As work.  Save As appends the language extension
   when the entered name already has it (`name.txt` becomes `name.txt.txt`);
-  this is cosmetic and tracked as a known minor issue.
+  this is the only known cosmetic issue.
 - Split View works from `View > Split View` (two panes share one document).
 - Notifications work: a failed Go to Definition shows
   "Could not find definition" in the notification area.
