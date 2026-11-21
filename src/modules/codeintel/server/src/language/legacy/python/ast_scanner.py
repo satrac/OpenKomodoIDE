@@ -12,15 +12,21 @@ back gracefully instead of failing the request.
 """
 
 import ast
+import builtins
+import keyword
 import logging
 import os
+import re
 import sys
 import tokenize
 
+from completions import (AbstractMemberCompletionContext,
+                         AbstractScopeCompletionContext)
+from goto_definition import GotoDefinitionContext
 from language.common import (AbstractScanner, AbstractScannerContext,
-                             Argument, Class, ClassMethod, Function, Import,
-                             Method, Module, PrivateMethod, Scope,
-                             StaticMethod, Variable)
+                             Argument, BuiltIn, Class, ClassMethod, Function,
+                             Import, Keyword, Method, Module, PrivateMethod,
+                             Scope, StaticMethod, Variable)
 
 log = logging.getLogger("codeintel.python")
 
@@ -128,22 +134,43 @@ def _target_names(node):
     return names
 
 
+class PythonScopeCompletionContext(AbstractScopeCompletionContext):
+    """Scope completions for Python."""
+    @property
+    def language(self):
+        return "Python"
+
+
+class PythonMemberCompletionContext(AbstractMemberCompletionContext):
+    """Member completions for Python."""
+    @property
+    def language(self):
+        return "Python"
+
+
 class PythonASTScanner(AbstractScanner):
     """Python scanner that builds CodeIntel symbols from an ``ast`` tree."""
 
     def __init__(self, stdlib_file=None):
         # Do not try to load a CIX stdlib; it is unavailable in this build.
         AbstractScanner.__init__(self, None)
+        for name in keyword.kwlist:
+            self._builtInScope.define(Keyword(name))
+        for name in dir(builtins):
+            if not name.startswith("_"):
+                self._builtInScope.define(BuiltIn(name))
 
     def scan(self, filename, env={}):
         source, filename = _read_source(filename)
+        self.content = source
+        self.filename = filename
         try:
             tree = ast.parse(source, filename if filename != ":untitled:" else "<buffer>")
         except (SyntaxError, ValueError) as ex:
             log.debug("Could not parse %s: %s", filename, ex)
             return Scope()
 
-        top = Scope()
+        top = Scope(self.builtInScope)
         line_count = len(source.splitlines()) or 1
         module = Module(_module_name(filename), top,
                         PythonASTContext(tree, filename,
@@ -153,16 +180,54 @@ class PythonASTScanner(AbstractScanner):
         self._walk(tree.body, module, filename, in_class=False, in_function=False)
         return top
 
-    # The service only requires scan() for symbol browsing.  Return None for
-    # the other contexts so requests degrade to "no results".
+    # -- contexts ---------------------------------------------------------
+
+    def _scan_state(self, filename, position):
+        scope = self.scan(filename, env={})
+        content = getattr(self, "content", "")
+        line = content.count("\n", 0, max(0, position)) + 1
+        return scope.resolveScope(line), content
+
     def getCompletionContext(self, filename, position, env={}):
-        return None
+        if not isinstance(position, int):
+            raise TypeError("position must be an int ('%s' received)"
+                            % position.__class__.__name__)
+
+        scope, content = self._scan_state(filename, position)
+        before = content[:position]
+
+        # Member completion (obj. or module.).
+        match = re.search(
+            r'([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\.([A-Za-z_]\w*)?$',
+            before)
+        if match:
+            receiver = match.group(1)
+            name_part = match.group(2) or ""
+            return PythonMemberCompletionContext(scope, receiver, name_part)
+
+        match = re.search(r'([A-Za-z_]\w*)$', before)
+        name_part = match.group(1) if match else ""
+        return PythonScopeCompletionContext(scope, name_part)
 
     def getCallTipContext(self, filename, position, env={}):
         return None
 
     def getGotoDefinitionContext(self, filename, position, env={}):
-        return None
+        if not isinstance(position, int):
+            raise TypeError("position must be an int ('%s' received)"
+                            % position.__class__.__name__)
+
+        scope, content = self._scan_state(filename, position)
+        before = content[:position]
+        after = content[position:]
+
+        match = re.search(r'([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)$', before)
+        if not match:
+            match = re.match(r'([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)', after)
+        if not match:
+            return None
+
+        return GotoDefinitionContext(scope, match.group(1))
 
     def getFindReferencesContext(self, filename, position, env={}):
         return None

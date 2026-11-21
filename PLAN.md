@@ -36,16 +36,20 @@ standard-library symbols.
 Acceptance met for Perl and Python symbol resolution. Python's own completion
 and goto-definition contexts remain stubs (step 2).
 
-## 2. Finish Python CodeIntel
+## 2. Finish Python CodeIntel (in progress)
 
-The `ast` scanner implements symbol browsing only. Implement:
+The `ast` scanner now implements symbol browsing, basic scope/member
+completions and go-to-definition. Remaining:
 
-- Go-to-definition and find-references for Python names.
-- Basic scope/member completions.
 - Call tips from function signatures.
+- Find-references for Python names.
+- Import-aware member completions (e.g. `os.` using the seeded database).
+- Better handling of `self.` and instance attributes.
 
-Acceptance: Python completions, go-to-definition and call tips work on the
-current buffer without server errors.
+Verified directly against the scanner: `foo` and `print` appear in scope
+completions, and go-to-definition resolves a local function to its line.
+The same fixes also removed a `Scope`-as-unhashable-key crash in the generic
+completion import resolver.
 
 ## 3. Clean-build validation
 
