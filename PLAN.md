@@ -110,7 +110,13 @@ Results so far:
   "Could not find definition" in the notification area.
 - Python linting works after installing `py3compile.py` and fixing
   `tabnanny`'s Python 3 `SystemExit` on tokenization errors.
-- Debugger/DBGP still needs an end-to-end run.
+- Python 3 debugging works end to end.  `src/dbgp/PyDBGP/Conscript` now
+  installs the target-side `py3_dbgp` driver and pure-Python `python3lib`
+  into `support/dbgp`, and the IDE-side DBGP transport handles Python 3
+  bytes/str, base64 and terminal decoding.  A sample script runs under the
+  debugger, prints its output in the Debug Output pane and enters Break Mode.
+- Remaining minor issue: the Save As file chooser appends the language
+  extension even when the typed name already has it.
 
 ## 5. Optional modules (done for the current build)
 

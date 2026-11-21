@@ -1,5 +1,33 @@
 #!/usr/local/bin/perl
-# Files in this directory are installed by the Blackfile image/packaging
-# step.  This Conscript is intentionally a no-op so the dev build can still
-# run without requiring the target-language debugger binaries.
-return;
+# Install the target-language DBGP client (the debugger side that runs in
+# the user's Python process).  The IDE-side dbgp package is installed by
+# src/dbgp/Conscript.
+#
+# The packaging step used to be the only thing that populated
+# support/dbgp/{bin,python3lib}; a development build then could not debug
+# Python at all.
+
+Import(
+    'cons',
+    'supportDir',
+);
+
+my $dbgpDir = "$supportDir/dbgp";
+
+$cons->Install("$dbgpDir/bin",
+               'bin/py3_dbgp',
+               'bin/py3_dbgp.py',
+               'bin/pydbgp',
+               'bin/pydbgpproxy');
+
+# Python 3 client library.  The prebuilt _clientNN extension modules target
+# old ABIs, so only the pure-Python files are needed; client.py falls back to
+# dbgp/_pyclient.py when the accelerator cannot be imported.
+$cons->Install("$dbgpDir/python3lib/dbgp",
+               'python3lib/dbgp/__init__.py',
+               'python3lib/dbgp/client.py',
+               'python3lib/dbgp/common.py',
+               'python3lib/dbgp/listcmd.py',
+               'python3lib/dbgp/server.py',
+               'python3lib/dbgp/serverBase.py',
+               'python3lib/dbgp/_pyclient.py');

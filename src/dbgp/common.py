@@ -27,8 +27,16 @@
 #    Shane Caraveo <ShaneC@ActiveState.com>
 #    Trent Mick <TrentM@ActiveState.com>
 
+import base64
 import sys, os
 import logging
+
+
+def b64decode_text(value):
+    """Decode a DBGP base64 payload to text, tolerating bad UTF-8."""
+    if isinstance(value, str):
+        value = value.encode("ascii")
+    return base64.b64decode(value).decode("utf-8", "replace")
 
 # insert a frame flag for ourselves.  This flag is used to drop frames from
 # the stack that we wouldn't want to normally see.  See

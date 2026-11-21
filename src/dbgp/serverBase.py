@@ -74,6 +74,7 @@ class session:
                            + """<response xmlns="urn:debugger_protocol_v1" """
                            + """command="stop" status="stopped" reason="ok" """
                            + """transaction_id="%r"/>""") % self._transaction_id
+                    msg = msg.encode("utf-8")
                     self._dispatch(len(msg), msg)
         finally:
             self._cmdthread = None
@@ -103,8 +104,11 @@ class session:
         self._stop = 1
 
     def _dispatch(self, size, response):
+        if isinstance(response, str):
+            response = response.encode("utf-8")
         if size != len(response):
-            raise "Data length is not correct %d != %d" % (size,len(response))
+            raise DBGPError("Data length is not correct %d != %d"
+                            % (size, len(response)))
         dom = minidom.parseString(response)
         root = dom.documentElement
         packetType = root.localName
@@ -115,7 +119,7 @@ class session:
             for node in nodelist:
                 if node.nodeType == node.TEXT_NODE:
                     text = text + node.data
-            text = base64.decodestring(text)
+            text = b64decode_text(text)
             self._sessionHost.outputHandler(self, type,text)
         elif packetType == 'response':
             command = root.getAttribute('command')
@@ -135,7 +139,7 @@ class session:
             print(root.ownerDocument.toprettyxml())
 
     def _handleIncoming(self):
-        data = ''
+        data = b''
         while self._socket and not self._stop:
             newdata = self._socket.recv(1024)
             if not newdata: # EOF on socket, break (see bug 48688).
@@ -144,7 +148,7 @@ class session:
             data += newdata
             log.debug("socket recv: [%s]", data)
             while data:
-                eop = data.find('\0')
+                eop = data.find(b'\0')
                 if eop < 0:
                     break
                 size = int(data[:eop])
@@ -176,7 +180,9 @@ class session:
 
         argv += ['-i', str(self._transaction_id)]
         if data:
-            argv += ['--', base64.encodestring(data).strip()]
+            if isinstance(data, str):
+                data = data.encode("utf-8")
+            argv += ['--', base64.encodebytes(data).decode("ascii").strip()]
             
         # if the args need quoting, it will happen here, argv2line doesn't
         # handle it all
@@ -192,7 +198,7 @@ class session:
         try:
             #print "sendCommand: %s"% cmdline
             log.debug("sendCommand: %s", cmdline)
-            self._socket.sendall(cmdline+'\0')
+            self._socket.sendall(cmdline.encode("utf-8") + b'\0')
             #log.debug("sendCommand: %s DONE", cmdline)
         except socket.error as e:
             log.error("session sendCommand socket error %r", e)

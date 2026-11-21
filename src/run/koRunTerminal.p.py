@@ -756,12 +756,19 @@ class _DebuggerIOWriter(object):
         if not data:
             # Nothing to add, then nothing to do...
             return
+        raw = data
         try:
             data, enc, bom = encodingServices.\
-                                getUnicodeEncodedStringUsingOSDefault(data)
-            l = len(data.encode('utf-8'))
-        except:
-            l = len(data)
+                                getUnicodeEncodedStringUsingOSDefault(raw)
+        except Exception:
+            data = None
+        if data is None:
+            # autoDetectEncoding returns None for unrecognized bytes.
+            if isinstance(raw, bytes):
+                data = raw.decode('utf-8', 'replace')
+            else:
+                data = str(raw)
+        l = len(data.encode('utf-8'))
         self.__terminal.addText(l, data, self.__name)
 
 class _TerminalReader(threading.Thread):
@@ -801,12 +808,19 @@ class _TerminalReader(threading.Thread):
                 # Anything we get in must be converted to unicode if it
                 # isn't already.  Try utf-8 first, if that fails, fallback to
                 # the default system encoding.
+                raw = data
                 try:
                     data, enc, bom = encodingServices.\
-                                        getUnicodeEncodedStringUsingOSDefault(data)
-                    l = len(data.encode('utf-8'))
-                except:
-                    l = len(data)
+                                        getUnicodeEncodedStringUsingOSDefault(raw)
+                except Exception:
+                    data = None
+                if data is None:
+                    # autoDetectEncoding returns None for unrecognized bytes.
+                    if isinstance(raw, bytes):
+                        data = raw.decode('utf-8', 'replace')
+                    else:
+                        data = str(raw)
+                l = len(data.encode('utf-8'))
                 #self.__terminal.mutex.acquire()
                 #try:
                 self.__terminal.addText(l, data, name)

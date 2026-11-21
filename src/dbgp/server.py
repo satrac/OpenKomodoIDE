@@ -324,7 +324,7 @@ class breakpoint:
             self.hitCondition = node.getAttribute('hit_condition')
         if self.type == 'expression':
             try:
-                self.expression = base64.decodestring(node.firstChild.firstChild.nodeValue)
+                self.expression = b64decode_text(node.firstChild.firstChild.nodeValue)
             except:
                 self.expression = node.firstChild.firstChild.nodeValue
     
@@ -515,7 +515,7 @@ class property:
                 value = value + child.nodeValue
         try:
             if value and (self.encoding == 'base64' or encoding == 'base64'):
-                value = base64.decodestring(value)
+                value = b64decode_text(value)
         except:
             pass
         return value
@@ -807,7 +807,7 @@ class session(dbgp.serverBase.session):
                 elif node.nodeType == node.CDATA_SECTION_NODE:
                     # Xdebug sends stdout in a cdata node - bug 77914.
                     text = text + node.data
-            text = base64.decodestring(text)
+            text = b64decode_text(text)
             self._application.outputHandler(type, text)
         elif packetType == 'response':
             command = root.getAttribute('command')
@@ -853,7 +853,7 @@ class session(dbgp.serverBase.session):
                 encoding = node.getAttribute('encoding')
             try:
                 if text and encoding == 'base64':
-                    text = base64.decodestring(text)
+                    text = b64decode_text(text)
             except:
                 pass
             #print "doing notify %s %s" %(name, text)
@@ -1170,7 +1170,7 @@ class session(dbgp.serverBase.session):
                    node.getAttribute('encoding') == 'base64'
         if isBase64:
             try:
-                value = base64.decodestring(value)
+                value = b64decode_text(value)
             except:
                 pass
         return value or 0
@@ -1437,7 +1437,7 @@ class session(dbgp.serverBase.session):
                 value = value + child.nodeValue
         try:
             if value and encoding == 'base64':
-                value = base64.decodestring(value)
+                value = b64decode_text(value)
         except:
             pass
 
@@ -1720,7 +1720,7 @@ class session(dbgp.serverBase.session):
         for c in node.childNodes:
             text = text + c.nodeValue
         try:
-            text = base64.decodestring(text)
+            text = b64decode_text(text)
         except:
             pass
         return text
@@ -1733,24 +1733,26 @@ class session(dbgp.serverBase.session):
         for c in node.childNodes:
             text = text + c.nodeValue
         try:
-            text = base64.decodestring(text)
-        except:
-            pass
+            profile_data = base64.b64decode(
+                text.encode("ascii") if isinstance(text, str) else text)
+        except Exception:
+            profile_data = (text.encode("utf-8")
+                            if isinstance(text, str) else text)
         if node.hasAttribute('datatype') and \
            node.getAttribute('datatype') == 'zip':
             # The profile information is wrapped inside a zip archive.
             try:
                 from zipfile import ZipFile
-                from io import StringIO
-                zipfile = StringIO(text)
+                from io import BytesIO
+                zipfile = BytesIO(profile_data)
                 z = ZipFile(zipfile)
                 assert len(z.filelist) == 1
                 filename = z.filelist[0]
-                text = z.read(filename)
-            except:
+                profile_data = z.read(filename)
+            except Exception:
                 # TODO: Properly handle and notify any errors.
                 pass
-        return text
+        return profile_data.decode("utf-8", "replace")
 
     #sendStdin(in wstring data, in long size);
     def sendStdin(self, data, size):
