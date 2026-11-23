@@ -1,8 +1,14 @@
 # OpenKomodoIDE next steps
 
-Status snapshot (2026-11-21):
+Status snapshot (2026-11-23):
 
+- Python 3.14 runtime port is complete: IDE, PyXPCOM, CodeIntel, DBGP
+  debugging, linting and optional modules.
 - XUL IDE builds and runs on Python 3.14 / modern GCC.
+- Fresh `make full`, `make check`, `make codeintel-db`, `make image` and
+  `make install-local` have all been validated.
+- The only Python 2 left is the build-only 2.7 shim for the legacy Mozilla 35
+  IDL/build tools; it is not an application runtime dependency.
 - Quickstart, New/Open/Save, Preferences, project pane, toolbox and syntax
   highlighting work.
 - Symbol Browser works for Perl, PHP, Ruby, JavaScript, Tcl, HTML, CSS and the
