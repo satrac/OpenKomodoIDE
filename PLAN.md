@@ -130,8 +130,9 @@ Results so far:
 - Fixed Python 3 issues found during the smoke test:
   - golang: `has_key`, `except ... , e`, `print e` and regex escapes.
   - editorconfig: Python 3.11+ inline regex flags and old `.next()` iterators.
-  - trackchanges: malformed logging call and an SCC fallback to on-disk
-    changes when the SCC backend cannot return file contents via PyXPCOM.
+  - trackchanges: malformed logging call, PyXPCOM async-callback adapter
+    (the SCC `cat` path now works instead of falling back to disk), and the
+    change-list marshalling fix.
 - The fixes are stored as patches under `util/module-patches/` and applied by
   `make modules` after cloning, so a fresh checkout reproduces them. The
   clones themselves remain optional/untracked and `make modules` remains part
@@ -143,8 +144,8 @@ Results so far:
   42 distinct remotes.
 - `DEPENDENCIES.md` documents the vendored PyDBGP driver and the optional
   module build path.
-- Removed the dead legacy-scanner import in the Python language router; the
-  `ast` scanner is now the single Python scanner implementation.
+- Removed the dead legacy Python scanner (`scanner.py`, `import_resolver.py`
+  and `tdparser.py`); the `ast` scanner is now the only Python scanner.
 - Remaining: keep pruning unused Python 2-only files as they are encountered.
 
 ## 7. Hardening and packaging validation (done for the current tree)
@@ -197,7 +198,6 @@ Python 2 target debugging (done):
 
 Remaining optional follow-ups:
 
-- Trackchanges SCC `cat` fallback.
 - The `underscore.js` `n is undefined` error remains; it comes from a
   throttled callback invoked after its view disappears and does not affect
   normal operation.

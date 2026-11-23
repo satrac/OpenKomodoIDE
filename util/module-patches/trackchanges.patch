@@ -1,8 +1,48 @@
 diff --git a/components/koChangeTracker.py b/components/koChangeTracker.py
-index 041eacc..6096b85 100644
+index 041eacc..20c7faf 100644
 --- a/components/koChangeTracker.py
 +++ b/components/koChangeTracker.py
-@@ -154,7 +154,7 @@ class DocumentChangeTracker(object):
+@@ -30,6 +30,22 @@ class DiffOpCode(object):
+ #                           Track Changes
+ ################################################################################
+ 
++class _SccCatCallback(object):
++    """XPCOM callback adapter for the Python bound method.
++
++    PyXPCOM does not automatically wrap a bound method as a
++    koIAsyncCallback in Python 3, so pass an object that explicitly
++    implements the interface.
++    """
++    _com_interfaces_ = [components.interfaces.koIAsyncCallback]
++
++    def __init__(self, tracker):
++        self._tracker = tracker
++
++    def callback(self, result, data):
++        self._tracker._sccCatCallback(result, data)
++
++
+ class DocumentChangeTracker(object):
+     koIChangeTracker = components.interfaces.koIChangeTracker
+ 
+@@ -51,6 +67,8 @@ class DocumentChangeTracker(object):
+     _ondisk_thread_timestamp = None
+     # The scc cat koIAsyncOperation - fetching the scc file contents.
+     _scc_cat_request = None
++    # Keep the callback adapter alive for the lifetime of the request.
++    _scc_cat_callback = None
+     # When the scc cat request was requested.
+     _scc_request_timestamp = None
+     # Whether the existing _scc_cat_request is out of date and needs to be re-run.
+@@ -86,6 +104,7 @@ class DocumentChangeTracker(object):
+                 log.warn("Unable to stop scc cat request for %r",
+                          self.koDoc.displayPath)
+             self._scc_cat_request = None
++        self._scc_cat_callback = None
+ 
+     @property
+     def koDoc(self):
+@@ -154,7 +173,7 @@ class DocumentChangeTracker(object):
                  name = 'collab'
              else:
                  name = self.koDoc.file.leafName
@@ -11,7 +51,7 @@ index 041eacc..6096b85 100644
              inserted_lines = list(chain(*(last_insertions.items())))
              modified_lines = list(chain(*(last_modifications.items())))
              log.debug("changes for %r\n"
-@@ -163,7 +163,10 @@ class DocumentChangeTracker(object):
+@@ -163,7 +182,10 @@ class DocumentChangeTracker(object):
                        "  modified_lines: %r",
                        name, deleted_lines, inserted_lines, modified_lines)
              try:
@@ -23,7 +63,41 @@ index 041eacc..6096b85 100644
              except Exception as innex:
                  # Callback gave an error - log it.
                  log.error("notifyChanges:: markChanges handler had an error %r", innex)
-@@ -305,7 +308,15 @@ class DocumentChangeTracker(object):
+@@ -238,6 +260,9 @@ class DocumentChangeTracker(object):
+ 
+         if result_code:
+             log.info("_sccCatCallback:: bad result %d, %s", result_code, message)
++            self._scc_cat_request = None
++            self._scc_cat_callback = None
++            self._scc_request_timestamp = None
+             self.notifyError(handler, "Scc error %s" % (str(message), ))
+             return
+         log.debug("_sccCatCallback:: successful got scc file contents")
+@@ -245,6 +270,7 @@ class DocumentChangeTracker(object):
+         scc_lines = message.splitlines()
+         self._scc_cat_request.data = None
+         self._scc_cat_request = None
++        self._scc_cat_callback = None
+         self._scc_request_timestamp = None
+         self._notifyFileChanges(handler, scc_lines)
+         if self._scc_request_out_of_date:
+@@ -281,7 +307,14 @@ class DocumentChangeTracker(object):
+         urls = [koFile.URI]
+         self._scc_request_out_of_date = False
+         self._scc_request_timestamp = time.time()
+-        self._scc_cat_request = sccSvc.cat(koFile.baseName, koFile.dirName, '', self._sccCatCallback)
++        self._scc_cat_callback = _SccCatCallback(self)
++        try:
++            self._scc_cat_request = sccSvc.cat(
++                koFile.baseName, koFile.dirName, '',
++                self._scc_cat_callback)
++        except Exception:
++            self._scc_cat_callback = None
++            raise
+         # Remember the handler for the request.
+         self._scc_cat_request.data = handler
+ 
+@@ -305,7 +338,15 @@ class DocumentChangeTracker(object):
                  else:
                      self.getDiskChangesAsync(handler, koDoc, koFile)
              except Exception as ex:
