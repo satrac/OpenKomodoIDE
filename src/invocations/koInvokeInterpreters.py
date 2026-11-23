@@ -883,6 +883,10 @@ class koPythonCommonInvocation(koInterpreterInvocation):
         return driverBase
     
     def _getDBGPClientDriver(self, executable):
+        if self._pythonVersion is not None and self._pythonVersion < 3:
+            raise ServerException(
+                nsError.NS_ERROR_NOT_AVAILABLE,
+                "Python 2 debugging is not supported; use Python 3")
         driverBase = self._getDBGPDriverBase()
         driver = os.path.join(os.path.dirname(executable), driverBase)
         if os.path.exists(driver):

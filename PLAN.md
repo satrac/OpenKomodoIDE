@@ -190,17 +190,13 @@ Fresh-worktree validation (done):
 - The fresh app started, seeded CodeIntel and opened a Python file.
 - `make image` from the fresh worktree produced a working image.
 
-Python 2 target debugging (done):
+Python 2 target debugging removed:
 
-- The dev build now installs `support/dbgp/pythonlib` (including the prebuilt
-  `_client24`..`_client27` modules), so `pydbgp` works when a Python 2.7
-  interpreter is selected.
-- `pycompile.py` falls back to Python 2's `__builtin__`, restoring Python 2
-  syntax linting.
-- Verified a Python 2 script under the debugger: output appears in Debug
-  Output and the session completes.
-- `.py` files still default to the Python3 language; legacy Python 2 files
-  need the `Python` language selected (a modeline works).
+- Only `py3_dbgp` and `support/dbgp/python3lib` are installed.
+- The Python 2 `pydbgp`/`pydbgpproxy` drivers and `support/dbgp/pythonlib`
+  were removed.
+- Selecting a Python 2 interpreter now reports that Python 2 debugging is
+  not supported.
 
 Build-only Python 2.7 decision:
 

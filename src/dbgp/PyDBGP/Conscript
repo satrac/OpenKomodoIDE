@@ -1,25 +1,21 @@
 #!/usr/local/bin/perl
-# Install the target-language DBGP client (the debugger side that runs in
-# the user's Python process).  The IDE-side dbgp package is installed by
+# Install the Python 3 DBGP client (the debugger side that runs in the
+# user's Python process).  The IDE-side dbgp package is installed by
 # src/dbgp/Conscript.
 #
-# The packaging step used to be the only thing that populated
-# support/dbgp/{bin,python3lib}; a development build then could not debug
-# Python at all.
+# Python 2 target debugging is not supported; only py3_dbgp and python3lib
+# are installed.
 
 Import(
     'cons',
     'supportDir',
-    'komodoDevDir',
 );
 
 my $dbgpDir = "$supportDir/dbgp";
 
 $cons->Install("$dbgpDir/bin",
                'bin/py3_dbgp',
-               'bin/py3_dbgp.py',
-               'bin/pydbgp',
-               'bin/pydbgpproxy');
+               'bin/py3_dbgp.py');
 
 # Python 3 client library.  The prebuilt _clientNN extension modules target
 # old ABIs, so only the pure-Python files are needed; client.py falls back to
@@ -32,21 +28,3 @@ $cons->Install("$dbgpDir/python3lib/dbgp",
                'python3lib/dbgp/server.py',
                'python3lib/dbgp/serverBase.py',
                'python3lib/dbgp/_pyclient.py');
-
-# Python 2 client library.  The legacy pydbgp driver selects this tree via
-# the "pythonlib" name.  The tracked support/dbgp tree is the source of the
-# prebuilt Python 2 client; install it so the development build can debug
-# user Python 2 scripts as well.
-my $py2dbgp = "$komodoDevDir/support/dbgp/pythonlib/dbgp";
-$cons->Install("$dbgpDir/pythonlib/dbgp",
-               "$py2dbgp/__init__.py",
-               "$py2dbgp/client.py",
-               "$py2dbgp/common.py",
-               "$py2dbgp/listcmd.py",
-               "$py2dbgp/server.py",
-               "$py2dbgp/serverBase.py",
-               "$py2dbgp/_pyclient.py",
-               "$py2dbgp/_client24.so",
-               "$py2dbgp/_client25.so",
-               "$py2dbgp/_client26.so",
-               "$py2dbgp/_client27.so");
