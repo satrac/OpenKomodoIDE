@@ -43,6 +43,9 @@ PYTHON27_DIR ?= $(patsubst %/bin,%,$(patsubst %/,%,$(dir $(PYTHON27))))
 PYTHON27_ZIP ?= $(PYTHON27_DIR).zip
 KOMODO_VERSION ?= 12.10.0
 KOMODO_BUILDNUM ?= 1
+# Mozilla's configure uses the two-part Komodo version (12.10).
+MOZ_KOMODO_VERSION ?= 12.10
+MOZ_SRC_TARBALL ?= firefox-35.0.source.tar.bz2
 CONFIGURE_ARGS ?= --ide --dev
 
 # Some GTK2 themes reference engines that are not shipped by every distro
@@ -315,16 +318,33 @@ python3-deps:
 
 deps: silo-python python3-deps pyxpcom
 
-mozilla:
+# Generate mozilla/config.py for a fresh checkout.  The Mozilla source and
+# build targets need this file before they can run; a normal tree only has it
+# because it was configured earlier.
+moz-configure:
+> @if [ ! -f "$(MOZ)/config.py" ]; then \
+>   tarball="$(MOZ_SRC_TARBALL)"; \
+>   case "$$tarball" in /*) ;; *) tarball="$(MOZ)/$$tarball";; esac; \
+>   test -f "$$tarball" || { \
+>     echo "error: missing $$tarball"; \
+>     echo "       download the Firefox 35 source tarball or pass MOZ_SRC_TARBALL=/path/to/tarball"; \
+>     exit 1; }; \
+>   echo "generating Mozilla build configuration"; \
+>   cd "$(MOZ)" && $(PYTHON) build.py configure --release \
+>     --moz-src="$(MOZ_SRC_TARBALL)" --moz-objdir=ko-rel \
+>     -k "$(MOZ_KOMODO_VERSION)" --gcc=gcc --gxx=g++; \
+> fi
+
+mozilla: moz-configure
 > cd "$(MOZ)" && $(PYTHON) build.py mozilla
 > cd "$(MOZ)" && $(PYTHON) build.py pyxpcom
 > cd "$(MOZ)" && $(PYTHON) build.py silo_python --force
 > cd "$(MOZ)" && $(PYTHON) build.py python3_deps
 
-mozilla-all:
+mozilla-all: moz-configure
 > cd "$(MOZ)" && $(PYTHON) build.py all
 
-full: modules prebuilt-python
+full: modules prebuilt-python moz-configure
 > $(MAKE) mozilla-all
 > $(MAKE) configure
 > $(MAKE) build

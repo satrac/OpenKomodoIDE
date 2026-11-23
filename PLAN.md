@@ -161,8 +161,13 @@ Results so far:
   launcher starts the IDE.
 - `make check` passes.
 
+- Fresh-checkout support: `make` now generates `mozilla/config.py` via
+  `moz-configure` when it is missing.  The Firefox 35 source tarball must be
+  supplied at `mozilla/firefox-35.0.source.tar.bz2` (or via
+  `MOZ_SRC_TARBALL=/path/to/tarball`); it is not tracked because it is 169 MB.
+
 Remaining optional follow-ups:
 
-- Validate a fresh clone/worktree with `make full`.
+- Let the fresh-worktree `make full` finish and record any failures.
 - Trackchanges SCC `cat` fallback.
 - Benign `underscore.js` and `casper` log noise.
