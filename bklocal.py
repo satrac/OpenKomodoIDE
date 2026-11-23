@@ -3548,10 +3548,14 @@ class SCCBranch(black.configure.Datum):
         scc_type = black.configure.items["sccType"].Get()
 
         if scc_type == "git":
+            scc_branch = ""
             stdout = _capture_stdout(['git', 'branch', '-l'])
             for line in stdout.splitlines(0):
                 if line.startswith("*"):
                     scc_branch = line[1:].strip()
+                    if scc_branch.startswith("("):
+                        # Detached HEAD, e.g. in a git worktree.
+                        scc_branch = ""
                     break
         else:
             return ""
@@ -3594,9 +3598,20 @@ class SCCRepo(black.configure.Datum):
         env = os.environ.copy()
         env["LANG"] = "C"
         cmd = ["git", "describe", "--all", "--candidates=0", "HEAD"]
-        branch = _capture_stdout(cmd).strip()
+        try:
+            branch = _capture_stdout(cmd).strip()
+        except RuntimeError:
+            # A detached HEAD (e.g. a git worktree) has no branch pointing
+            # at the current commit, so describe --candidates=0 fails.
+            try:
+                branch = _capture_stdout(
+                    ["git", "symbolic-ref", "--short", "-q", "HEAD"]).strip()
+            except RuntimeError:
+                return ""
         if branch.startswith("heads/"):
             branch = branch.split("/", 1)[-1] # strip leading "heads/"
+        if not branch or branch == "HEAD":
+            return ""
         cmd = ["git", "config", "--get", "branch.%s.remote" % (branch,)]
         try:
             remote = _capture_stdout(cmd).strip()

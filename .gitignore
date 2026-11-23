@@ -26,6 +26,7 @@ packages/
 /test
 /src/codeintel/test2
 /src/releasetime*
+!/src/releasetime.txt
 /vc110.pdb
 /src/xdebug2/build
 /src/xdebug2/tmp
