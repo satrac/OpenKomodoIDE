@@ -1384,20 +1384,22 @@ def target_configure(argv):
                              "(a.k.a. --python-version): %r"
                              % config["pythonVersion"])
 
-        # Find the Python binary under here.
-        if sys.platform == "win32":
-            if config["buildType"] == "debug":
-                pythonExe = join(prebuiltDir, "python_d.exe")
+        # Find the Python binary under the prebuilt tree (Python 2 only;
+        # the Python 3 branch above already set config["python"]).
+        if config["pythonVersion"].startswith("2"):
+            if sys.platform == "win32":
+                if config["buildType"] == "debug":
+                    pythonExe = join(prebuiltDir, "python_d.exe")
+                else:
+                    pythonExe = join(prebuiltDir, "python.exe")
+            elif sys.platform == "darwin":
+                # we can link against a release version of the python framework just fine
+                pattern = join(prebuiltDir, "Python.framework", "Versions",
+                               "?.?", "bin", "python")
+                pythonExe = glob.glob(pattern)[0]
             else:
-                pythonExe = join(prebuiltDir, "python.exe")
-        elif sys.platform == "darwin":
-            # we can link against a release version of the python framework just fine
-            pattern = join(prebuiltDir, "Python.framework", "Versions", 
-                           "?.?", "bin", "python")
-            pythonExe = glob.glob(pattern)[0]
-        else:
-            pythonExe = join(prebuiltDir, "bin", "python")
-        config["python"] = abspath(pythonExe)
+                pythonExe = join(prebuiltDir, "bin", "python")
+            config["python"] = abspath(pythonExe)
 
     # Validate options: some combinations don't make sense.
     if config["buildTag"] is not None and config["srcTreeName"] is not None:
