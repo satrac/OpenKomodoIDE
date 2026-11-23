@@ -369,6 +369,7 @@ install-local: image
 > @test -n "$(IMAGE_INSTALLDIR)" || { echo "error: IMAGE_DIR is not set"; exit 1; }
 > @test -d "$(IMAGE_INSTALLDIR)" || { echo "error: install image missing: $(IMAGE_INSTALLDIR)"; exit 1; }
 > install -d "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" "$(LOCAL_PREFIX)/bin"
+> @chmod -R u+w "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" 2>/dev/null || true
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/"
 > printf '%s\n' '#!/bin/sh' \
 >   'if [ -z "$$GTK2_RC_FILES" ] && [ -f "$(GTK2_RC_FILES)" ]; then GTK2_RC_FILES="$(GTK2_RC_FILES)"; export GTK2_RC_FILES; fi' \
