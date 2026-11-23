@@ -831,8 +831,7 @@ adding an additional caret at the clicked position.">
 <!ENTITY phpDoubleClickSelectsEntireVariable.label "Double-click selects entire variable (including $).">
 <!ENTITY phpDoubleClickSelectsEntireVariable.description "Any changes will only apply to newly opened or re-opened PHP files.">
 
-<!--pref-python.xul-->
-<!ENTITY noPythonInterpreter.description "No Python interpreter was found on your system PATH. If you would like to debug and run Python programs in Komodo you will need to have Python installed and then enter the path to your Python interpreter below. You can get Python from ActiveState at">
+<!-- Python interpreter prefs (shared by pref-python3.xul) -->
 <!ENTITY noPython3Interpreter.description "No Python 3 interpreter was found on your system PATH. If you would like to debug and run Python 3 programs in Komodo you will need to have Python 3 installed and then enter the path to your Python 3 interpreter below. You can get Python from ActiveState at">
 <!ENTITY noteRestartPython.alert "Note: Komodo must be restarted for it to recognize new Python installations.">
 <!ENTITY filePrefPythonUseThisInterpreter.label "Use this interpreter">

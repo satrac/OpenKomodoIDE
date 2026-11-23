@@ -647,7 +647,6 @@ DebuggerItemsController.prototype.do_cmd_dbgViewAsHex = function(event, commandE
  */
 var _interactiveShellEnabled_data = {
     "Perl": true,
-    "Python": true,
     "Python3": true,
     "Ruby": true,
     "Tcl": true,
@@ -726,13 +725,6 @@ DebuggerItemsController.prototype.do_cmd_startInteractiveShell = function() {
 // language specific commands for built in menu items
 // These all use the global pref to find the interpreter,
 // not a view- or project-specific pref
-DebuggerItemsController.prototype.is_cmd_startPythonInteractiveShell_enabled = function () {
-    return _interactiveShellEnabled_data['Python'];
-}
-DebuggerItemsController.prototype.do_cmd_startPythonInteractiveShell = function() {
-    ko.dbg.invocation.interactiveShell('Python');
-}
-
 // language specific commands for built in menu items
 DebuggerItemsController.prototype.is_cmd_startPython3InteractiveShell_enabled = function () {
     return _interactiveShellEnabled_data['Python3'];

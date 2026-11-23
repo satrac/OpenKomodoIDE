@@ -37,10 +37,6 @@
             desc="&debuggerStartFindHideDefaultInteractiveShell.desc;"
             oncommand="ko.dbg.doCommand('cmd_toggleInteractiveShell', event)"/>
         <command
-            id="cmd_startPythonInteractiveShell" key="key_cmd_startPythonInteractiveShell"
-            desc="&debuggerStartPythonInteractiveShell.desc;"
-            oncommand="ko.commands.doCommandAsync('cmd_startPythonInteractiveShell', event)"/>
-        <command
             id="cmd_startPython3InteractiveShell" key="key_cmd_startPython3InteractiveShell"
             desc="&debuggerStartPython3InteractiveShell.desc;"
             oncommand="ko.commands.doCommandAsync('cmd_startPython3InteractiveShell', event)"/>
@@ -424,16 +420,9 @@
                             label="&startFindHideDefaultInteractiveShell.label;"
                             class="menuitem-iconic ishell-icon"
                             type="dummy_so_menuitem_iconic_works"
-                            language="Python">
+                            language="Python3">
                         </menuitem>
                         <menuseparator/>
-                        <menuitem id="menu_PythonInteractiveShell"
-                            command="cmd_startPythonInteractiveShell"
-                            label="&startNewPythonShell.label;"
-                            class="menuitem-iconic ishell-icon"
-                            type="dummy_so_menuitem_iconic_works"
-                            language="Python">
-                        </menuitem>
                         <menuitem id="menu_Python3InteractiveShell"
                             command="cmd_startPython3InteractiveShell"
                             label="&startNewPython3Shell.label;"
@@ -487,15 +476,9 @@
                     label="&startFindHideDefaultInteractiveShell.label;"
                     class="menuitem-iconic ishell-icon"
                     type="dummy_so_menuitem_iconic_works"
-                    language="Python">
+                    language="Python3">
                 </menuitem>
                 <menuseparator/>
-                <menuitem id="tbmenu_PythonInteractiveShell"
-                    command="cmd_startPythonInteractiveShell"
-                    label="&startNewPythonShell.label;"
-                    class="menuitem-iconic ishell-icon"
-                    type="dummy_so_menuitem_iconic_works"
-                    language="Python"/>
                 <menuitem id="tbmenu_Python3InteractiveShell"
                     command="cmd_startPython3InteractiveShell"
                     label="&startNewPython3Shell.label;"

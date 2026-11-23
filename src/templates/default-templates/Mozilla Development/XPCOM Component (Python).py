@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright (c) [[%date:%Y]] [[%tabstop1:MyCompany.com]]
 # See the file LICENSE.txt for licensing information.
 

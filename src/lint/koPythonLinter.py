@@ -6,7 +6,7 @@
     koILinter implementation for Python Syntax Checking
 
     Requirements:
-    - Should work for old versions of Python back to Python 1.5.2.
+    - Uses the configured Python 3 interpreter.
     - Should pick up warnings from Python's warnings framework.
 
     Design:
@@ -135,7 +135,7 @@ class KoPythonCommonPyLintChecker(_GenericPythonLinter):
         if not text:
             return None
         prefset = request.prefset
-        # self.lint_prefname: "lint_python_with_pylint" or "lint_python3_with_pylint3"
+        # self.lint_prefname: "lint_python3_with_pylint3"
         if not prefset.getBoolean(self.lint_prefname):
             return
         pythonExe = self._pythonInfo.getExecutableFromPrefs(prefset)
@@ -268,17 +268,6 @@ class KoPythonCommonPyLintChecker(_GenericPythonLinter):
         except:
             return re.compile(pseudoPtn)
 
-class KoPythonPyLintChecker(KoPythonCommonPyLintChecker):
-    language_name = "Python"
-    _reg_desc_ = "Komodo Python PyLint Linter"
-    _reg_clsid_ = "{8de9b933-d32d-4c12-b73e-9bcce4fec63c}"
-    _reg_contractid_ = "@activestate.com/koLinter?language=Python&type=pylint;1"
-    _reg_categories_ = [
-         ("category-komodo-linter", 'Python&type=pylint'),
-         ]
-    lint_prefname = "lint_python_with_pylint"
-    rcfile_prefname = "pylint_checking_rcfile"
-
 class KoPython3PyLintChecker(KoPythonCommonPyLintChecker):
     language_name = "Python3"
     _reg_desc_ = "Komodo Python3 PyLint Linter"
@@ -376,17 +365,6 @@ class KoPythonCommonPep8Checker(_GenericPythonLinter):
                 koLintResult.createAddResult(results, textlines, severity, lineNo, desc, columnStart=columnNum)
         return results
 
-class KoPythonPep8Checker(KoPythonCommonPep8Checker):
-    language_name = "Python"
-    _reg_desc_ = "Komodo Python Pep8 Linter"
-    _reg_clsid_ = "{1c51ad7e-2788-448d-80f4-db6465164cc9}"
-    _reg_contractid_ = "@activestate.com/koLinter?language=Python&type=pep8;1"
-    _reg_categories_ = [
-         ("category-komodo-linter", 'Python&type=pep8'),
-         ]
-    lint_prefname = "lint_python_with_pep8"
-    rcfile_prefname = "pep8_checking_rcfile"
-
 class KoPython3Pep8Checker(KoPythonCommonPep8Checker):
     language_name = "Python3"
     _reg_desc_ = "Komodo Python3 Pep8 Linter"
@@ -473,16 +451,6 @@ class KoPythonCommonPyflakesChecker(_GenericPythonLinter):
         self._createAddResult(results, textlines, errorLines, koLintResult.SEV_ERROR)
         self._createAddResult(results, textlines, warnLines, koLintResult.SEV_WARNING)
         return results
-
-class KoPythonPyflakesChecker(KoPythonCommonPyflakesChecker):
-    language_name = "Python"
-    _reg_desc_ = "Komodo Python Pyflakes Linter"
-    _reg_clsid_ = "{5e040c73-814d-4151-b6aa-a6201e43a627}"
-    _reg_contractid_ = "@activestate.com/koLinter?language=Python&type=pyflakes;1"
-    _reg_categories_ = [
-         ("category-komodo-linter", 'Python&type=pyflakes'),
-         ]
-    lint_prefname = "lint_python_with_pyflakes"
 
 class KoPython3PyflakesChecker(KoPythonCommonPyflakesChecker):
     language_name = "Python3"
@@ -572,18 +540,6 @@ class KoPythonCommonPycheckerLinter(_GenericPythonLinter):
                 koLintResult.createAddResult(results, textlines, koLintResult.SEV_ERROR, lineNo,
                            "pychecker: " + desc)
         return results
-
-class KoPythonPycheckerLinter(KoPythonCommonPycheckerLinter):
-    language_name = "Python"
-    _reg_desc_ = "Komodo Python Pychecker Linter"
-    _reg_clsid_ = "{93b2d525-ed2f-4b77-8312-ab784632c8b8}"
-    _reg_contractid_ = "@activestate.com/koLinter?language=Python&type=pychecker;1"
-    _reg_categories_ = [
-         ("category-komodo-linter", 'Python&type=pychecker'),
-         ]
-    lint_prefname = "lint_python_with_pychecker"
-    wrapper_location = "pychecker_wrapper_location"
-    rcfile_prefname = "pychecker_checking_rcfile"
 
 class KoPython3PycheckerLinter(KoPythonCommonPycheckerLinter):
     language_name = "Python3"
@@ -697,19 +653,15 @@ class KoPythonCommonLinter(_GenericPythonLinter):
                 raise ServerException(nsError.NS_ERROR_FAILURE,
                                       "Invalid %r executable: %r" %
                                       (self.language_name, python))
-            # Determine the pycompile settings.
-            if self.language_name == "Python3":
-                compilePy = os.path.join(self._koDirSvc.supportDir, "python",
-                                         "py3compile.py")
-                if encoding_name not in self._simple_python3_string_encodings:
-                    # First, make sure the text is Unicode
-                    if type(text) == self._stringType:
-                        text = text.decode(encoding_name)
-                    # Now save it as utf-8 -- python3 knows how to read utf-8
-                    text = text.encode("utf-8")
-            else:
-                compilePy = os.path.join(self._koDirSvc.supportDir, "python",
-                                         "pycompile.py")
+            # Python 3 syntax checking.
+            compilePy = os.path.join(self._koDirSvc.supportDir, "python",
+                                     "py3compile.py")
+            if encoding_name not in self._simple_python3_string_encodings:
+                # First, make sure the text is Unicode
+                if type(text) == self._stringType:
+                    text = text.decode(encoding_name)
+                # Now save it as utf-8 -- python3 knows how to read utf-8
+                text = text.encode("utf-8")
             if request.koDoc.displayPath.startswith("macro2://"):
                 text = projectUtils.wrapPythonMacro(text)
                 leading_ws_re = re.compile(r'(\s*)')
@@ -777,18 +729,6 @@ class KoPythonCommonLinter(_GenericPythonLinter):
             log.exception("unexpected internal error")
             raise
         return results
-
-class KoPythonLinter(KoPythonCommonLinter):
-    language_name = "Python"
-    language_name_lc = "python"
-    _com_interfaces_ = [components.interfaces.koILinter]
-    _reg_desc_ = "Komodo Python Linter"
-    _reg_clsid_ = "{FAA3B898-5192-4463-BD37-816EDE05A5EE}"
-    _reg_contractid_ = "@activestate.com/koLinter?language=Python&type=standard;1"
-    _reg_categories_ = [
-         ("category-komodo-linter", language_name),
-         ]
-
 
 class KoPython3Linter(KoPythonCommonLinter):
     language_name = "Python3"

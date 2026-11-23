@@ -26,14 +26,8 @@ $cons->BuildAndInstallXpt('koILinter.idl');
 $cons->InstallPythonUtility('koLintResult.py');
 $cons->InstallXpcomComponent('koPerlCompileLinter.py');
 $cons->InstallXpcomComponent('koPythonLinter.py');
-$cons->Install("$supportDir/python", 'pycompile.py');
-if ($havePy2to3) {
-    $cons->Py2To3('pycompile.py', "$supportDir/python/py3compile.py");
-} else {
-    # pycompile.py is already Python 3 compatible; Python 3 linting needs
-    # the py3compile.py name even when the 2to3 tool is unavailable.
-    $cons->InstallAs("$supportDir/python/py3compile.py", 'pycompile.py');
-}
+# Only Python 3 syntax checking is supported.
+$cons->InstallAs("$supportDir/python/py3compile.py", 'pycompile.py');
 $cons->InstallXpcomComponent('koCSSExLinter.py');
 $cons->InstallXpcomComponent('koHTMLLinter.py');
 $cons->InstallXpcomComponent('koPHPLinter.py');

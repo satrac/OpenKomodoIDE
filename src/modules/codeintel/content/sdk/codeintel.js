@@ -55,7 +55,6 @@
         let langs = [
             "JavaScript",
             "PHP",
-            "Python",
             "Python3",
             "Tcl",
             "Ruby",

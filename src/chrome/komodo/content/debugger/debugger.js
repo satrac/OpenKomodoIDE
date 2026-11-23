@@ -190,7 +190,7 @@ function DBG_getDefaultInteractiveShellLanguage() {
 
     var language = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
     if (ko.dbg.haveInteractiveShellExecutable(language)) return language;
-    var ishells = ['Perl','Python','Python3','Tcl','Ruby'];
+    var ishells = ['Perl','Python3','Tcl','Ruby'];
     for (var i = 0; i < ishells.length; i++) {
         if (ko.dbg.haveInteractiveShellExecutable(ishells[i])) return ishells[i];
     }
@@ -203,7 +203,7 @@ this.getDefaultInteractiveShellLanguageAsync =
 function DBG_getDefaultInteractiveShellLanguageAsync(callback) {
     var pref_lang = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
     // Note: pref_lang may be in there twice... but that won't matter.
-    var ishellLanguages = [pref_lang, 'Python','Python3','Perl','Ruby','Tcl'];
+    var ishellLanguages = [pref_lang, 'Python3','Perl','Ruby','Tcl'];
     var langIdx = 0;
     var getNextIShellLanguage = function() {
         if (langIdx >= ishellLanguages.length) {
@@ -289,7 +289,6 @@ function DBG_Manager() {
     this._pref_observer_topics = [
         'interactiveShellDefaultLanguage',
         'perlDefaultInterpreter',
-        'pythonDefaultInterpreter',
         'python3DefaultInterpreter',
         'tclshDefaultInterpreter',
     ];
@@ -785,7 +784,6 @@ DBG_Manager.prototype = {
             DBG_UpdateIShellToolbarButton();
             // fallthrough
         case "perlDefaultInterpreter":
-        case "pythonDefaultInterpreter":
         case "python3DefaultInterpreter":
         case "tclshDefaultInterpreter":
             window.updateCommands("interactiveshell");

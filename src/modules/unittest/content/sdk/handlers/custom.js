@@ -16,7 +16,6 @@
     const executablePrefs =
     {
         "go": "golangDefaultLocation",
-        "python": "pythonDefaultInterpreter",
         "python3": "python3DefaultInterpreter"
     };
 

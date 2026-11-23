@@ -38,32 +38,6 @@ class KoPythonCommonLexerLanguageService(KoLexerLanguageService):
         # read lexPython.cxx to understand the meaning of the levels.
         self.supportsFolding = 1
 
-class KoPythonLexerLanguageService(KoPythonCommonLexerLanguageService):
-    def __init__(self):
-        KoPythonCommonLexerLanguageService.__init__(self)
-        kwlist = set(keyword.kwlist)
-        kwlist2 = set(['False', 'None', 'True', 'as', 'self',
-                       ## built-in functions
-                       'abs', 'all', 'any', 'apply', 'basestring', 'bin',
-                       'bool', 'buffer', 'bytearray', 'bytes', 'callable',
-                       'chr', 'classmethod', 'cmp', 'coerce', 'compile',
-                       'complex', 'copyright', 'credits', 'delattr', 'dict',
-                       'dir', 'divmod', 'enumerate', 'eval', 'execfile', 'exit',
-                       'file', 'filter', 'float', 'format', 'frozenset',
-                       'getattr', 'globals', 'hasattr', 'hash', 'help', 'hex',
-                       'id', 'input', 'int', 'intern', 'isinstance',
-                       'issubclass', 'iter', 'len', 'license', 'list', 'locals',
-                       'long', 'map', 'max', 'memoryview', 'min', 'next',
-                       'object', 'oct', 'open', 'ord', 'pow', 'print',
-                       'property', 'quit', 'range', 'raw_input', 'reduce',
-                       'reload', 'repr', 'reversed', 'round', 'set', 'setattr',
-                       'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super',
-                       'tuple', 'type', 'unichr', 'unicode', 'vars', 'xrange',
-                       'zip', '__import__']
-                    )
-        self.setKeywords(0, list(kwlist))
-        self.setKeywords(1, list(kwlist2))
-
 class KoPython3LexerLanguageService(KoPythonCommonLexerLanguageService):
     def __init__(self):
         KoPythonCommonLexerLanguageService.__init__(self)
@@ -105,7 +79,6 @@ class KoPythonCommonLanguage(KoLanguageBase):
     _lineup_close_chars = ")]}"
     _dedenting_statements = ['raise', 'return', 'pass', 'break', 'continue']
     supportsSmartIndent = "python"
-    importPref = "pythonExtraPaths"
     sample = """import math
 class Class:
     \"\"\" this is a docstring \"\"\"
@@ -287,26 +260,6 @@ class Class:
         ]
         sciutils.runSciMozTests(testCases, scimoz)
 
-class KoPythonLanguage(KoPythonCommonLanguage):
-    name = "Python"
-    _reg_desc_ = "%s Language" % (name)
-    _reg_contractid_ = "@activestate.com/koLanguage?language=%s;1" \
-                       % (name)
-    _reg_clsid_ = "{D90FF5C7-1FD4-4535-A0D2-47B5BDC3E7FE}"
-    _reg_categories_ = [("komodo-language", name)]
-
-    accessKey = 'y'
-    primary = 1
-    defaultExtension = ".py"
-    shebangPatterns = [
-        re.compile(r'\\A#!.*python(?!3).*$', re.IGNORECASE | re.MULTILINE),
-    ]
-
-    def get_lexer(self):
-        if self._lexer is None:
-            self._lexer = KoPythonLexerLanguageService()
-        return self._lexer
-
 class KoPython3Language(KoPythonCommonLanguage):
     name = "Python3"
     _reg_desc_ = "%s Language" % (name)
@@ -318,8 +271,9 @@ class KoPython3Language(KoPythonCommonLanguage):
     accessKey = '3'
     primary = 1
     defaultExtension = ".py"
+    modeNames = ['python', 'python3']
     shebangPatterns = [
-        re.compile(r'\A#!.*python3.*$', re.IGNORECASE | re.MULTILINE),
+        re.compile(r'\A#!.*python[0-9.]*.*$', re.IGNORECASE | re.MULTILINE),
     ]
 
     importPref = "python3ExtraPaths"

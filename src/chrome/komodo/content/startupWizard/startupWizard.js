@@ -415,9 +415,9 @@ if (typeof window.startupWizard == "undefined")
             this.loadSample.initialized = true;
             
             var languageRegistry = Cc["@activestate.com/koLanguageRegistryService;1"].getService(Ci.koILanguageRegistryService);
-            var sampleText = languageRegistry.getLanguage("Python").sample;
+            var sampleText = languageRegistry.getLanguage("Python3").sample;
             view.setBufferText(sampleText);
-            view.language = "Python";
+            view.language = "Python3";
         }
         
         var schemeService = Cc['@activestate.com/koScintillaSchemeService;1'].getService();

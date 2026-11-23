@@ -87,7 +87,7 @@ Got:      %s
             "#!/bin/mypython",
         ]
         for head in pythonHeads:
-            self._assertPossibleLanguagesAre(head, "", ["Python"])
+            self._assertPossibleLanguagesAre(head, "", ["Python3"])
         notPythonHeads = [
             "foo",
             "#!/bin/ython",

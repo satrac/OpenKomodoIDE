@@ -872,7 +872,7 @@ class KoRxxPythonHandler(KoRxxLanguageRequester):
         KoRxxLanguageRequester.__init__(self)
         koDirSvc = components.classes["@activestate.com/koDirs;1"].\
                     getService(components.interfaces.koIDirs)
-        koPythonAppInfo = components.classes["@activestate.com/koAppInfoEx?app=Python;1"].\
+        koPythonAppInfo = components.classes["@activestate.com/koAppInfoEx?app=Python3;1"].\
                      getService(components.interfaces.koIAppInfoEx)
         pythonPath = koPythonAppInfo.executablePath
         if not (pythonPath

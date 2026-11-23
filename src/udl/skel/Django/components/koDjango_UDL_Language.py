@@ -74,13 +74,8 @@ class KoDjangoLinter(object):
             getService(components.interfaces.koIDirs)
         koLintService = components.classes["@activestate.com/koLintService;1"].getService(components.interfaces.koILintService)
         self._userPath = koprocessutils.getUserEnv()["PATH"].split(os.pathsep)
-        self._pythonInfo = components.classes["@activestate.com/koAppInfoEx?app=Python;1"]\
-            .createInstance(components.interfaces.koIAppInfoEx)
         self._python3Info = components.classes["@activestate.com/koAppInfoEx?app=Python3;1"]\
             .createInstance(components.interfaces.koIAppInfoEx)
-        self._djangoLinterPath = join(dirname(dirname(__file__)),
-                                     "pylib",
-                                     "djangoLinter.py")
         self._djangoLinter3Path = join(dirname(dirname(__file__)),
                                       "pylib",
                                       "djangoLinter3.py")
@@ -194,8 +189,7 @@ class KoDjangoLinter(object):
                 fout.write(text)
                 fout.close()
 
-                #XXX: How to tell whether we're using Python or Python3?
-                prefName = "pythonExtraPaths"
+                prefName = "python3ExtraPaths"
                 pythonPath =  request.prefset.getString(prefName, "")
                 pythonPathEnv = env.get("PYTHONPATH", "")
                 if pythonPathEnv:
@@ -210,22 +204,9 @@ class KoDjangoLinter(object):
                 elif "PYTHONPATH" in env:
                     del env["PYTHONPATH"]
 
-                # First try to use Python2 to run the django linter. If django
-                # is not found, use Python3 instead.
                 results = koLintResults()
-                pythonExe = self._pythonInfo.getExecutableFromDocument(request.koDoc)
-                djangoLinterPath = self._djangoLinterPath
-                if pythonExe:
-                    p = process.ProcessOpen([pythonExe, "-c", "import django"], env=env, stdin=None)
-                    output, error = p.communicate()
-                    #log.debug("Django output: output:[%s], error:[%s]", output, error)
-                    if error.find('ImportError:') >= 0 and \
-                       self._python3Info.getExecutableFromDocument(request.koDoc):
-                        pythonExe = self._python3Info.getExecutableFromDocument(request.koDoc)
-                        djangoLinterPath = self._djangoLinter3Path
-                else:
-                    pythonExe = self._python3Info.getExecutableFromDocument(request.koDoc)
-                    djangoLinterPath = self._djangoLinter3Path
+                pythonExe = self._python3Info.getExecutableFromDocument(request.koDoc)
+                djangoLinterPath = self._djangoLinter3Path
                 #log.debug("pythonExe = " + pythonExe)
                 #log.debug("djangoLinterPath = " + djangoLinterPath)
                 argv = [pythonExe, djangoLinterPath,

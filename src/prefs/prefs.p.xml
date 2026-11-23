@@ -350,7 +350,6 @@ SSL_CLIENT_I_C=
   <string id="statetoolDefaultbinary"/>
   <string id="nodejsDefaultInterpreter"/>
   <string id="perlDefaultInterpreter"/>
-  <string id="pythonDefaultInterpreter"/>
   <string id="python3DefaultInterpreter"/>
   <string id="tclshDefaultInterpreter"/>
   <string id="wishDefaultInterpreter"/>
@@ -371,8 +370,6 @@ SSL_CLIENT_I_C=
   <string id="nodejsExcludePaths"></string>
   <string id="phpExtraPaths"></string>
   <string id="phpExcludePaths"></string>
-  <string id="pythonExtraPaths"></string>
-  <string id="pythonExcludePaths"></string>
   <string id="python3ExtraPaths"></string>
   <string id="python3ExcludePaths"></string>
   <string id="perlExtraPaths"></string>
@@ -427,19 +424,6 @@ SSL_CLIENT_I_C=
   <boolean id="lintHTML_CheckWith_Perl_HTML_Tidy">false</boolean>
   <boolean id="lintHTML_CheckWith_Perl_HTML_Lint">false</boolean>
   
-  <!-- Python linters -->
-  <boolean id="lint_python_with_standard_python">true</boolean>
-
-  <boolean id="lint_python_with_pyflakes">false</boolean>
-  <boolean id="lint_python_with_pylint">false</boolean>
-  <string id="pylint_checking_rcfile"></string>
-  <boolean id="lint_python_with_pep8">false</boolean>
-  <string id="pep8_checking_rcfile"></string>
-  
-  <boolean id="lint_python_with_pychecker">false</boolean>
-  <string id="pychecker_wrapper_location"></string>
-  <string id="pychecker_checking_rcfile"></string>
-
   <!-- Python3 linters -->
   <boolean id="lint_python3_with_standard_python">true</boolean>
   <boolean id="lint_python3_with_pyflakes3">false</boolean>
@@ -2100,32 +2084,6 @@ SSL_CLIENT_I_C=
             <string id="preference">phpDefaultInterpreter</string>
             <string id="documentation">http://php.net/manual/en/install.php</string>
         </preference-set>
-        <preference-set id="python">
-            <string id="label">Python 2</string>
-            <string id="group">Languages</string>
-            <ordered-preference id="executables">
-                <string>python</string>
-                <string>python2</string>
-                <string>python2.7</string>
-            </ordered-preference>
-            <!-- #if PLATFORM == "win" -->
-            <ordered-preference id="paths">
-                <string>C:\python27\</string>
-            </ordered-preference>
-            <!-- #elif PLATFORM == "linux" -->
-            <ordered-preference id="paths">
-                <string>/opt/ActivePython-2.7</string>
-                <string>~/ActivePython-2.7</string>
-            </ordered-preference>
-            <!-- #else -->
-            <ordered-preference id="paths">
-                <string>/Library/Frameworks/Python.framework/Versions/2.7</string>
-                <string>/usr/local/bin</string>
-            </ordered-preference>
-            <!-- #endif -->
-            <string id="preference">pythonDefaultInterpreter</string>
-            <string id="documentation">https://www.activestate.com/activepython</string>
-        </preference-set>
         <preference-set id="python3">
             <string id="label">Python 3</string>
             <string id="group">Languages</string>
@@ -2367,15 +2325,6 @@ SSL_CLIENT_I_C=
             </ordered-preference>
             <string id="preference">npmDefaultInterpreter</string>
             <string id="documentation">https://www.activestate.com/node</string>
-        </preference-set>
-        <preference-set id="pip">
-            <string id="label">pip 2</string>
-            <string id="group">Package Managers</string>
-            <ordered-preference id="executables">
-                <string>pip</string>
-            </ordered-preference>
-            <string id="preference">pipDefaultInterpreter</string>
-            <string id="documentation">https://www.activestate.com/activepython</string>
         </preference-set>
         <preference-set id="pip3">
             <string id="label">pip 3</string>

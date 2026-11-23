@@ -53,7 +53,6 @@ else
         log.info("Starting CodeIntel");
         
         var pythonExe = koDirSvc.pythonExe;
-        var pythonLib = koFile.join(koFile.dirname(pythonExe), "..", "lib", "python2.7");
         var addonPath = koResolve.uriToPath("chrome://codeintel/content/codeintel.js");
         addonPath = koFile.join(koFile.dirname(addonPath), '..');
         var logPath = koFile.join(system.pathFor("ProfD"), "..", "codeintel3.log");
@@ -72,7 +71,7 @@ else
         // server is a separate process, so it does not inherit Komodo's
         // in-process sys.path.
         var komodoLibDir = koDirSvc.komodoPythonLibDir;
-        env.PYTHONPATH = [pythonLib, koDirSvc.pythonDBGPDir, komodoLibDir,
+        env.PYTHONPATH = [koDirSvc.pythonDBGPDir, komodoLibDir,
                           libDir, envLibDir].join(pathsep);
         
         log.debug("PYTHONPATH: " +  env.PYTHONPATH);

@@ -116,8 +116,6 @@ class KoFeatureStatusService:
             createInstance(components.interfaces.koIAppInfoEx)
         self._phpInfoEx = components.classes["@activestate.com/koAppInfoEx?app=PHP;1"].\
             createInstance(components.interfaces.koIAppInfoEx)
-        self._pythonInfoEx = components.classes["@activestate.com/koAppInfoEx?app=Python;1"].\
-            getService(components.interfaces.koIAppInfoEx)
         self._python3InfoEx = components.classes["@activestate.com/koAppInfoEx?app=Python3;1"].\
             getService(components.interfaces.koIAppInfoEx)
         self._rubyInfoEx = components.classes["@activestate.com/koAppInfoEx?app=Ruby;1"].\
@@ -261,26 +259,6 @@ class KoFeatureStatusService:
                 elif featureName == "PHP Syntax Checking":
                     if self._haveSufficientPHP(feature="Syntax Checking",
                                                 minVersion="4.0.5"):
-                        status = "Ready"
-                    else:
-                        status = "Not Functional"
-                        reason = self._lastErrorSvc.getLastErrorMessage()
-                elif featureName == "Python Debugging":
-# #if WITH_DEBUGGING
-                    if self._haveSufficientPython(minVersion="1.5.2"):
-                        status = "Ready"
-                    else:
-                        status = "Not Functional"
-                        reason = self._lastErrorSvc.getLastErrorMessage()
-# #elif PRODUCT_TYPE == "edit"
-                        status = "Komodo IDE only"
-                        reason = "Debugging is only available in Komodo IDE"
-# #else
-                        status = "Not Functional"
-                        reason = "Debugging is not available"
-# #endif
-                elif featureName == "Python Syntax Checking":
-                    if self._haveSufficientPython():
                         status = "Ready"
                     else:
                         status = "Not Functional"
@@ -784,24 +762,6 @@ class KoFeatureStatusService:
                 return 1
         except:
             pass
-        return 0
-
-    def _haveSufficientPython(self, stopOnFirst=1, minVersion=None):
-        """Return true iff a Python installation meeting the above conditions
-        can be found.
-            "stopOnFirst" is a boolean indicating if the search should stop
-                on the "first" found interpreter. This is because things like
-                debugging and syntax checking are just going to use this
-                one anyway. Default is true.
-
-        If false is returned, then the last error (see koILastErrorService)
-        is set with a reason why.
-        """
-        # Try the user's selected python interpreter.
-        if self._getVersionForAppInfo(self._pythonInfoEx):
-            return 1
-        errmsg = "Could not find a suitable Python installation."
-        self._lastErrorSvc.setLastError(0, errmsg)
         return 0
 
     def _haveSufficientPython3(self, stopOnFirst=1, minVersion=None):

@@ -55,7 +55,7 @@ def TestPerlInvocation():
 
 
 def TestPythonInvocation():
-    invocation = components.classes["@activestate.com/koInvocation;1?type=Python"].createInstance()
+    invocation = components.classes["@activestate.com/koInvocation;1?type=Python3"].createInstance()
     cat, inst = invocation.getDefaultPreferences()
     invocation.currentCategoryPreferences = cat
     invocation.currentInstancePreferences = inst

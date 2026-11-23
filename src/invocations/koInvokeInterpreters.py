@@ -1066,19 +1066,6 @@ class koPythonCommonInvocation(koInterpreterInvocation):
         env = self._getDebuggerEnvironment(installed)
         return self._doLaunch(argv, cwd, env)
 
-class koPythonInvocation(koPythonCommonInvocation):
-       # If this object needs to be registered, the following 2 are also needed.
-    _language = "Python"
-    _reg_clsid_ = "{eef242ad-c57e-4507-80d5-d2fa7885dea5}"
-    _reg_contractid_ = "@activestate.com/koInvocation;1?type=Python"
-    #_reg_registrar_ = RegisterAsInvocation, None
-
-    _invocation_name_ = "Python"
-    _invocation_description_ = "Python"
-    def __init__(self):
-        self.languageName_lc = self._language.lower()
-        koPythonCommonInvocation.__init__(self)
-
 class koPython3Invocation(koPythonCommonInvocation):
        # If this object needs to be registered, the following 2 are also needed.
     _language = "Python3"

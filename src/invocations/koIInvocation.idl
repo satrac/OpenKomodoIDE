@@ -28,7 +28,7 @@ EXAMPLE:
 To create and execute a Python program, the following code would be used.
 <code>
 
-ob = components.classes["@activestate.com/koInvocation;1?type=Python"].\
+ob = components.classes["@activestate.com/koInvocation;1?type=Python3"].\
      createInstance()
 
 // get default property sets.

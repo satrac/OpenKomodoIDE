@@ -28,7 +28,6 @@ Komodo project clones.
 | `satrac/pyxpcom` | `thereisonlyxul/pyxpcom` | In-process PyXPCOM extension |
 | `satrac/komodo-codeintel2` | `mook/komodo-codeintel2` | CodeIntel server sources and `stdlibs/*.cix` |
 | `satrac/komodo-python3-dbgp` | `agroszer/komodo-python3-dbgp` | Python 3 DBGP debugger client |
-| `satrac/komodo-python-dbgp` | `agroszer/komodo-python-dbgp` | Legacy Python 2 DBGP debugger client |
 | `satrac/komodo-patches-codeintel` | `mook/komodo-patches-codeintel` | CodeIntel patches |
 | `satrac/KomodoEdit-CodeIntel` | `Kronuz/KomodoEdit-CodeIntel` | Older CodeIntel implementation |
 | `satrac/trackchanges` | `Komodo/trackchanges` | IDE Track Changes extension |

@@ -2,7 +2,7 @@
 # module.  Use the ast-based scanner for both Python 2 and Python 3 CIX
 # groups; the language class selects the matching stdlib file.
 from language.legacy.python.ast_scanner import PythonASTScanner
-PythonScanner = Python3Scanner = PythonASTScanner
+Python3Scanner = PythonASTScanner
 
 from language.legacy.python import stdlib as python_stdlib
 from language.legacy.javascript.scanner import JavaScriptScanner, NodeJSScanner
@@ -89,33 +89,6 @@ class Languages:
 
         return None
 
-    class Python(Language):
-
-        name = "Python"
-
-        stdlib = python_stdlib
-        cix = python_stdlib.PYTHON2_STDLIB_FILE
-        catalogs = (python_stdlib.CATALOG_PYWIN32_FILE,)
-        keywords = python_stdlib.PYTHON2_KEYWORDS
-
-        ext = ["py"]
-
-        extrapaths = "PYTHONPATH"
-
-        _scanner = None
-
-        @property
-        def scanner(self):
-            if PythonScanner is None:
-                # Scan summaries walk whole directories; report "no scanner"
-                # for Python rather than aborting the entire request.
-                return None
-            Parent = Languages.Python
-            if not Parent._scanner:
-                Parent._scanner = PythonScanner(self.cix)
-
-            return Parent._scanner
-
     class Python3(Language):
 
         name = "Python3"
@@ -125,7 +98,7 @@ class Languages:
         catalogs = (python_stdlib.CATALOG_PYTHON3_PYWIN32_FILE,)
         keywords = python_stdlib.PYTHON3_KEYWORDS
 
-        ext = [] # We default to Python2 for now
+        ext = ["py"]
 
         extrapaths = "PYTHONPATH"
 

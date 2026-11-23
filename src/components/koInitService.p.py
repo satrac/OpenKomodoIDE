@@ -1045,7 +1045,7 @@ class KoInitService(object):
                 formatters = prefs.getPref("configuredFormatters")
                 py_formatter_prefset = components.classes[
                     '@activestate.com/koPreferenceSet;1'].createInstance()
-                py_formatter_prefset.setStringPref("lang", "Python")
+                py_formatter_prefset.setStringPref("lang", "Python3")
                 py_formatter_prefset.setStringPref("name", "Reindent")
                 py_formatter_prefset.setStringPref("uuid", "{a5b90f01-8d7b-4006-8b44-e59ea21c968d}")
                 py_formatter_prefset.setStringPref("formatter_name", "generic")

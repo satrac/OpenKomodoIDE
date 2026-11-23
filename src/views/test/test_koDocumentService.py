@@ -40,12 +40,12 @@ class TestKoDocumentService(unittest.TestCase):
         assert len(docs) == 0
 
     def test_createUntitledDocument(self):
-        doc = self.__docsvc.createUntitledDocument('Python')
+        doc = self.__docsvc.createUntitledDocument('Python3')
         doc.addReference()
-        assert doc.baseName == 'Python-1.py', "%s != %s" % (doc.baseName, 'Python-1.py')
+        assert doc.baseName == 'Python3-1.py', "%s != %s" % (doc.baseName, 'Python3-1.py')
         docs = self.__docsvc.getAllDocuments()
         assert doc in docs
-        xdoc = self.__docsvc.findDocumentByURI('Python-1.py')
+        xdoc = self.__docsvc.findDocumentByURI('Python3-1.py')
         assert doc == xdoc
         doc.releaseReference()
         docs = self.__docsvc.getAllDocuments()

@@ -1,7 +1,7 @@
 {
   "keyboard_shortcut": "", 
   "name": "Restore {{version}} Samples", 
-  "language": "Python", 
+  "language": "Python3",
   "trigger_enabled": false, 
   "rank": 100, 
   "trigger": "trigger_postopen",

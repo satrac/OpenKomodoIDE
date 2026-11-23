@@ -35,6 +35,16 @@ import json
 log = logging.getLogger('koDocument')
 #log.setLevel(logging.DEBUG)
 
+# Removed languages that may still be stored in restored sessions or project
+# files.  Map them to their replacement when a document is loaded.
+_LEGACY_LANGUAGE_ALIASES = {
+    "Python": "Python3",
+}
+
+
+def _canonicalizeLanguageName(language):
+    return _LEGACY_LANGUAGE_ALIASES.get(language, language)
+
 
 ################################################################################
 # Note that koDocument's scintilla/scimoz attribute is thread-protected, all
@@ -437,12 +447,15 @@ class koDocumentBase(object):
         # then just use that, unless it's too large for Komodo.
 
         if self.prefs.hasPrefHere('language'):
-            language = self.prefs.getStringPref('language')
+            language = _canonicalizeLanguageName(
+                self.prefs.getStringPref('language'))
             if language != "Text" \
                and self._isConsideredLargeDocument(self.langRegistrySvc, language):
                 self._setAsLargeDocument(language)
                 language = "Text"
             self._language = language
+            if self.prefs.getStringPref('language') != language:
+                self.prefs.setStringPref('language', language)
             self._setLangPrefs()
             log.info("_guessLanguage: use set preference: '%s'",
                      self._language)
@@ -739,6 +752,7 @@ class koDocumentBase(object):
         return self._language
     
     def set_language(self,language):
+        language = _canonicalizeLanguageName(language)
         log.info("setting language to " + language)
         self._language = language
         

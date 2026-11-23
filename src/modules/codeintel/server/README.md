@@ -26,15 +26,14 @@ To build a seed database:
 
 The script imports CSS, HTML, XUL, Tcl and the catalogs in
 `src/modules/codeintel/codeintel-catalogs/catalogs` without extra inputs.
-The language stdlib CIX dumps (`python2.cix`, `python3.cix`,
-`javascript.cix`, `perl.cix`, `php7.cix`, `ruby.cix`) were removed from the
-installed extension.  Old copies are available from the
+The language stdlib CIX dumps (`python3.cix`, `javascript.cix`,
+`perl.cix`, `php7.cix`, `ruby.cix`) were removed from the installed
+extension.  Old copies are available from the
 `mook/komodo-codeintel2` repository's `stdlibs/` directory; use
 `--cix-dir` to import them.
 
 ## Status
 
-Python 2 sources.  They have been converted to Python 3 syntax and the
-server/import path has been validated.  The legacy Python source scanner still
-uses Python 2's removed `compiler`/`parser` modules and needs a separate port
-to `ast` for live Python scanning.
+The server and Python scanner run on Python 3.14.  Python source scanning uses
+the `ast`-based scanner; the legacy `compiler`/`parser` scanner has been
+removed.  Python 2 stdlib symbols are no longer imported.

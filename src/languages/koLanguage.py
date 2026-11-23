@@ -154,6 +154,12 @@ class KoLanguageRegistryService:
         # XXX get from prefs?
         self.defaultLanguage = "Text"
 
+        # Language names that were removed but may still appear in restored
+        # sessions, project files, or persisted file associations.
+        self._legacyLanguageAliases = {
+            "Python": "Python3",
+        }
+
         # This is here because the addon manager is asynchronous which really
         # cramps us later when we try to synchronously check to see
         # if a particular extension is available.
@@ -181,7 +187,8 @@ class KoLanguageRegistryService:
         factoryFileAssociationsRepr \
             = self._globalPrefs.getStringPref("factoryFileAssociations")
         for pattern, languageName in list(eval(factoryFileAssociationsRepr).items()):
-            self._addOneFileAssociation(pattern, languageName)
+            self._addOneFileAssociation(pattern,
+                                        self._canonicalizeLanguageName(languageName))
 
         # Apply fallback default extensions from all registered languages.
         for defaultExtension, languageName in list(self._defaultLanguageExtensions.items()):
@@ -203,6 +210,7 @@ class KoLanguageRegistryService:
                 = self._globalPrefs.getStringPref("fileAssociationDiffs")
             try:
                 for action, pattern, languageName in eval(fileAssociationDiffsRepr):
+                    languageName = self._canonicalizeLanguageName(languageName)
                     if action == '+':
                         self._addOneFileAssociation(pattern, languageName)
                     elif action == '-':
@@ -484,11 +492,20 @@ class KoLanguageRegistryService:
             self._systemIdMap[id] = name
 
 
+    def _canonicalizeLanguageName(self, language):
+        """Map a removed legacy language name to its replacement."""
+        alias = self._legacyLanguageAliases.get(language)
+        if alias and alias in self.__languageFromLanguageName \
+                and language not in self.__languageFromLanguageName:
+            return alias
+        return language
+
     def getLanguage(self, language):
         # return a koILanguage for language.  Create it if it does not
         # exist yet.
         if not language: language=self.defaultLanguage
-        
+        language = self._canonicalizeLanguageName(language)
+
         if language not in self.__languageFromLanguageName:
             log.warning("Asked for unknown language: %r", language)
             if language != self.defaultLanguage:
@@ -710,11 +727,7 @@ class KoLanguageRegistryService:
                                               returnDetails=True)
         if not modelineLangs and not shebangLangs:
             # Deal with variants of languages here.
-            if fileNameLanguage == "Python":
-                newLang = self._distinguishPythonVersion(buffer, koDoc)
-                if newLang:
-                    langs.insert(0, newLang)
-            elif fileNameLanguage == "JavaScript":
+            if fileNameLanguage == "JavaScript":
                 newLang = self._distinguishJavaScriptOrNode(buffer)
                 if newLang:
                     langs.insert(0, newLang)
@@ -871,60 +884,6 @@ class KoLanguageRegistryService:
                 return "JavaScript"
         
         return preferred
-
-    _pythonNameByVersion = {2: "Python", 3: "Python3"}
-    def _distinguishPythonVersion(self, buffer, koDoc):
-        """
-        If the user has an installation for only one of the Python
-        versions, favor that.  Otherwise, analyze the buffer.
-        """
-        import pythonVersionUtils
-        python2 = self._getPython2Path(koDoc)
-        python3 = self._getPython3Path(koDoc)
-        # If the buffer's empty, favor v2 over v3.
-        if (not python2) == (not python3):
-            # Either we have both, or neither, so we need to do
-            # further analysis.
-            isPython3 = pythonVersionUtils.isPython3(buffer)
-            if isPython3:
-                versionNo = 3
-            else:
-                versionNo = 2
-        elif python2:
-            versionNo = 2
-        else:
-            versionNo = 3
-        return self._pythonNameByVersion[versionNo]
-
-    def _getPython2Path(self, koDoc):
-        python2Path = koDoc.getEffectivePrefs().getStringPref("pythonDefaultInterpreter")
-        if python2Path and os.path.isfile(python2Path):
-            return python2Path
-        python2Info = components.classes["@activestate.com/koAppInfoEx?app=%s;1"
-                                        % 'Python'] \
-                        .getService(components.interfaces.koIAppInfoEx)
-        python2Path = python2Info.executablePath
-        if not python2Path or not os.path.exists(python2Path):
-            try:
-                python2Path = which.which("python")
-            except which.WhichError:
-                python2Path = None
-        return python2Path
-
-    def _getPython3Path(self, koDoc):
-        python3Path = koDoc.getEffectivePrefs().getStringPref("python3DefaultInterpreter")
-        if python3Path and os.path.isfile(python3Path):
-            return python3Path
-        python3Info = components.classes["@activestate.com/koAppInfoEx?app=%s;1"
-                                        % 'Python3'] \
-                        .getService(components.interfaces.koIAppInfoEx)
-        python3Path = python3Info.executablePath
-        if not python3Path or not os.path.exists(python3Path):
-            try:
-                python3Path = which.which("python3")
-            except which.WhichError:
-                python3Path = None
-        return python3Path
 
     def __initPrefs(self):
         self.__prefs = components \

@@ -58,8 +58,6 @@ $cons->InstallInChrome('pref-association.js');
 
 $cons->InstallInChrome('pref-find.xul');
 
-$cons->InstallInChrome('pref-python.xul');
-$cons->InstallInChrome('pref-python.js');
 $cons->InstallInChrome('pref-python3.xul');
 $cons->InstallInChrome('pref-python3.js');
 

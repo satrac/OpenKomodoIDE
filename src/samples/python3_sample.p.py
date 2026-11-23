@@ -91,7 +91,7 @@ printTotal(prices)
 # Code Browsing:
 #   1. If necesssary, enable Komodo's code intelligence (Edit|Preferences|Code Intelligence).
 #   2. Select View|Tabs|Code Browser.
-#   3. On the Code tab, click the plus sign next to "python_sample".
+#   3. On the Code tab, click the plus sign next to "python3_sample".
 #   4. If necessary, display the Code Description pane by clicking the
 #      "Show/Hide Description" button at the bottom of the Code Browser.
 #   5. Select "Imports". The Code Description pane indicates that the file

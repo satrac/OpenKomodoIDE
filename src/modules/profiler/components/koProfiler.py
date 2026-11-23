@@ -150,7 +150,7 @@ class koPythonProfiler(object):
     _reg_desc_ = "Komodo Python pstats profiler data"
 
     type_name = "python pstats"
-    language = "Python"
+    language = "Python3"
     rawdata = None
 
     def __init__(self):
@@ -476,7 +476,7 @@ class koCallgrindProfiler(object):
                     # command.
                     cmd_parts = sp[1].lower().split()
                     if any([x.endswith(".py") for x in cmd_parts]):
-                        self.language = "Python"
+                        self.language = "Python3"
                     elif any([x.endswith(".php") or x.endswith(".mod") for x in cmd_parts]):
                         self.language = "PHP"
                     elif any([x.endswith(".pl") or x.endswith(".pm") for x in cmd_parts]):

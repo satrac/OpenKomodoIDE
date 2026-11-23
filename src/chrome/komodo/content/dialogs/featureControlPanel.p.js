@@ -30,7 +30,7 @@ var gPrefsList = [
 // #endif
         "nodejsDefaultInterpreter",
         "perlDefaultInterpreter","phpDefaultInterpreter",
-        "pythonDefaultInterpreter","rubyDefaultInterpreter",
+        "rubyDefaultInterpreter",
         "tclshDefaultInterpreter","wishDefaultInterpreter",
         "python3DefaultInterpreter"
                  ];
@@ -117,9 +117,6 @@ FeatureStatusObserver.prototype.observe = function(subject, topic, data)
         case "phpDefaultInterpreter":
             _requestFeatureStatus('PHP Debugging');
             _requestFeatureStatus('PHP Syntax Checking');
-        case "pythonDefaultInterpreter":
-            _requestFeatureStatus('Python Debugging');
-            _requestFeatureStatus('Python Syntax Checking');
         case "python3DefaultInterpreter":
             _requestFeatureStatus('Python3 Debugging');
             _requestFeatureStatus('Python3 Syntax Checking');
@@ -155,7 +152,6 @@ function _requestFeatureStatus(featureName)
             var allFeatureNames = ["Node.js Debugging", "Node.js Syntax Checking",
                                    "Perl Debugging", "Perl Syntax Checking",
                                    "PHP Debugging", "PHP Syntax Checking",
-                                   "Python Debugging", "Python Syntax Checking",
                                    "Python3 Debugging", "Python3 Syntax Checking",
                                    "Ruby Debugging", "Ruby Syntax Checking",
                                    "Tcl Debugging", "Tcl Syntax Checking",
@@ -228,14 +224,6 @@ function _updateFeatureControlPanel(featureName, status, reason)
         case "PHP Syntax Checking":
             status = "Syntax Checking: " + status;
             widget = gWidgets.phpSyntaxCheckingStatus;
-            break;
-        case "Python Debugging":
-            status = "Debugging: " + status;
-            widget = gWidgets.pythonDebuggingStatus;
-            break;
-        case "Python Syntax Checking":
-            status = "Syntax Checking: " + status;
-            widget = gWidgets.pythonSyntaxCheckingStatus;
             break;
         case "Python3 Debugging":
             status = "Debugging: " + status;
@@ -331,8 +319,6 @@ function OnLoad()
         gWidgets.perlSyntaxCheckingStatus = document.getElementById("perl-syntax-checking-status");
         gWidgets.phpDebuggingStatus = document.getElementById("php-debugging-status");
         gWidgets.phpSyntaxCheckingStatus = document.getElementById("php-syntax-checking-status");
-        gWidgets.pythonDebuggingStatus = document.getElementById("python-debugging-status");
-        gWidgets.pythonSyntaxCheckingStatus = document.getElementById("python-syntax-checking-status");
         gWidgets.python3DebuggingStatus = document.getElementById("python3-debugging-status");
         gWidgets.python3SyntaxCheckingStatus = document.getElementById("python3-syntax-checking-status");
         gWidgets.rubyDebuggingStatus = document.getElementById("ruby-debugging-status");

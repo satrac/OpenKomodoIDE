@@ -28,7 +28,7 @@
             id: "pytest",
             namespace: "unittest/handlers/pytest",
             label: "pytest",
-            language: "Python",
+            language: "Python3",
             parser: "pytest",
             command: "python -m pytest --tb short --color no -vr a -o console_output_style=classic"
         });

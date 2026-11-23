@@ -67,7 +67,7 @@ class KoDocInfoDetectionTestCase(_KoDocTestCase):
     def test_basic(self):
         for name in ("exists.py", "does not exist.py"):
             koDoc = self._koDocFromPath(join(self.data_dir, name), load=False)
-            self.assertEqual(koDoc.language, "Python")
+            self.assertEqual(koDoc.language, "Python3")
 
     def test_recognize_perl_file(self):
         manifest = [
@@ -322,7 +322,7 @@ except AttributeError, x:
             path = join(self.data_dir, name)
             _writefile(path, content)
             koDoc = self._koDocFromPath(path)
-            self.assertEqual(koDoc.language, "Python")
+            self.assertEqual(koDoc.language, "Python3")
 
     def test_recognize_python3_file(self):
         manifest = [
@@ -461,7 +461,7 @@ console.log(event.name);
     
     def test_language_reset(self):
         manifest = [
-            ("Python", tempfile.mktemp(".py"), r"""\
+            ("Python3", tempfile.mktemp(".py"), r"""\
 #!/usr/bin/env python3
 print 'should be py'
 """),

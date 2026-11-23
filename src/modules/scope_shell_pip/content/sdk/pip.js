@@ -15,33 +15,6 @@
 
     this.register = function()
     {
-        // Register the "pip" namespace
-        shell.registerNamespace("pip",
-        {
-            command: function() { return prefs.file().getString("pipDefaultInterpreter", "pip") || "pip" },
-            description: "The PyPA recommended tool for installing Python packages (Python 2)",
-            env: {},
-            results: {
-                install: {
-                    description: "Install packages",
-                    results: this.searchInstall.bind(this, "pip"),
-                    weight: 10
-                },
-                uninstall: {
-                    description: "Uninstall packages",
-                    command: "uninstall -y",
-                    results: this.listInstalled.bind(this, "pip"),
-                    weight: 10
-                },
-                freeze: { description: "Output installed packages in requirements format" },
-                list: { description: "List installed packages" },
-                show: { description: "Show information about installed packages" },
-                search: { description: "Search PyPI for packages" },
-                wheel: { description: "Build wheels from your requirements" },
-                help: { description: "Show help for commands" }
-            }
-        });
-
         shell.registerNamespace("pip3",
         {
             command: function() { return prefs.file().getString("pip3DefaultInterpreter", "pip3") || "pip3" },
@@ -69,13 +42,6 @@
         });
 
         // Inject pref UI
-        shellHelpers.injectInterpreterPref({
-            basename: 'pref-python.xul',
-            siblingSelector: '#defaultPythonInterpreterGroupBox',
-            prefname: 'pipDefaultInterpreter',
-            caption: 'Pip Location'
-        });
-
         shellHelpers.injectInterpreterPref({
             basename: 'pref-python3.xul',
             siblingSelector: '#defaultPython3InterpreterGroupBox',

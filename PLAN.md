@@ -8,7 +8,8 @@ Status snapshot (2026-11-23):
 - Fresh `make full`, `make check`, `make codeintel-db`, `make image` and
   `make install-local` have all been validated.
 - The only Python 2 left is the build-only 2.7 shim for the legacy Mozilla 35
-  IDL/build tools; it is not an application runtime dependency.
+  IDL/build tools; it is not an application runtime dependency.  The Python 2
+  language, linters, DBGP client and CodeIntel stdlib data have been removed.
 - Quickstart, New/Open/Save, Preferences, project pane, toolbox and syntax
   highlighting work.
 - Symbol Browser works for Perl, PHP, Ruby, JavaScript, Tcl, HTML, CSS and the
@@ -29,8 +30,9 @@ standard-library symbols.
   make codeintel-db CIX_DIR=~/Projects/komodo-forks/komodo-codeintel2/stdlibs
   ```
 
-- Result: 46.9 MB database, 340,079 symbols, 21 catalog groups (Python 2/3,
-  Perl, JavaScript, PHP 5, Ruby, Tcl, CSS, HTML5, XUL and the catalogs).
+- Result: 34.6 MB database, 19 catalog groups (Python 3, Perl, JavaScript,
+  PHP 5, Ruby, Tcl, CSS, HTML5, XUL and the catalogs).  Python 2 stdlib and
+  pywin32 data were removed when the Python 2 language was dropped.
 - A fresh profile copies the seeded database and starts without missing-stdlib
   errors; Symbol Browser works and Perl completions resolve `open`/`opendir`.
 - `make codeintel-db` now also stages the database under
@@ -152,6 +154,9 @@ Results so far:
   module build path.
 - Removed the dead legacy Python scanner (`scanner.py`, `import_resolver.py`
   and `tdparser.py`); the `ast` scanner is now the only Python scanner.
+- Removed the Python 2 language/lexer, Python 2 linter components, preference
+  page, sample tools and CodeIntel `:python2:` data.  `.py` now maps directly
+  to `Python3`.
 - Remaining: keep pruning unused Python 2-only files as they are encountered.
 
 ## 7. Hardening and packaging validation (done for the current tree)

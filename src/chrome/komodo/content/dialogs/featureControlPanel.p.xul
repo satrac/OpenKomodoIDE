@@ -126,33 +126,6 @@
                                         oncommand="LaunchPrefs('phpItem')"/>
                             </hbox>
                         </row>
-                        <row id="python-feature-row">
-                            <hbox class="sp-mru-row" align="center" pack="start">
-                                <label value="&python.label;"/>
-                            </hbox>
-                            <hbox class="sp-mru-row" align="center" pack="start">
-                                <label id="python-debugging-status"
-                                       value="Debugging: Status Unknown"/>
-                                <image id="python-debugging-status-image"
-                                       class="status-pending"
-                                       />
-                                <button class="help-icon button-toolbar-a"
-                                        tooltiptext="&helpOnPythonDebugging.tooltiptext;"
-                                        oncommand="LaunchHelp('prefs.html#configuring-python');"/>
-                                <label id="python-syntax-checking-status"
-                                       value="&sintaxCheckingUnknown.label;"/>
-                                <image id="python-syntax-checking-status-image"
-                                       class="status-pending"
-                                       />
-                                <button class="help-icon button-toolbar-a"
-                                        tooltiptext="&helpOnBackgroundSyntaxChecking.tooltiptext;"
-                                        oncommand="LaunchHelp('editor.html#Linting');"/>
-                                <separator flex="1"/>
-                                <button class="icon-cog button-toolbar-a"
-                                        tooltiptext="&configurePython.tooltiptext;"
-                                        oncommand="LaunchPrefs('pythonItem')"/>
-                            </hbox>
-                        </row>
                         <row id="python3-feature-row">
                             <hbox class="sp-mru-row" align="center" pack="start">
                                 <label value="&python3.label;"/>

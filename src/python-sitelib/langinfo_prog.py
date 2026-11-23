@@ -16,22 +16,12 @@ class _PythonCommonLangInfo(LangInfo):
     # http://www.python.org/dev/peps/pep-0263/
     encoding_decl_pattern = re.compile(r"coding[:=]\s*(?P<encoding>[-\w.]+)")
 
-# Where there's a conflict in extensions, put the main
-# LangInfo entry last.
-class PythonLangInfo(_PythonCommonLangInfo):
-    name = "Python"
-    default_encoding = "ascii"  #TODO: link to ref defining default encoding
-    magic_numbers = [
-        (0, "regex", re.compile(r'\A#!.*python(?!3).*$', re.I | re.M))
-    ]
-
 class Python3LangInfo(_PythonCommonLangInfo):
     name = "Python3"
     default_encoding = "utf-8"
     magic_numbers = [
         (0, "regex", re.compile(r'\A#!.*python3.*$', re.I | re.M))
     ]
-    is_minor_variant = PythonLangInfo
 
 class CompiledPythonLangInfo(LangInfo):
     name = "Compiled Python"

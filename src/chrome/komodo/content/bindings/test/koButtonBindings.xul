@@ -1514,14 +1514,9 @@ NOTE: Width and height are defined by the xul around the buttons
                         command="cmd_toggleInteractiveShell"
                         label="Start/Find/Toggle Default Interactive Shell"
                         class="menuitem-iconic ishell-icon"
-                        language="Python">
+                        language="Python3">
                     </menuitem>
                     <menuseparator/>
-                    <menuitem id="tbmenu_PythonInteractiveShell"
-                        command="cmd_startPythonInteractiveShell"
-                        label="Start New Python Shell"
-                        class="menuitem-iconic ishell-icon"
-                        language="Python"/>
                     <menuitem id="tbmenu_TclInteractiveShell"
                         command="cmd_startTclInteractiveShell"
                         label="Start New Tcl Shell"

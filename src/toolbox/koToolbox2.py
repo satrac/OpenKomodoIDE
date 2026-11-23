@@ -2507,7 +2507,11 @@ class DataParser:
         langRegistry = components.classes["@activestate.com/koLanguageRegistryService;1"]\
             .getService(components.interfaces.koILanguageRegistryService)
         common = "-common"
-        if common in langname:
+        if langname == "Python-common":
+            # Python snippets shared by the old Python/Python3 languages now
+            # use the Python 3 language for comment metadata.
+            langname = "Python3"
+        elif common in langname:
             langname = langname[:langname.find(common)]
         langinfo = langRegistry.getLanguage(langname)
         return [langinfo.getCommentDelimiter("line", 0), langinfo.getCommentDelimiter("block", 0)]

@@ -183,7 +183,7 @@ TestKoPyRefac.prototype._get_scimoz_and_koDoc_from_string = function(buf) {
         // Set up the real Python lexer (for styling information)
         var lexerSvc = Cc["@activestate.com/koLanguageRegistryService;1"]
                          .getService(Ci.koILanguageRegistryService)
-                         .getLanguage("Python")
+                         .getLanguage("Python3")
                          .getLanguageService(Ci.koILexerLanguageService);
         lexerSvc.setCurrent(scimoz);
     }

@@ -1383,7 +1383,7 @@ import sciutils
 class ScintillaControllerTestCase(sciutils.SciMozTestCase):
     controller = None
     
-    def assertCmdResultIs(self, buffer, cmdName, expected, language="Python"):
+    def assertCmdResultIs(self, buffer, cmdName, expected, language="Python3"):
         self._setupSciMoz(buffer, language)
         cmd = getattr(self.controller, "_do_cmd_%s" % cmdName)
         cmd()

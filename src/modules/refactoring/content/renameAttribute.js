@@ -217,13 +217,12 @@ function _init_widgets()
 }
 
 let komodoInternalExtensions = {
-    "Python": ["*.ksf"],
+    "Python3": ["*.ksf"],
     "Perl": ["Conscript", "Construct"]
 }
 
 const _aliasLangs = {
                     "Node.js" : "JavaScript",
-                    "Python3" : "Python",
                     "HTML5": "HTML"
                 };
 function getActualLanguageName(languageName) {

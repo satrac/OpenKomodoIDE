@@ -598,15 +598,6 @@ class KoPythonCommonInfoEx(KoAppInfoEx):
         retval = p.wait()
         return not retval
 
-class KoPythonInfoEx(KoPythonCommonInfoEx):
-    _reg_clsid_ = "{b76bc2ee-261e-4597-b1ef-446e9bb89d7c}"
-    _reg_contractid_ = "@activestate.com/koAppInfoEx?app=Python;1"
-    _reg_desc_ = "Extended Python Information"
-    exenames = ["python", "python2"]
-    defaultInterpreterPrefName = "pythonDefaultInterpreter"
-    minVersionSupported = (2, 4)
-    maxVersionTuple = (2, 99, 99)
-
 class KoPython3InfoEx(KoPythonCommonInfoEx):
     _reg_clsid_ = "{e98c16e6-0b9f-4f11-8505-5012555a19b2}"
     _reg_contractid_ = "@activestate.com/koAppInfoEx?app=Python3;1"
@@ -1255,7 +1246,7 @@ if __name__ == "__main__":
             else:
                 raise
                     
-    for app in ["Perl", "Python", "PHP", "TclPro"]:
+    for app in ["Perl", "Python3", "PHP", "TclPro"]:
         appInfoExe = components.classes["@activestate.com/koAppInfoEx?app=%s;1"%app]\
                    .createInstance()
         

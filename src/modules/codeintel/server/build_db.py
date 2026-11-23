@@ -9,7 +9,7 @@ present and skips the missing ones.
 
 The server does not require this file: if it is absent, Database.initialize()
 creates an empty database and logs a warning.  Committing the generated
-~55 MB database is unnecessary.
+~35 MB database is unnecessary.
 
 Usage:
     python3 build_db.py [--db codeintel.db] [--cix-dir DIR]
@@ -17,7 +17,6 @@ Usage:
 Place optional stdlib CIX files in the language directories expected by the
 stdlib modules, for example:
 
-    language/legacy/python/python2.cix
     language/legacy/python/python3.cix
     language/legacy/javascript/javascript.cix
     language/legacy/javascript/node.js.cix
@@ -70,9 +69,7 @@ def main(argv=None):
         # Copy any supplied CIX files into the expected language directories
         # using the conventional names.
         mapping = {
-            "python2.cix": ("python", "python2.cix"),
             "python3.cix": ("python", "python3.cix"),
-            "python-2.7.cix": ("python", "python2.cix"),
             "python3-3.3.cix": ("python", "python3.cix"),
             "javascript.cix": ("javascript", "javascript.cix"),
             "node.js.cix": ("javascript", "node.js.cix"),
@@ -99,7 +96,7 @@ def main(argv=None):
     ])
     _copy_catalogs("php", ["drupal.cix", "pecl.cix"])
     _copy_catalogs("ruby", ["rails.cix"])
-    _copy_catalogs("python", ["pywin32.cix", "python3-pywin32.cix"])
+    _copy_catalogs("python", ["python3-pywin32.cix"])
 
     from config import Config
     from db import Database
@@ -117,8 +114,6 @@ def main(argv=None):
 
     # (module, stdlib constant attribute, catalog constant attributes)
     targets = [
-        ("language.legacy.python.stdlib", "PYTHON2_STDLIB_FILE",
-         ("CATALOG_PYWIN32_FILE",)),
         ("language.legacy.python.stdlib", "PYTHON3_STDLIB_FILE",
          ("CATALOG_PYTHON3_PYWIN32_FILE",)),
         ("language.legacy.javascript.stdlib", "JAVASCRIPT_STDLIB_FILE",

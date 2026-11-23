@@ -459,14 +459,6 @@
                                                           helptag="configuring-php"/>
                                             </treerow>
                                         </treeitem>
-                                        <treeitem container="false" id="pythonItem">
-                                            <treerow>
-                                                <treecell class="treecell-indent"
-                                                          url="chrome://komodo/content/pref/pref-python.xul"
-                                                          label="&python.label;"
-                                                          helptag="configuring-python"/>
-                                            </treerow>
-                                        </treeitem>
                                         <treeitem container="false" id="python3Item">
                                             <treerow>
                                                 <treecell class="treecell-indent"

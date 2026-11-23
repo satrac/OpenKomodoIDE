@@ -28,11 +28,7 @@ Dev Notes:
 import sys
 import re
 import pprint
-try:
-    import builtins
-except ImportError:
-    # Python 2's module is named __builtin__.
-    import __builtin__ as builtins
+import builtins
 
 
 class PyCompileError(Exception):

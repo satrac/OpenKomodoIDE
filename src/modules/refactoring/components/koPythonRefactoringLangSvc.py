@@ -546,13 +546,6 @@ class _KoPythonCommonRefactoringLangSvc(KoRefactoringLanguageServiceBase):
         log.debug("Not sure if %s in %s|%s in %s/%d is a true hit", targetName, beforeText, afterText, path, lineNo)
         return False
 
-class KoPythonRefactoringLanguageService(_KoPythonCommonRefactoringLangSvc):
-    language_name = "Python"
-    _com_interfaces_ = [components.interfaces.koIRefactoringLanguageService]
-    _reg_clsid_ = "{54a73397-7d4d-46e7-879b-58f446fa9c01}"
-    _reg_contractid_ = "@activestate.com/koRefactoringLanguageService;1?language=Python"
-    _reg_desc_ = "Komodo %s Refactoring Language Service" % (language_name,)
-
 class KoPython3RefactoringLanguageService(_KoPythonCommonRefactoringLangSvc):
     language_name = "Python3"
     _com_interfaces_ = [components.interfaces.koIRefactoringLanguageService]

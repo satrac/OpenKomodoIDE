@@ -73,7 +73,7 @@ function checkValidPythonInterpreter(exe)
                              ", which should not work as a Python 3 interpreter.  Do you still want to use it?",
                              {"title":"Invalid Python Interpreter", window:require("ko/windows").getMostRecent()});
             if(! resp)
-                document.getElementById("pythonDefaultInterpreter").selectedIndex = 0;
+                document.getElementById("python3DefaultInterpreter").selectedIndex = 0;
             return false;
         }
         return true;

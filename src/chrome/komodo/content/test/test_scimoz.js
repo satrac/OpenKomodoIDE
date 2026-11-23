@@ -25,7 +25,7 @@ function OnLoad()
 
         view = document.getElementById("view");
         view.init();
-        view.initWithBuffer("if 1:\n    print 'hi'", "Python");
+        view.initWithBuffer("if 1:\n    print('hi')", "Python3");
         view.scimoz.viewWS = 1;
         view.setFocus();
     } catch(ex) {
@@ -66,7 +66,8 @@ function RunTest()
             cicLangSvc.test_scimoz(view.scimoz);
             break;
         case "koPythonLanguage":
-            var pyLang = Components.classes["@activestate.com/koLanguage?language=Python;1"].getService();
+        case "koPython3Language":
+            var pyLang = Components.classes["@activestate.com/koLanguage?language=Python3;1"].getService();
             pyLang.test_scimoz(view.scimoz);
             break;
         case "koCSSLanguage":

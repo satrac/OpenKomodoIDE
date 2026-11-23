@@ -1,6 +1,2 @@
-import sys
-import os
-
-cwd = os.path.dirname(__file__)
-include = os.path.join(cwd, "..", "env", "lib", "python2.7", "site-packages")
-sys.path.append(os.path.abspath(include))
+# CodeIntel runs in Komodo's Python 3 environment; there is no bundled
+# Python 2 site-packages directory to add.

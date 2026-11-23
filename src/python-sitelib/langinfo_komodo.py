@@ -15,7 +15,7 @@ class KomodoProjectLangInfo(LangInfo):
 class KomodoColorSchemeLangInfo(LangInfo):
     name = "Komodo Color Scheme"
     exts = [".ksf"]
-    conforms_to_bases = ["Python"]
+    conforms_to_bases = ["Python3"]
 
 class KomodoKeybindingSchemeLangInfo(LangInfo):
     name = "Komodo Keybinding Scheme"
