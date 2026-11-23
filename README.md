@@ -321,6 +321,12 @@ make install-local LOCAL_PREFIX=/tmp/komodo-local
 
   Set `GTK2_RC_FILES=` (empty) to use the desktop's normal GTK2 theme.
 
+- **Python 2 debugging.** Python 3 is the default for `.py` files.  To debug
+  a legacy Python 2 script, configure a Python 2.7 interpreter and select the
+  `Python` language (for example with a first-line modeline
+  `# -*- mode: python; -*-`).  The Python 2 DBGP client and `pydbgp` driver are
+  installed under `support/dbgp/`.
+
 - **Symbol Browser / CodeIntel.** The CodeIntel server is started
   automatically and the Symbol Browser tab is shown for supported languages.
   If you hide it, reopen it with **View > Tabs > Symbol Browser** or

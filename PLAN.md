@@ -183,6 +183,18 @@ Fresh-worktree validation (done):
 - The fresh app started, seeded CodeIntel and opened a Python file.
 - `make image` from the fresh worktree produced a working image.
 
+Python 2 target debugging (done):
+
+- The dev build now installs `support/dbgp/pythonlib` (including the prebuilt
+  `_client24`..`_client27` modules), so `pydbgp` works when a Python 2.7
+  interpreter is selected.
+- `pycompile.py` falls back to Python 2's `__builtin__`, restoring Python 2
+  syntax linting.
+- Verified a Python 2 script under the debugger: output appears in Debug
+  Output and the session completes.
+- `.py` files still default to the Python3 language; legacy Python 2 files
+  need the `Python` language selected (a modeline works).
+
 Remaining optional follow-ups:
 
 - Trackchanges SCC `cat` fallback.

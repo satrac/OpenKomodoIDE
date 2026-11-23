@@ -10,6 +10,7 @@
 Import(
     'cons',
     'supportDir',
+    'komodoDevDir',
 );
 
 my $dbgpDir = "$supportDir/dbgp";
@@ -31,3 +32,21 @@ $cons->Install("$dbgpDir/python3lib/dbgp",
                'python3lib/dbgp/server.py',
                'python3lib/dbgp/serverBase.py',
                'python3lib/dbgp/_pyclient.py');
+
+# Python 2 client library.  The legacy pydbgp driver selects this tree via
+# the "pythonlib" name.  The tracked support/dbgp tree is the source of the
+# prebuilt Python 2 client; install it so the development build can debug
+# user Python 2 scripts as well.
+my $py2dbgp = "$komodoDevDir/support/dbgp/pythonlib/dbgp";
+$cons->Install("$dbgpDir/pythonlib/dbgp",
+               "$py2dbgp/__init__.py",
+               "$py2dbgp/client.py",
+               "$py2dbgp/common.py",
+               "$py2dbgp/listcmd.py",
+               "$py2dbgp/server.py",
+               "$py2dbgp/serverBase.py",
+               "$py2dbgp/_pyclient.py",
+               "$py2dbgp/_client24.so",
+               "$py2dbgp/_client25.so",
+               "$py2dbgp/_client26.so",
+               "$py2dbgp/_client27.so");
