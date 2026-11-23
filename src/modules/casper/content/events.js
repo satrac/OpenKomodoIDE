@@ -1,6 +1,11 @@
 /* Copyright (c) 2006 ActiveState Software Inc.
    See the file LICENSE.txt for licensing information. */
-include('chrome://jslib/content/io/chromeFile.js');
+// jslib defines include(), but some overlay loads (notably non-Komodo
+// windows) do not get far enough to define it.  Do not let that abort the
+// Casper script; ChromeFile is only needed by the rare event-template path.
+if (typeof(include) == "function") {
+    include('chrome://jslib/content/io/chromeFile.js');
+}
 
 if (typeof(Casper) == 'undefined') {
     var Casper = {};

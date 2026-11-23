@@ -170,4 +170,7 @@ Remaining optional follow-ups:
 
 - Let the fresh-worktree `make full` finish and record any failures.
 - Trackchanges SCC `cat` fallback.
-- Benign `underscore.js` and `casper` log noise.
+- The `casper` `include is not defined` error is fixed by guarding the
+  optional jslib load.  The `underscore.js` `n is undefined` error remains;
+  it comes from a throttled callback invoked after its view disappears and
+  does not affect normal operation.
