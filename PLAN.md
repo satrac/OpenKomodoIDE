@@ -165,6 +165,9 @@ Results so far:
   `moz-configure` when it is missing.  The Firefox 35 source tarball must be
   supplied at `mozilla/firefox-35.0.source.tar.bz2` (or via
   `MOZ_SRC_TARBALL=/path/to/tarball`); it is not tracked because it is 169 MB.
+- The first fresh-tree build exposed a missing breakpad compatibility patch:
+  modern glibc no longer provides the `ucontext` typedef.  Added
+  `breakpad_ucontext.patch` so the fresh source uses `ucontext_t`.
 
 Remaining optional follow-ups:
 

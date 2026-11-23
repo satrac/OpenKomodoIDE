@@ -1,0 +1,23 @@
+Description: Modern glibc no longer provides the non-standard ucontext typedef.
+Use the POSIX ucontext_t in the x86 and AMD64 breakpad minidump writer.
+diff --git a/toolkit/crashreporter/google-breakpad/src/client/linux/minidump_writer/minidump_writer.cc b/toolkit/crashreporter/google-breakpad/src/client/linux/minidump_writer/minidump_writer.cc
+--- a/toolkit/crashreporter/google-breakpad/src/client/linux/minidump_writer/minidump_writer.cc
++++ b/toolkit/crashreporter/google-breakpad/src/client/linux/minidump_writer/minidump_writer.cc
+@@ -173,7 +173,7 @@
+ // Juggle an x86 ucontext into minidump format
+ //   out: the minidump structure
+ //   info: the collection of register structures.
+-void CPUFillFromUContext(MDRawContextX86 *out, const ucontext *uc,
++void CPUFillFromUContext(MDRawContextX86 *out, const ucontext_t *uc,
+                          const struct _libc_fpstate* fp) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+@@ -273,7 +273,7 @@
+   my_memcpy(&out->flt_save.xmm_registers, &info.fpregs.xmm_space, 16 * 16);
+ }
+ 
+-void CPUFillFromUContext(MDRawContextAMD64 *out, const ucontext *uc,
++void CPUFillFromUContext(MDRawContextAMD64 *out, const ucontext_t *uc,
+                          const struct _libc_fpstate* fpregs) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
