@@ -169,11 +169,23 @@ Results so far:
   modern glibc no longer provides the `ucontext` typedef.  Added
   `breakpad_ucontext.patch` so the fresh source uses `ucontext_t`.
 
+Fresh-worktree validation (done):
+
+- `make full` succeeded from a clean worktree after fixing:
+  - missing generated `mozilla/config.py` (`moz-configure`);
+  - Python 3 `target_configure` falling through to the Python 2 prebuilt
+    path;
+  - modern glibc's missing `ucontext` typedef (`breakpad_ucontext.patch`);
+  - detached-HEAD handling in `bklocal.py`;
+  - ignored `src/releasetime.txt` required by `bk configure`.
+- `make check` passed in the fresh worktree.
+- `make codeintel-db` built the 45 MB database from the CIX dumps.
+- The fresh app started, seeded CodeIntel and opened a Python file.
+- `make image` from the fresh worktree produced a working image.
+
 Remaining optional follow-ups:
 
-- Let the fresh-worktree `make full` finish and record any failures.
 - Trackchanges SCC `cat` fallback.
-- The `casper` `include is not defined` error is fixed by guarding the
-  optional jslib load.  The `underscore.js` `n is undefined` error remains;
-  it comes from a throttled callback invoked after its view disappears and
-  does not affect normal operation.
+- The `underscore.js` `n is undefined` error remains; it comes from a
+  throttled callback invoked after its view disappears and does not affect
+  normal operation.
