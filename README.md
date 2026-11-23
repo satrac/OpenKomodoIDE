@@ -269,6 +269,42 @@ should be a lot faster as much of the compiled data is cached.
 <br />
 <br />
 
+#### Quick source build
+
+The IDE and PyXPCOM now run on Python 3.14.  The old prebuilt Python 2.7
+tree is still used only by the legacy Mozilla build tools.
+
+From a fresh checkout:
+
+```sh
+# Firefox 35 source tarball (169 MB, not tracked)
+# Put it at mozilla/firefox-35.0.source.tar.bz2, or pass an absolute path:
+make full MOZ_SRC_TARBALL=/path/to/firefox-35.0.source.tar.bz2
+```
+
+`make full` generates `mozilla/config.py`, builds Mozilla/PyXPCOM, installs
+the Python 3 dependencies and builds the Komodo app.  Then:
+
+```sh
+make run          # launch the development build
+make check        # PyXPCOM, DBGP, CodeIntel and component-manifest checks
+```
+
+The optional CodeIntel database is built separately from the CIX dumps:
+
+```sh
+make codeintel-db CIX_DIR=~/Projects/komodo-forks/komodo-codeintel2/stdlibs
+```
+
+Packaging and local install:
+
+```sh
+make image
+make install-local                 # installs under ~/.local
+# or into a test prefix:
+make install-local LOCAL_PREFIX=/tmp/komodo-local
+```
+
 #### Linux runtime notes
 
 - **GTK2 theme warning.** Some GTK2 themes reference engines that are not
@@ -289,10 +325,10 @@ should be a lot faster as much of the compiled data is cached.
   automatically and the Symbol Browser tab is shown for supported languages.
   If you hide it, reopen it with **View > Tabs > Symbol Browser** or
   `Ctrl+Shift+K` and search for `symbol browser`.  Perl, PHP, Ruby,
-  JavaScript, Tcl, HTML, CSS and the UDL languages have working symbol
-  browsers.  The Python scanner still depends on the removed Python 2
-  `compiler` module, so Python symbol browsing is disabled until that scanner
-  is ported to `ast`.
+  JavaScript, Tcl, HTML, CSS, the UDL languages and Python all have working
+  symbol browsers.  Python uses an `ast`-based scanner with import-aware
+  completions, `self.`/instance attributes, go-to-definition, call tips and
+  find-references.
 
 ### Building with Docker
 
