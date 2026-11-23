@@ -196,6 +196,12 @@ Python 2 target debugging (done):
 - `.py` files still default to the Python3 language; legacy Python 2 files
   need the `Python` language selected (a modeline works).
 
+Build-only Python 2.7 decision:
+
+- Keep the bundled Python 2.7 build-tool shim for the Mozilla 35 IDL/build
+  helpers.  It is not an application runtime dependency.  Porting those
+  helpers to Python 3 is optional and is not required for the IDE.
+
 Remaining optional follow-ups:
 
 - The `underscore.js` `n is undefined` error remains; it comes from a

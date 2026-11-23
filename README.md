@@ -272,7 +272,10 @@ should be a lot faster as much of the compiled data is cached.
 #### Quick source build
 
 The IDE and PyXPCOM now run on Python 3.14.  The old prebuilt Python 2.7
-tree is still used only by the legacy Mozilla build tools.
+tree is **build-only**: it is used by the legacy Mozilla 35 IDL/build tools,
+not by the application at runtime.  Do not select it as the Komodo or Python
+interpreter.  Porting those Mozilla build tools to Python 3 is optional; the
+bundled shim is intentionally retained for now.
 
 From a fresh checkout:
 

@@ -98,6 +98,11 @@ not need separate forks:
 - `src/modules/codeintel/server/` (recovered CodeIntel sources)
 - `mozilla/support/autoconf-2.13/` and the bundled Python 2.7 build-tool zips
 
+The bundled Python 2.7 tree is **build-only**.  It exists because Mozilla 35's
+IDL/build helpers are Python 2 scripts; the Komodo application, PyXPCOM,
+CodeIntel, DBGP and all runtime components use Python 3.14.  It is not a
+runtime dependency and is not selected as an application interpreter.
+
 These remain preserved even if their original upstream repositories vanish.
 
 Komodo Edit itself is deliberately not mirrored: this project only supports
