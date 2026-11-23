@@ -137,7 +137,7 @@ Results so far:
   clones themselves remain optional/untracked and `make modules` remains part
   of the full-build path.
 
-## 6. Housekeeping
+## 6. Housekeeping (done)
 
 - No duplicate `squirt` clone remains; the fork inventory has 42 clones with
   42 distinct remotes.
@@ -146,3 +146,23 @@ Results so far:
 - Removed the dead legacy-scanner import in the Python language router; the
   `ast` scanner is now the single Python scanner implementation.
 - Remaining: keep pruning unused Python 2-only files as they are encountered.
+
+## 7. Hardening and packaging validation (done for the current tree)
+
+- Replaced the remaining `Thread.isAlive()` calls with `is_alive()` in
+  `koFileStatusService` and the DBGP clients (dev and packaged copies).
+  Shutdown no longer logs the `Thread` attribute error.
+- Save As no longer duplicates the extension (`name.txt` stays `name.txt`).
+- `make image` now works.  It follows the Mozilla dist's relative symlinks
+  while skipping genuinely dangling `dist-info` links, and the image contains
+  `libxul`, `libmozsandbox`, `libnspr4`, `libpyxpcom`, the CodeIntel database,
+  the Python 3 packages and the DBGP support files.
+- `make install-local` works with an alternate `LOCAL_PREFIX`; the installed
+  launcher starts the IDE.
+- `make check` passes.
+
+Remaining optional follow-ups:
+
+- Validate a fresh clone/worktree with `make full`.
+- Trackchanges SCC `cat` fallback.
+- Benign `underscore.js` and `casper` log noise.

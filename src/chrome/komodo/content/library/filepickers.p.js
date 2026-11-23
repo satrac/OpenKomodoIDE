@@ -607,6 +607,19 @@ this.saveFile = function filepicker_saveFile(defaultDirectory /* =null */,
         // - If path already has an extension, then no.
         var ext = local.osPathSvc.getExtension(path);
         if (ext) {
+            // Some GTK file choosers append the selected filter's extension
+            // even when the typed name already has it ("name.txt.txt").
+            // Only collapse the duplicate when it matches the extension we
+            // would have suggested, so names like "archive.tar.tar" survive.
+            var extLower = ext.toLowerCase();
+            var defaultExt = defaultFilename
+                ? local.osPathSvc.getExtension(defaultFilename).toLowerCase()
+                : "";
+            var baseLower = local.osPathSvc.basename(path).toLowerCase();
+            if ((!defaultExt || extLower == defaultExt) &&
+                baseLower.endsWith(extLower + extLower)) {
+                path = path.slice(0, path.length - ext.length);
+            }
             return path;
         }
 

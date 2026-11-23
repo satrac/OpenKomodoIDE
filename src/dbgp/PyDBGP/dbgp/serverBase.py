@@ -89,7 +89,7 @@ class session:
         self._socket = socket
         self._clientAddr = clientAddr
         # create a new thread and initiate a debugger session
-        if not self._cmdthread or not self._cmdthread.isAlive():
+        if not self._cmdthread or not self._cmdthread.is_alive():
             self._cmdthread = threading.Thread(target=self._cmdloop,
                                                name="dbgp server cmdloop")
             self._cmdthread.setDaemon(True)
@@ -211,7 +211,7 @@ class listener:
         self._totalConnections = 0
 
     def checkListening(self):
-        return self._thread and self._thread.isAlive()
+        return self._thread and self._thread.is_alive()
 
     def start(self, address, port):
         # stop any existing listener

@@ -169,7 +169,7 @@ class sessionProxy(dbgp.serverBase.session):
         self._socket = socket
         self._clientAddr = clientAddr
         # create a new thread and initiate a debugger session
-        if not self._cmdthread or not self._cmdthread.isAlive():
+        if not self._cmdthread or not self._cmdthread.is_alive():
             self._cmdthread = threading.Thread(target = self._cmdloop)
             self._cmdthread.setDaemon(True)
             self._cmdthread.start()

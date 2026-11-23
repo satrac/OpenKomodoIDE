@@ -1412,7 +1412,26 @@ def ImageKomodo(cfg, argv):
                 if isdir(srcpath):
                     dstpath = isdir(dst) and join(dst, basename(srcpath)) or dst
                     log.debug("image:: cp dir %r to %r", srcpath, dstpath)
-                    shutil.copytree(srcpath, dstpath)
+                    # Follow symlinks so the image is self-contained (the
+                    # Mozilla dist uses relative links into the objdir).
+                    # shutil's ignore_dangling_symlinks checks readlink()
+                    # targets relative to the current directory, which skips
+                    # valid relative links; catch only truly dangling ones.
+                    try:
+                        shutil.copytree(srcpath, dstpath)
+                    except shutil.Error as ex:
+                        unresolved = []
+                        for err in ex.args[0]:
+                            srcfile = err[0]
+                            if os.path.islink(srcfile):
+                                target = os.readlink(srcfile)
+                                if not os.path.isabs(target):
+                                    target = join(dirname(srcfile), target)
+                                if not exists(target):
+                                    continue
+                            unresolved.append(err)
+                        if unresolved:
+                            raise
                 else:
                     log.debug("image:: cp %r to %r", srcpath, dst)
                     shutil.copy2(srcpath, dst)

@@ -327,7 +327,7 @@ class KoFileStatusService:
     # @private
     def unload(self):
         self.shutdown = 1
-        if self._thread.isAlive():
+        if self._thread.is_alive():
             self._cv.acquire()
             self._cv.notify()
             self._cv.release()
