@@ -2689,7 +2689,10 @@ def _install_extension_xpis(cfg, xpi_dir, dest_root):
                     db_path = join(dest, "pylib", "codeintel",
                                    "codeintel.db")
                     if exists(db_path):
-                        preserved_db = db_path + ".preserve"
+                        # Keep the preserved copy outside `dest`, because
+                        # `dest` is replaced below.
+                        preserved_db = join(dest_root,
+                                            ".codeintel.db.preserve")
                         shutil.copy2(db_path, preserved_db)
 
                 if exists(dest):
