@@ -21,7 +21,7 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 | Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output |
 | Projects / SCC / search | ✅ | Generic IDE features |
 | Snippets / templates / icon | ✅ | Abbreviations (`say`, `sub`, `class`, `for`, `given`, `grammar`), print-debug snippet, script/module templates and `raku.svg` |
-| Test runner | ❌ | `.rakutest` opens as Raku, but there is no “run test” integration |
+| Test runner | ✅ | Unit Testing panel handler runs `.rakutest`/`.t6` with `prove -v --exec raku` and parses TAP |
 | Package manager | ❌ | No `zef` integration |
 | Automated GUI tests | ⚠️ | DAP bridge has tests; run/REPL/debug GUI flows are still manual |
 
@@ -29,13 +29,12 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 
 | Priority | Item | Notes |
 | --- | --- | --- |
-| 1 | Test-runner integration for `.rakutest` | Run a file or a `plan`/`done-testing` suite from the IDE |
-| 2 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
-| 3 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
-| 4 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
-| 5 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
-| 6 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
-| 7 | `zef` package-manager integration | Optional |
+| 1 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
+| 2 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
+| 3 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
+| 4 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
+| 5 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
+| 6 | `zef` package-manager integration | Optional |
 
 ## Phase 0 — editor, run, lint, REPL (implemented)
 
@@ -71,6 +70,14 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
   and `Raku Module.ktf`, plus
   `src/templates/default-templates/All Languages/Raku.raku`.
 - A file icon: `src/images/fileicons/raku.svg`.
+
+### Unit testing
+
+The Unit Testing panel has a `raku` handler. Set the config path to the
+project or test directory; it runs every `.rakutest` and `.t6` file with
+`prove -v --exec raku` and parses the TAP output. `rakuDefaultInterpreter`
+is used when set, otherwise `raku` must be on PATH. The handler relies on
+Perl's `prove` harness.
 
 ### Phase 0 follow-ups
 
