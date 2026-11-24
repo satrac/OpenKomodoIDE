@@ -222,6 +222,8 @@ Phase 0 is implemented: native `Raku` language detection, `.raku`/
 Perl lexer, `raku -c` syntax checking, run support, and a
 `raku --repl-mode=process` REPL.  See [RAKU.md](RAKU.md).
 
-Raku debugging is not DBGP-based.  The roadmap in `RAKU.md` covers a
-DAP-to-DBGP bridge first (to reuse Komodo's existing debugger UI), then native
-DAP integration if needed, followed by optional LSP/CodeIntel support.
+Raku debugging now uses a DAP-to-DBGP bridge in
+`src/dbgp/raku_dap_bridge.py`, so it reuses Komodo's existing debugger UI.
+Breakpoints, stop-on-entry, stepping, stack/variables and evaluation are
+working.  The remaining roadmap details and LSP/CodeIntel status are in
+[RAKU.md](RAKU.md).

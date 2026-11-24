@@ -109,11 +109,12 @@
         this.create = function (_meta)
         {
             meta = _meta;
+            return this;
         };
 
-        this.spawn = function (binary, args)
+        this.spawn = function (binary, args, env)
         {
-            process = child_process.spawn(binary, args);
+            process = child_process.spawn(binary, args, env ? {env: env} : {});
             process.stdin.write = (data) =>
             {
                 data = unescape(encodeURIComponent(data));
@@ -179,6 +180,17 @@
         };
 
         this.onClosePremature = function () {};
+
+        this.stop = function ()
+        {
+            if (process)
+            {
+                try { process.kill(); } catch (e) {}
+                process = null;
+            }
+            connection = null;
+            ready = false;
+        };
         
         this.isFailing = function ()
         {
@@ -229,7 +241,7 @@
 
             var textDocument = {
                 uri: uri,
-                languageId: meta.language,
+                languageId: (meta.opts.language || meta.language),
                 version: 0,
                 text: args.buf
             };
@@ -263,18 +275,36 @@
             {
                 var symbols = [];
                 var containers = { global: [{ members: symbols }]};
+                var defaultUri = opts.args.path ?
+                    legacy.uriparse.pathToURI(opts.args.path) : "file://unsaved";
+                var flatItems = [];
+                var flatten = (list, containerName) =>
+                {
+                    for (let item of list)
+                    {
+                        flatItems.push([item, containerName]);
+                        if (item.children && item.children.length)
+                            flatten(item.children, item.name);
+                    }
+                };
+                flatten(items, null);
 
-                for (let item of items)
+                for (let [item, nestedContainer] of flatItems)
                 {
                     if ( ! ("_"+item.name in containers))
                         containers["_"+item.name] = [];
+
+                    let location = item.location || {};
+                    let range = location.range || item.range;
+                    if ( ! range)
+                        continue;
 
                     let symbol = {
                         "name": item.name,
                         "typehint": null,
                         "type": this.symbolKindMap[item.kind] || "KW",
-                        "filename": item.location.uri,
-                        "line": item.location.range.start.line + 1,
+                        "filename": location.uri || defaultUri,
+                        "line": range.start.line + 1,
                         "pos": -1,
                         "active": false,
                         "isScope": this.symbolKindScopes.indexOf(item.kind) != -1,
@@ -288,9 +318,10 @@
                     containers["_"+item.name].push(symbol);
 
                     let container = symbols;
-                    if (item.containerName && "_"+item.containerName in containers)
+                    let containerName = nestedContainer || item.containerName;
+                    if (containerName && "_"+containerName in containers)
                     {
-                        container = containers["_"+item.containerName].slice(-1)[0];
+                        container = containers["_"+containerName].slice(-1)[0];
                         container.isScope = true;
                         container = container.members;
                     }
@@ -339,7 +370,7 @@
 
             var textDocument = {
                 uri: uri,
-                languageId: meta.language,
+                languageId: (meta.opts.language || meta.language),
                 version: 0,
                 text: args.buf
             };
@@ -358,16 +389,28 @@
             .then((items) =>
             {
                 var activeItem;
+                var activeRange;
                 var line = opts.args.line-1;
-                for (let item of items)
+                var defaultUri = opts.args.path ?
+                    legacy.uriparse.pathToURI(opts.args.path) : "file://unsaved";
+                var walk = (list) =>
                 {
-                    var curLine = item.location.range.start.line;
-                    if (this.symbolKindScopes.indexOf(item.kind) != -1 &&
-                        curLine <= line && ( ! activeItem || curLine > activeItem.location.range.start.line))
+                    for (let item of list)
                     {
-                        activeItem = item;
+                        let location = item.location || {};
+                        let range = location.range || item.range;
+                        if (range && this.symbolKindScopes.indexOf(item.kind) != -1 &&
+                            range.start.line <= line &&
+                            ( ! activeRange || range.start.line > activeRange.start.line))
+                        {
+                            activeItem = item;
+                            activeRange = range;
+                        }
+                        if (item.children && item.children.length)
+                            walk(item.children);
                     }
-                }
+                };
+                walk(items);
 
                 if ( ! activeItem)
                     return resolve();
@@ -376,8 +419,8 @@
                     "name": activeItem.name,
                     "typehint": null,
                     "type": this.symbolKindMap[activeItem.kind] || "KW",
-                    "filename": activeItem.location.uri,
-                    "line": activeItem.location.range.start.line + 1,
+                    "filename": (activeItem.location || {}).uri || defaultUri,
+                    "line": activeRange.start.line + 1,
                     "pos": -1,
                     "active": true,
                     "isScope": this.symbolKindScopes.indexOf(activeItem.kind) != -1,
@@ -420,7 +463,7 @@
 
             var textDocument = {
                 uri: legacy.uriparse.pathToURI(args.path),
-                languageId: meta.language,
+                languageId: (meta.opts.language || meta.language),
                 version: 0,
                 text: args.buf
             };
@@ -450,7 +493,7 @@
                         "docblock": "",
                         "signature": "",
                         "entries": symbols,
-                        "language": meta.language
+                        "language": (meta.opts.language || meta.language)
                     });
                 })
                 .catch(reject);

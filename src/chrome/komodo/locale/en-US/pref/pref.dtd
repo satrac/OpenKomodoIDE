@@ -371,6 +371,15 @@ adding an additional caret at the clicked position.">
 <!ENTITY additionalRakuImportDirectories.label "Additional Raku Library Directories">
 <!ENTITY filePrefRakuAdditionalDirectory.description "Specify any additional directories that you want Komodo to add to RAKULIB when running, syntax checking or starting a Raku shell.">
 <!ENTITY filePrefRakuExcludeDirectory.description "Specify any directories you want to exclude from code autocompletion scans.">
+<!ENTITY rakuDebugger.label "Raku Debugger">
+<!ENTITY rakuDapCommand.label "DAP adapter command">
+<!ENTITY rakuDapArgs.label "Adapter arguments">
+<!ENTITY rakuStopOnEntry.label "Stop at the entry point">
+<!ENTITY rakuDapCommand.description "The Raku DAP adapter is used through a DBGP bridge. The default is nimala-raku-dap.">
+<!ENTITY rakuLanguageServer.label "Raku Language Server">
+<!ENTITY rakuLspEnabled.label "Use the Raku language server for completions and symbols">
+<!ENTITY rakuLspCommand.label "LSP command">
+<!ENTITY rakuLspArgs.label "LSP arguments">
 <!ENTITY perlcriticRCFileLocation.label "Location of .perlcriticrc file to use">
 <!ENTITY phpPHP.label ".php: PHP">
 <!ENTITY plPerl.label ".pl: Perl">

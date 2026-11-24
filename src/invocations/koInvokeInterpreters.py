@@ -357,7 +357,7 @@ class koInterpreterInvocation(object):
 
     @LazyProperty
     def cookie(self):
-        return base64.encodebytes(uuid.uuid4().bytes).strip()
+        return base64.b64encode(uuid.uuid4().bytes).decode("ascii")
 
     def getDefaultPreferences( self ):
         cat = Cc["@activestate.com/koPreferenceRoot;1"].createInstance()
@@ -1928,8 +1928,7 @@ class koRakuInvocation(koInterpreterInvocation):
         self.languageService = registryService.getLanguage('Raku')
 
     def get_supportedInvokeTypes(self):
-        # Raku debugging is not available through DBGP yet.
-        return INVOKE_RUN | INVOKE_INTERACTIVE
+        return INVOKE_DEBUG | INVOKE_RUN | INVOKE_INTERACTIVE
 
     def _determineExecutable(self):
         rakuExe = self.effectivePrefs.getStringPref("rakuDefaultInterpreter")
@@ -1981,6 +1980,50 @@ class koRakuInvocation(koInterpreterInvocation):
         if not cwd:
             cwd = os.getcwd()
         return self._doLaunch(argv, cwd, self._getenv())
+
+    def _launchForDebug(self):
+        executable = self._determineExecutable()
+        script = self.currentInstancePrefs.getStringPref('filename')
+        if not script:
+            raise ServerException(nsError.NS_ERROR_INVALID_ARG,
+                                  "You must specify the Raku script to debug")
+        cwd = self.currentInstancePrefs.getString('cwd', "")
+        if not cwd:
+            cwd = os.path.dirname(script)
+
+        koDirs = Cc["@activestate.com/koDirs;1"].getService(Ci.koIDirs)
+        bridge = os.path.join(koDirs.binDBGPDir, "raku_dap_bridge.py")
+        if not os.path.exists(bridge):
+            raise ServerException(
+                nsError.NS_ERROR_FILE_NOT_FOUND,
+                "Raku DAP bridge not found: %s" % bridge)
+
+        port = self.currentInstancePrefs.getLongPref("debugger.listener-port")
+        adapter = self.effectivePrefs.getString("rakuDapCommand", "")
+        if not adapter:
+            adapter = "nimala-raku-dap"
+        adapter_args = self.effectivePrefs.getString("rakuDapArgs", "")
+        stop_on_entry = self.effectivePrefs.getBoolean("rakuStopOnEntry", False)
+
+        argv = [
+            koDirs.pythonExe, bridge,
+            "--host", "127.0.0.1",
+            "--port", str(port),
+            "--program", script,
+            "--cwd", cwd,
+            "--raku", executable,
+            "--adapter", adapter,
+        ]
+        if adapter_args:
+            argv += ["--adapter-args", adapter_args]
+        for arg in self._getScriptArgs():
+            argv += ["--arg", arg]
+        if stop_on_entry:
+            argv.append("--stop-on-entry")
+
+        env = self._getenv()
+        env["DBGP_COOKIE"] = self.cookie
+        return self._doLaunch(argv, cwd, env)
 
     def _launchForRun(self):
         exe = self.getExecutable()

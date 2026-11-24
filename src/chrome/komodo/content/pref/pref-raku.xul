@@ -81,6 +81,37 @@
             </vbox>
         </groupbox>
 
+        <separator class="thin"/>
+
+        <groupbox orient="vertical">
+            <caption label="&rakuDebugger.label;"/>
+            <description>&rakuDapCommand.description;</description>
+            <label value="&rakuDapCommand.label;" control="rakuDapCommand"/>
+            <textbox id="rakuDapCommand" flex="1" pref="true"
+                     prefstring="rakuDapCommand"/>
+            <label value="&rakuDapArgs.label;" control="rakuDapArgs"/>
+            <textbox id="rakuDapArgs" flex="1" pref="true"
+                     prefstring="rakuDapArgs"/>
+            <checkbox id="rakuStopOnEntry" label="&rakuStopOnEntry.label;"
+                      pref="true" prefstring="rakuStopOnEntry"
+                      prefattribute="checked"/>
+        </groupbox>
+
+        <separator class="thin"/>
+
+        <groupbox orient="vertical">
+            <caption label="&rakuLanguageServer.label;"/>
+            <checkbox id="rakuLspEnabled" label="&rakuLspEnabled.label;"
+                      pref="true" prefstring="rakuLspEnabled"
+                      prefattribute="checked"/>
+            <label value="&rakuLspCommand.label;" control="rakuLspCommand"/>
+            <textbox id="rakuLspCommand" flex="1" pref="true"
+                     prefstring="rakuLspCommand"/>
+            <label value="&rakuLspArgs.label;" control="rakuLspArgs"/>
+            <textbox id="rakuLspArgs" flex="1" pref="true"
+                     prefstring="rakuLspArgs"/>
+        </groupbox>
+
     </vbox>
 
 </window>

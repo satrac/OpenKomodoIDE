@@ -5,6 +5,7 @@ Import(
     'cons',
     'komodoPythonUtilsDir',
     'ranRegxpcomStateFileName',
+    'supportDir',
 );
 
 $cons->InstallPythonUtilityPackage('__init__.py', 'dbgp');
@@ -12,3 +13,5 @@ $cons->InstallPythonUtilityPackage('common.py', 'dbgp');
 $cons->InstallPythonUtilityPackage('listcmd.py', 'dbgp');
 $cons->InstallPythonUtilityPackage('server.py', 'dbgp');
 $cons->InstallPythonUtilityPackage('serverBase.py', 'dbgp');
+
+$cons->Install("$supportDir/dbgp/bin", "raku_dap_bridge.py");

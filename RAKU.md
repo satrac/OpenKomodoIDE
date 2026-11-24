@@ -26,12 +26,23 @@ usable editor support; DAP debugging and LSP/CodeIntel integration follow.
 - Ship a Raku icon and Raku snippets/file templates.
 - Add automated GUI tests for run, lint and the REPL.
 
-## Phase 1 — DAP bridge
+## Phase 1 — DAP bridge (implemented)
 
 Komodo's debugger is DBGP-based.  Raku's current ecosystem is DAP-based
 (`nimala-raku-dap` is a commonly available adapter; `raku-debug` is a CLI
 debugger).  Do not make the debugger UI speak a second protocol ad hoc.  Build
 a bridge first.
+
+The bridge is `src/dbgp/raku_dap_bridge.py`.  It connects to Komodo's DBGP
+listener, starts the configured Raku DAP adapter over stdio, and translates
+the debugger operations used by Komodo.  The adapter command and arguments
+are configurable with `rakuDapCommand` and `rakuDapArgs`; the default is
+`nimala-raku-dap`.
+
+Implemented launch flow: initialize, launch, setBreakpoints,
+configurationDone, stop-on-entry, threads, stackTrace, scopes, variables,
+evaluate, output, continue, next, stepIn, stepOut, pause and disconnect.
+Attach mode is not exposed in the Komodo debugger dialog yet.
 
 ### Option A (recommended): DAP-to-DBGP adapter bridge
 
@@ -71,41 +82,47 @@ consume DAP objects.  This is cleaner long-term but duplicates most of the
 debugger session, stack, variable and watch plumbing.  Do this only if the
 bridge becomes a limiting abstraction.
 
-## Phase 2 — debugger integration
+## Phase 2 — debugger integration (implemented)
 
-- Add a `rakuDapCommand` preference (default: `raku-dap` if found, otherwise
-  empty) and optionally `rakuDapArgs`.
-- Mark `koRakuInvocation` as supporting `INVOKE_DEBUG` once the bridge is
-  reliable.
-- Add launch/attach preference fields: script, arguments, cwd, environment,
-  stop-on-entry, adapter command.
-- Map Raku file references and breakpoint verification through the existing
-  debugger source/breakpoint model.
-- Verify breakpoints in `.raku`, `.rakumod` and `.rakutest` files.
+- `rakuDapCommand`, `rakuDapArgs` and `rakuStopOnEntry` preferences are in
+  the Raku preference page.
+- `koRakuInvocation` supports `INVOKE_DEBUG`.
+- The debugger uses the normal Komodo breakpoint manager, call stack,
+  Locals/Watch panels, Evaluate, step buttons and debug output.
+- Verified locally: stop-on-entry, line breakpoints, continue, console
+  output, stack frames, variables, child variables and expression evaluation.
+- Attach mode, restart and exception-filter controls are not exposed yet.
 
 ## Phase 3 — DAP tests and hardening
 
-- Adapter contract tests with a recorded/minimal DAP adapter.
-- Shared integration test: launch, breakpoint, continue, step, stack trace,
-  evaluate, variables, terminate.
-- Test adapter failure, missing adapter, malformed DAP messages, and shutdown
-  during startup.
-- Package/document the adapter as an optional dependency; do not commit a
-  vendored adapter binary.
+- Added `src/dbgp/test/test_raku_dap_bridge.py`, an integration test that
+  drives a real `nimala-raku-dap` adapter through a mock DBGP listener.
+- The test covers init/features, breakpoint set, run/stop, stack, contexts,
+  child variables, evaluation and disconnect.
+- Adapter failure and missing-adapter paths are handled by the bridge and
+  logged to `/tmp/komodo-raku-dap-bridge.log` (or
+  `RAKU_DAP_BRIDGE_LOG`).
+- Run it with:
 
-## Phase 4 — LSP / CodeIntel (optional, after DAP)
+  ```sh
+  python3 src/dbgp/test/test_raku_dap_bridge.py
+  ```
 
-`nimala-raku-lsp` can provide diagnostics, completion, symbols and
-definitions.  Integrate it through a small LSP client:
+## Phase 4 — LSP / CodeIntel
 
-- LSP `textDocument/publishDiagnostics` -> Komodo lint results.
-- `textDocument/completion` -> CodeIntel completion UI.
-- `textDocument/hover` + `definition` -> CodeIntel calltips/navigation.
-- `workspace/symbol` -> Go to Anything/CodeIntel symbols.
-- Map LSP `file://` URIs to Komodo `koIFileEx` paths.
+`nimala-raku-lsp` provides completion and document symbols.  It is started by
+CodeIntel when `rakuLspEnabled` is true (the default), using
+`rakuLspCommand`/`rakuLspArgs` (default `nimala-raku-lsp --stdio`).  CodeIntel
+routes Raku completions and symbol requests through the existing LSP mediator.
 
-Raku has no bundled CIX database in this repository yet.  LSP is the preferred
-route rather than generating and maintaining a Raku CIX.
+Current limits:
+
+- Diagnostics remain `raku -c` based; LSP diagnostics are not yet forwarded
+  into Komodo's lint view.
+- Go-to-definition, find-references and hover/calltips are not wired to the
+  LSP mediator yet.
+- Raku has no bundled CIX database; LSP is the preferred route for richer
+  CodeIntel support.
 
 ## Acceptance criteria
 
@@ -115,5 +132,5 @@ route rather than generating and maintaining a Raku CIX.
   evaluate expressions in a Raku script.
 - Phase 3: the above is covered by repeatable tests and survives adapter
   errors.
-- Phase 4: Raku diagnostics/completions appear through LSP without blocking
+- Phase 4: Raku completions and symbols appear through LSP without blocking
   the editor when the server is absent.

@@ -538,14 +538,15 @@ class property:
         # resulting characters won't be recognizable.
         #
         # Doing this fixes this problem.
-        if isinstance(s, str):
+        if isinstance(s, bytes):
             try:
                 return s.decode("utf-8")
             except UnicodeDecodeError:
                 try:
                     return s.decode('latin1')
                 except:
-                    proplog.exception("property.%s: Failed to convert %r", value, context)
+                    proplog.exception("property.%s: Failed to convert %r",
+                                      value, context)
         return s
 
     # These methods are XPCOM getters.  Use methods to allow converting

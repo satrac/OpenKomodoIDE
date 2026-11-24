@@ -130,6 +130,7 @@
         timers.clearTimeout(keepaliveTimer);
 
         mediator.unregister("codeintel/service/mediator/codeintel");
+        mediator.unregister("codeintel/service/mediator/lsp", "Raku");
     };
 
     this.stopSocket = () =>
@@ -229,6 +230,15 @@
     {
         socket = storage.socket = require("ko/socket/tcp").open("127.0.0.1", process.get("port"));
         client = storage.client = require("ko/jsonrpc").create(socket);
+
+        try
+        {
+            setupRakuLsp();
+        }
+        catch (e)
+        {
+            log.exception(e, "Raku LSP setup failed");
+        }
         
         if (featuresLoaded)
             return;
@@ -267,9 +277,84 @@
         }
     };
 
+    var setupRakuLsp = () =>
+    {
+        log.info("Setting up Raku LSP");
+        if (mediator.getMediatorMetaByLanguage("Raku"))
+        {
+            log.info("Raku LSP already registered");
+            return;
+        }
+        if (prefs.hasPref("rakuLspEnabled") && !prefs.getBoolean("rakuLspEnabled"))
+        {
+            log.info("Raku LSP disabled by preference");
+            return;
+        }
+
+        var command = prefs.getString("rakuLspCommand", "nimala-raku-lsp");
+        log.info("Raku LSP command: " + command);
+        if ( ! command)
+            return;
+
+        var sysUtils = Cc["@activestate.com/koSysUtils;1"].getService(Ci.koISysUtils);
+        var binary = sysUtils.Which(command);
+        if ( ! binary)
+        {
+            log.warn("Raku LSP executable not found: " + command);
+            return;
+        }
+
+        var opts = {
+            "language": "raku",
+            "supports": [this.FEATURE_COMPLETIONS,
+                         this.FEATURE_SYMBOLBROWSER,
+                         this.FEATURE_SYMBOLSCOPE],
+            "completion_query_characters": "[\\w-]",
+            "completion_word_characters": "[\\w-]"
+        };
+        mediator.register("codeintel/service/mediator/lsp",
+                          "Raku Language Server",
+                          "Raku", opts);
+
+        var args = prefs.getString("rakuLspArgs", "--stdio");
+        args = args.trim() ? args.trim().split(/\s+/) : [];
+        var env = require("ko/shell").getEnv();
+        try
+        {
+            var rakuInfo = Cc["@activestate.com/koAppInfoEx?app=Raku;1"].
+                getService(Ci.koIAppInfoEx);
+            if (rakuInfo.executablePath)
+            {
+                var rakuDir = rakuInfo.executablePath.replace(/[\\/][^\\/]*$/, "");
+                env.PATH = rakuDir + pathSep + (env.PATH || "");
+            }
+        }
+        catch (e)
+        {
+            log.warn("Could not locate Raku executable for LSP PATH");
+        }
+        try
+        {
+            mediator.getMediatorByLanguage("Raku").spawn(binary, args, env);
+            log.info("Started Raku LSP: " + binary + " " + args.join(" "));
+        }
+        catch (e)
+        {
+            log.exception(e, "Failed to start Raku LSP");
+        }
+    };
+
     var onServiceReady = () =>
     {
         loadFeatures();
+        try
+        {
+            setupRakuLsp();
+        }
+        catch (e)
+        {
+            log.exception(e, "Raku LSP setup failed");
+        }
 
         require("ko/dom")(require("ko/windows").getMain()).trigger("codeintel-ready");
 
