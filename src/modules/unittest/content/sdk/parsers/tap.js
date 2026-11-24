@@ -14,7 +14,7 @@ else // web worker
 (function() {
     
     // ./t/00_compile.t ...............................
-    var suiteRx = /^([^\s].+?)\s\.\.\.+\s?$/;
+    var suiteRx = /^([^\s].+?)\s\.\.+\s?$/;
     
     // ok 1 - test name
     var testRx = /^([\w\s]+?)\s(\d+)[\s-]+(.*)$/;
@@ -69,8 +69,9 @@ else // web worker
                 if ( ! line)
                     continue;
                 
-                // Match suite
-                if (line.substr(-4).substr(0,3) == "...") // gotta be careful, can have a space at the end
+                // Match suite (prove uses two or more dot leaders depending
+                // on the number of tests in the file)
+                if (["ok ", "not", "# "].indexOf(line.substr(0,3)) === -1)
                 {
                     match = line.match(suiteRx);
                     if (match)
