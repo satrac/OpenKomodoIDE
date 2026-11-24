@@ -49,6 +49,14 @@
             command: "prove -vlrfm --normalize --nocolor"
         });
         this.registerHandler({
+            id: "raku",
+            namespace: "unittest/handlers/raku",
+            label: "raku tests",
+            language: "Raku",
+            parser: "tap",
+            command: "prove -v --exec raku --ext .rakutest --ext .t6 -r ."
+        });
+        this.registerHandler({
             id: "mocha",
             namespace: "unittest/handlers/mocha",
             label: "Mocha",
