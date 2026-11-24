@@ -10,6 +10,7 @@
     const legacy = require("ko/windows").getMain().ko;
     const timers = require("sdk/timers");
     const prefs = require("ko/prefs");
+    const koFile = require("ko/file");
     const observerSvc = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
     const isWindows = require("sdk/system").platform.toLowerCase() == "winnt";
     const pathSep = isWindows ? ";" : ":";
@@ -298,6 +299,36 @@
 
         var sysUtils = Cc["@activestate.com/koSysUtils;1"].getService(Ci.koISysUtils);
         var binary = sysUtils.Which(command);
+        var rakuInfo = null;
+        try
+        {
+            rakuInfo = Cc["@activestate.com/koAppInfoEx?app=Raku;1"].
+                getService(Ci.koIAppInfoEx);
+        }
+        catch (e) {}
+
+        if ( ! binary && rakuInfo && rakuInfo.executablePath)
+        {
+            // rakubrew installs the LSP alongside the Raku runtime, but the
+            // user environment seen by Komodo may not include rakubrew's
+            // PATH entries.
+            var rakuDir = koFile.dirname(rakuInfo.executablePath);
+            var commandName = koFile.basename(command);
+            var candidates = [
+                koFile.join(rakuDir, "..", "share", "perl6", "site", "bin",
+                            commandName),
+                koFile.join(rakuDir, commandName),
+            ];
+            for (let candidate of candidates)
+            {
+                if (koFile.exists(candidate))
+                {
+                    binary = candidate;
+                    break;
+                }
+            }
+        }
+
         if ( ! binary)
         {
             log.warn("Raku LSP executable not found: " + command);
@@ -321,9 +352,7 @@
         var env = require("ko/shell").getEnv();
         try
         {
-            var rakuInfo = Cc["@activestate.com/koAppInfoEx?app=Raku;1"].
-                getService(Ci.koIAppInfoEx);
-            if (rakuInfo.executablePath)
+            if (rakuInfo && rakuInfo.executablePath)
             {
                 var rakuDir = rakuInfo.executablePath.replace(/[\\/][^\\/]*$/, "");
                 env.PATH = rakuDir + pathSep + (env.PATH || "");

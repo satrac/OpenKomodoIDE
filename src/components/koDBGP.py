@@ -885,16 +885,18 @@ class koDBGPBreakpointManager(dbgp.server._breakpointManager):
         import pickle
         bpFile = self._getBreakpointsFile()
         breakpointList = []
-        if os.path.exists(bpFile):
+        if os.path.exists(bpFile) and os.path.getsize(bpFile) > 0:
             try:
-                fin = open(bpFile, 'r')
+                fin = open(bpFile, 'rb')
                 try:
                     breakpointList = pickle.load(fin)
                 finally:
                     fin.close()
-            except (pickle.PickleError, EnvironmentError, EOFError) as ex:
-                log.exception("Could not restore breakpoints from '%s'.",
-                              bpFile)
+            except Exception as ex:
+                # A stale or Python 2-era breakpoints file must never prevent
+                # the debugger service from starting.
+                log.exception("Could not restore breakpoints from '%s': %s",
+                              bpFile, ex)
             else:
                 log.info("restored breakpoints from '%s'", bpFile)
 
@@ -916,11 +918,11 @@ class koDBGPBreakpointManager(dbgp.server._breakpointManager):
         import pickle
         bpFile = self._getBreakpointsFile()
         try:
-            fout = open(bpFile, 'w')
+            fout = open(bpFile, 'wb')
             try:
                 # We just save the breakpoints themselves (and NOT their
                 # runtime GUIDs, or the GUID->breakpoint mapping).
-                pickle.dump(list(self._breakpoints.values()), fout, 0) #XXX bin=1
+                pickle.dump(list(self._breakpoints.values()), fout, 0)
             finally:
                 fout.close()
         except (pickle.PickleError, EnvironmentError) as ex:
