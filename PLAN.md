@@ -225,5 +225,6 @@ Perl lexer, `raku -c` syntax checking, run support, and a
 Raku debugging now uses a DAP-to-DBGP bridge in
 `src/dbgp/raku_dap_bridge.py`, so it reuses Komodo's existing debugger UI.
 Breakpoints, stop-on-entry, stepping, stack/variables and evaluation are
-working.  The remaining roadmap details and LSP/CodeIntel status are in
-[RAKU.md](RAKU.md).
+working.  Phase 4 (LSP completions, symbols, go-to-definition,
+find-references, calltips and LSP diagnostics) is implemented.  The remaining
+roadmap details are in [RAKU.md](RAKU.md).

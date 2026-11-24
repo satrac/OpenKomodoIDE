@@ -110,6 +110,9 @@
             <label value="&rakuLspArgs.label;" control="rakuLspArgs"/>
             <textbox id="rakuLspArgs" flex="1" pref="true"
                      prefstring="rakuLspArgs"/>
+            <checkbox id="rakuLspDiagnostics" label="&rakuLspDiagnostics.label;"
+                      pref="true" prefstring="rakuLspDiagnostics"
+                      prefattribute="checked"/>
         </groupbox>
 
     </vbox>

@@ -108,21 +108,28 @@ bridge becomes a limiting abstraction.
   python3 src/dbgp/test/test_raku_dap_bridge.py
   ```
 
-## Phase 4 — LSP / CodeIntel
+## Phase 4 — LSP / CodeIntel (implemented)
 
-`nimala-raku-lsp` provides completion and document symbols.  It is started by
-CodeIntel when `rakuLspEnabled` is true (the default), using
-`rakuLspCommand`/`rakuLspArgs` (default `nimala-raku-lsp --stdio`).  CodeIntel
-routes Raku completions and symbol requests through the existing LSP mediator.
+`nimala-raku-lsp` provides completion, document symbols, definitions, references
+and signature help.  It is started by CodeIntel when `rakuLspEnabled` is true
+(the default), using `rakuLspCommand`/`rakuLspArgs` (default
+`nimala-raku-lsp --stdio`).  CodeIntel routes Raku completions, symbols,
+go-to-definition, find-references and calltips through the existing LSP
+mediator.
+
+Diagnostics are forwarded into Komodo's normal lint view.  Because Komodo's
+linters are pull-based and LSP diagnostics are pushed, the Raku linter keeps a
+persistent client (`src/lint/raku_lsp_client.py`) and converts
+`textDocument/publishDiagnostics` into `koILintResults`.  The
+`rakuLspDiagnostics` preference (default on) controls this; when the server is
+missing or disabled the linter falls back to `raku -c`.
 
 Current limits:
 
-- Diagnostics remain `raku -c` based; LSP diagnostics are not yet forwarded
-  into Komodo's lint view.
-- Go-to-definition, find-references and hover/calltips are not wired to the
-  LSP mediator yet.
 - Raku has no bundled CIX database; LSP is the preferred route for richer
   CodeIntel support.
+- Hover text is shown through the signature-help calltip; there is no
+  dedicated editor hover popup.
 
 ## Acceptance criteria
 

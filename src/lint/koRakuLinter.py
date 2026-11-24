@@ -2,7 +2,11 @@
 # Copyright (c) 2026 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
-"""Raku syntax checking using `raku -c`."""
+"""Raku syntax checking.
+
+Uses diagnostics from the Raku language server when available and falls back
+to `raku -c` otherwise.
+"""
 
 import os
 import re
@@ -14,6 +18,7 @@ from koLintResult import KoLintResult, createAddResult
 from koLintResults import koLintResults
 import process
 import koprocessutils
+import raku_lsp_client
 import logging
 
 log = logging.getLogger("koRakuLinter")
@@ -35,14 +40,58 @@ class KoRakuLinter:
                 components.interfaces.koIAppInfoEx)
 
     def lint(self, request):
-        text = request.content.encode(request.encoding.python_encoding_name)
+        text = request.content
         return self.lint_with_text(request, text)
+
+    def _diagnostics_to_results(self, diagnostics):
+        results = koLintResults()
+        for diagnostic in diagnostics:
+            range_ = diagnostic.get("range") or {}
+            start = range_.get("start") or {}
+            end = range_.get("end") or {}
+            start_line = int(start.get("line", 0)) + 1
+            end_line = max(int(end.get("line", start.get("line", 0))) + 1, start_line)
+            start_col = int(start.get("character", 0)) + 1
+            end_col = int(end.get("character", start.get("character", 0))) + 1
+            if end_col <= start_col:
+                end_col = start_col + 1
+            severity = {
+                1: KoLintResult.SEV_ERROR,
+                2: KoLintResult.SEV_WARNING,
+            }.get(diagnostic.get("severity"), KoLintResult.SEV_INFO)
+            results.addResult(KoLintResult(
+                description=diagnostic.get("message", "Raku diagnostic"),
+                severity=severity,
+                lineStart=start_line,
+                lineEnd=end_line,
+                columnStart=start_col,
+                columnEnd=end_col,
+            ))
+        return results
 
     def lint_with_text(self, request, text):
         prefset = request.prefset
         if (prefset.hasPref("genericLinter:Raku") and
                 not prefset.getBooleanPref("genericLinter:Raku")):
             return None
+
+        env = koprocessutils.getUserEnv()
+        if prefset.hasPref("rakuExtraPaths"):
+            rakuLib = prefset.getStringPref("rakuExtraPaths")
+            if rakuLib:
+                if sys.platform.startswith("win"):
+                    rakuLib = rakuLib.replace('\\', '/')
+                env["RAKULIB"] = rakuLib
+
+        # Prefer the language server's diagnostics when it is available.
+        try:
+            diagnostics = raku_lsp_client.get_diagnostics_for_request(
+                request, text, env)
+        except Exception:
+            log.exception("Raku LSP diagnostics failed")
+            diagnostics = None
+        if diagnostics is not None:
+            return self._diagnostics_to_results(diagnostics)
 
         rakuExe = self._rakuInfo.getExecutableFromPrefs(prefset)
         if not rakuExe:
@@ -51,15 +100,7 @@ class KoRakuLinter:
         tmpfilename = tempfile.mktemp(suffix=".raku")
         try:
             with open(tmpfilename, "wb") as fout:
-                fout.write(text)
-
-            env = koprocessutils.getUserEnv()
-            if prefset.hasPref("rakuExtraPaths"):
-                rakuLib = prefset.getStringPref("rakuExtraPaths")
-                if rakuLib:
-                    if sys.platform.startswith("win"):
-                        rakuLib = rakuLib.replace('\\', '/')
-                    env["RAKULIB"] = rakuLib
+                fout.write(text.encode(request.encoding.python_encoding_name))
 
             argv = [rakuExe, "-c", tmpfilename]
             p = process.ProcessOpen(argv, cwd=request.cwd or None, env=env,

@@ -383,6 +383,7 @@ SSL_CLIENT_I_C=
   <boolean id="rakuLspEnabled">1</boolean>
   <string id="rakuLspCommand">nimala-raku-lsp</string>
   <string id="rakuLspArgs">--stdio</string>
+  <boolean id="rakuLspDiagnostics">1</boolean>
   <string id="tclExtraPaths"></string>
 
   <!-- Go prefs -->

@@ -380,6 +380,7 @@ adding an additional caret at the clicked position.">
 <!ENTITY rakuLspEnabled.label "Use the Raku language server for completions and symbols">
 <!ENTITY rakuLspCommand.label "LSP command">
 <!ENTITY rakuLspArgs.label "LSP arguments">
+<!ENTITY rakuLspDiagnostics.label "Use the language server for syntax checking">
 <!ENTITY perlcriticRCFileLocation.label "Location of .perlcriticrc file to use">
 <!ENTITY phpPHP.label ".php: PHP">
 <!ENTITY plPerl.label ".pl: Perl">
