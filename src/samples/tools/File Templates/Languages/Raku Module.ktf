@@ -1,0 +1,13 @@
+# komodo tool: Raku Module
+# ========================
+# lang_default: false
+# language: Raku
+# treat_as_ejs: false
+# type: template
+# version: 1.1.5
+# ========================
+unit module [[%tabstop:ModuleName]];
+
+sub [[%tabstop:hello]]() is export {
+    return "Hello from [[%tabstop:ModuleName]]";
+}

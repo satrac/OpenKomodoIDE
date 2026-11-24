@@ -1,0 +1,18 @@
+# komodo tool: given
+# ==================
+# auto_abbreviation: true
+# indent_relative: true
+# language: Raku
+# set_selection: false
+# treat_as_ejs: false
+# type: snippet
+# version: 1.1.5
+# ==================
+given [[%tabstop:value]] {
+    when [[%tabstop:condition]] {
+        [[%tabstop]]
+    }
+    default {
+        [[%tabstop]]
+    }
+}

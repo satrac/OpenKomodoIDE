@@ -1,0 +1,13 @@
+# komodo tool: Raku
+# =================
+# lang_default: false
+# language: Raku
+# treat_as_ejs: false
+# type: template
+# version: 1.1.5
+# =================
+#!/usr/bin/env raku
+
+use v6.d;
+
+say "Hello, Raku!";

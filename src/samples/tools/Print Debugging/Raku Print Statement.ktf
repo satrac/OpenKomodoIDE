@@ -1,0 +1,10 @@
+# komodo tool: Raku Print Statement
+# =================================
+# active: 1
+# is_clean: true
+# language: Raku
+# treat_as_ejs: 1
+# type: printdebug
+# version: 1.1.6
+# =================================
+say [[%t]];
