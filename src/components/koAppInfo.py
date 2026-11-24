@@ -883,6 +883,8 @@ class KoPHPInfoInstance(KoAppInfoEx):
 
         fd, filepath = tempfile.mkstemp(suffix=".php")
         try:
+            if isinstance(phpCode, str):
+                phpCode = phpCode.encode("utf-8")
             os.write(fd, phpCode)
             os.close(fd)
             argv.append(filepath)

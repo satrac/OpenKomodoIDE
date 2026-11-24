@@ -945,6 +945,8 @@ class PHPLangIntel(CitadelLangIntel, ParenStyleCalltipIntelMixin,
 
         fd, filepath = tempfile.mkstemp(suffix=".php")
         try:
+            if isinstance(info_cmd, str):
+                info_cmd = info_cmd.encode("utf-8")
             os.write(fd, info_cmd)
             os.close(fd)
             argv.append(filepath)
