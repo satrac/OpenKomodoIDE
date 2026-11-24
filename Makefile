@@ -371,6 +371,7 @@ install-local: image
 > install -d "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" "$(LOCAL_PREFIX)/bin"
 > @chmod -R u+w "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)" 2>/dev/null || true
 > cp -a "$(IMAGE_INSTALLDIR)/." "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/"
+> @rm -f "$(LOCAL_PREFIX)/bin/komodo"
 > printf '%s\n' '#!/bin/sh' \
 >   'if [ -z "$$GTK2_RC_FILES" ] && [ -f "$(GTK2_RC_FILES)" ]; then GTK2_RC_FILES="$(GTK2_RC_FILES)"; export GTK2_RC_FILES; fi' \
 >   'exec "$(LOCAL_PREFIX)/lib/$(INSTALL_NAME)/bin/komodo" "$$@"' \

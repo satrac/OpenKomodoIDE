@@ -27,77 +27,29 @@ function OnPreferencePageSaved(prefset)
     }
 }
 
-function PrefRaku_PopulateRakuInterps(done)
+function PrefRaku_PopulateRakuInterps()
 {
     var availInterpList = document.getElementById("rakuDefaultInterpreter");
 
     availInterpList.removeAllItems();
-    availInterpList.appendItem(_bundle.formatStringFromName(
-        "findingInterpreters.label", [programmingLanguage], 1));
-
-    var appInfo = Components.classes["@activestate.com/koAppInfoEx?app=Raku;1"]
-        .getService(Components.interfaces.koIAppInfoEx);
-    var callback = {
-        callback: function(result, availInterps)
-        {
-            var ok = result == Components.interfaces.koIAsyncCallback.RESULT_SUCCESSFUL;
-            availInterpList.removeAllItems();
-            availInterpList.appendItem(_bundle.GetStringFromName("findOnPath.label"), '');
-
-            var foundInterps = [];
-            if (availInterps)
-            {
-                for (let i = 0; i < availInterps.length; i++)
-                    foundInterps.push(availInterps[i]);
-            }
-
-            // The async finder can return an empty list when the interpreter
-            // was configured explicitly; always offer the resolved path.
-            try
-            {
-                var resolved = appInfo.executablePath;
-                if (resolved && foundInterps.indexOf(resolved) == -1)
-                    foundInterps.push(resolved);
-            }
-            catch (e) {}
-
-            var found = false;
-            if (!ok || foundInterps.length == 0)
-            {
-                document.getElementById("no-avail-interps-message")
-                    .removeAttribute("collapsed");
-            }
-            else
-            {
-                for (let interp of foundInterps)
-                {
-                    availInterpList.appendItem(interp, interp);
-                    if (interp == prefExecutable) found = true;
-                }
-            }
-            if (!found && prefExecutable)
-                availInterpList.appendItem(prefExecutable, prefExecutable);
-            if (done)
-                done();
-        }
-    };
-    appInfo.FindExecutablesAsync(callback);
+    availInterpList.appendItem(_bundle.GetStringFromName("findOnPath.label"), '');
+    if (prefExecutable)
+        availInterpList.appendItem(prefExecutable, prefExecutable);
 }
 
 function PrefRaku_OnLoad()
 {
     prefExecutable = parent.hPrefWindow.prefset.getString(
         'rakuDefaultInterpreter', '');
-    PrefRaku_PopulateRakuInterps(function()
-    {
-        parent.hPrefWindow.onpageload();
-        var extraPaths = document.getElementById("rakuExtraPaths");
-        extraPaths.init(); // must happen after onpageload
-        var file = getOwningFileObject();
-        if (file && file.dirName) {
-            extraPaths.setCwd(file.dirName);
-        }
-    });
+    PrefRaku_PopulateRakuInterps();
+
+    parent.hPrefWindow.onpageload();
+    var extraPaths = document.getElementById("rakuExtraPaths");
+    extraPaths.init(); // must happen after onpageload
+    var file = getOwningFileObject();
+    if (file && file.dirName) {
+        extraPaths.setCwd(file.dirName);
+    }
 }
 
 function loadRakuExecutable()
