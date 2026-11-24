@@ -209,7 +209,15 @@
         var openDocument = function (opts)
         {
             var args = opts.args;
-            var uri = args.path ? legacy.uriparse.pathToURI(args.path) : "file://unsaved";
+            var uri = args.path ? legacy.uriparse.pathToURI(args.path) : null;
+            if ( ! uri)
+            {
+                var view = opts.view || views.current().get();
+                if (view && view.koDoc && view.koDoc.file)
+                    uri = view.koDoc.file.URI;
+            }
+            if ( ! uri)
+                uri = "file://unsaved";
             var text = args.buf || "";
             var previous = openDocs[uri];
             var version = previous ? previous.version + 1 : 1;
@@ -427,9 +435,27 @@
 
             var doc = openDocument(opts);
 
-            connection.sendRequest("textDocument/documentSymbol", {
-                textDocument: { uri: doc.uri }
-            })
+            // The server may need to parse the document before it can answer;
+            // retry briefly if the first answer is empty.
+            var requestSymbols = (attempt) =>
+            {
+                return connection.sendRequest("textDocument/documentSymbol", {
+                    textDocument: { uri: doc.uri }
+                })
+                .then((items) =>
+                {
+                    log.debug("documentSymbol count: " + (items ? items.length : items));
+                    if (( ! items || ! items.length) && attempt < 5)
+                    {
+                        return new Promise((next) => w.setTimeout(next, 250))
+                            .then(() => requestSymbols(attempt + 1));
+                    }
+                    return items;
+                });
+            };
+
+            waitForDiagnostics(doc, 2000)
+            .then(() => requestSymbols(0))
             .then((items) =>
             {
                 this.parseSymbolTree(items, opts)
@@ -453,6 +479,15 @@
                 {
                     for (let item of list)
                     {
+                        // Language servers sometimes emit anonymous nodes
+                        // (LuaLS uses a single space for anonymous tables).
+                        // Skip the node and promote its children.
+                        if ( ! item.name || !String(item.name).trim())
+                        {
+                            if (item.children && item.children.length)
+                                flatten(item.children, containerName);
+                            continue;
+                        }
                         flatItems.push([item, containerName]);
                         if (item.children && item.children.length)
                             flatten(item.children, item.name);
@@ -534,9 +569,10 @@
 
             var doc = openDocument(opts);
 
-            connection.sendRequest("textDocument/documentSymbol", {
+            waitForDiagnostics(doc, 1500)
+            .then(() => connection.sendRequest("textDocument/documentSymbol", {
                 textDocument: { uri: doc.uri }
-            })
+            }))
             .then((items) =>
             {
                 var activeItem;
