@@ -44,29 +44,32 @@ function PrefRaku_PopulateRakuInterps(done)
             availInterpList.removeAllItems();
             availInterpList.appendItem(_bundle.GetStringFromName("findOnPath.label"), '');
 
+            var foundInterps = [];
+            if (availInterps)
+            {
+                for (let i = 0; i < availInterps.length; i++)
+                    foundInterps.push(availInterps[i]);
+            }
+
             // The async finder can return an empty list when the interpreter
             // was configured explicitly; always offer the resolved path.
             try
             {
                 var resolved = appInfo.executablePath;
-                if (resolved)
-                {
-                    availInterps = availInterps || [];
-                    if (availInterps.indexOf(resolved) == -1)
-                        availInterps.push(resolved);
-                }
+                if (resolved && foundInterps.indexOf(resolved) == -1)
+                    foundInterps.push(resolved);
             }
             catch (e) {}
 
             var found = false;
-            if (!ok || !availInterps || availInterps.length == 0)
+            if (!ok || foundInterps.length == 0)
             {
                 document.getElementById("no-avail-interps-message")
                     .removeAttribute("collapsed");
             }
             else
             {
-                for (let interp of availInterps)
+                for (let interp of foundInterps)
                 {
                     availInterpList.appendItem(interp, interp);
                     if (interp == prefExecutable) found = true;
