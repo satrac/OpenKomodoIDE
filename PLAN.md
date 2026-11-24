@@ -228,8 +228,9 @@ Breakpoints, stop-on-entry, stepping, stack/variables and evaluation are
 working.  Phase 4 (LSP completions, symbols, go-to-definition,
 find-references, calltips and LSP diagnostics) is implemented.  Editing uses
 the dedicated UDL lexer in `src/udl/udl/raku.udl`, and `.rakudoc`, `.nqp` and
-`.pod6` are associated with Raku.  The remaining roadmap details are in
-[RAKU.md](RAKU.md).
+`.pod6` are associated with Raku.  Snippets, script/module templates and a
+`raku.svg` file icon ship with the language.  The remaining roadmap details
+are in [RAKU.md](RAKU.md).
 
 ## Lua support
 

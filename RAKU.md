@@ -20,7 +20,7 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 | Calltips / signatures | ✅ | LSP signature help |
 | Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output |
 | Projects / SCC / search | ✅ | Generic IDE features |
-| Snippets / templates / icon | ❌ | Not shipped yet |
+| Snippets / templates / icon | ✅ | Abbreviations (`say`, `sub`, `class`, `for`, `given`, `grammar`), print-debug snippet, script/module templates and `raku.svg` |
 | Test runner | ❌ | `.rakutest` opens as Raku, but there is no “run test” integration |
 | Package manager | ❌ | No `zef` integration |
 | Automated GUI tests | ⚠️ | DAP bridge has tests; run/REPL/debug GUI flows are still manual |
@@ -29,14 +29,13 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 
 | Priority | Item | Notes |
 | --- | --- | --- |
-| 1 | Raku snippets, file templates and a language icon | Quick polish win |
-| 2 | Test-runner integration for `.rakutest` | Run a file or a `plan`/`done-testing` suite from the IDE |
-| 3 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
-| 4 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
-| 5 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
-| 6 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
-| 7 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
-| 8 | `zef` package-manager integration | Optional |
+| 1 | Test-runner integration for `.rakutest` | Run a file or a `plan`/`done-testing` suite from the IDE |
+| 2 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
+| 3 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
+| 4 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
+| 5 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
+| 6 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
+| 7 | `zef` package-manager integration | Optional |
 
 ## Phase 0 — editor, run, lint, REPL (implemented)
 
@@ -62,9 +61,19 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
   `raku --repl-mode=process` in Komodo's terminal pane rather than through the
   DBGP debugger.
 
+### Shipped tooling
+
+- Abbreviations under `src/samples/tools/Abbreviations/Raku/`: `say`,
+  `sub`, `class`, `for`, `given` and `grammar`.
+- A print-debug snippet: `src/samples/tools/Print Debugging/Raku Print
+  Statement.ktf`.
+- File templates: `src/samples/tools/File Templates/Languages/Raku.ktf`
+  and `Raku Module.ktf`, plus
+  `src/templates/default-templates/All Languages/Raku.raku`.
+- A file icon: `src/images/fileicons/raku.svg`.
+
 ### Phase 0 follow-ups
 
-- Ship a Raku icon and Raku snippets/file templates.
 - Add automated GUI tests for run, lint and the REPL.
 
 ## Phase 1 — DAP bridge (implemented)
