@@ -11,6 +11,7 @@
     const appinfo = Cc["@mozilla.org/xre/app-info;1"].getService(Ci.nsIXULRuntime);
     const koEditor = require("ko/editor");
     const views = require("ko/views");
+    const koFile = require("ko/file");
     const w = require("ko/windows").getMain();
     const legacy = w.ko;
 
@@ -19,6 +20,8 @@
     var process, connection;
     var ready = false;
     var failing = false;
+    var diagnostics = {};
+    var openDocs = {};
     
     module.exports = {};
 
@@ -114,6 +117,8 @@
 
         this.spawn = function (binary, args, env)
         {
+            openDocs = {};
+            diagnostics = {};
             process = child_process.spawn(binary, args, env ? {env: env} : {});
             process.stdin.write = (data) =>
             {
@@ -146,6 +151,20 @@
             connection.trace(true, { log: (data) => { log.debug(data); } });
             connection.listen();
 
+            connection.onNotification("textDocument/publishDiagnostics", (params) =>
+            {
+                if ( ! params || ! params.uri)
+                    return;
+
+                diagnostics[params.uri] = {
+                    version: params.version,
+                    diagnostics: params.diagnostics || [],
+                    timestamp: Date.now()
+                };
+                log.debug("publishDiagnostics: " + params.uri + " version=" + params.version +
+                          " count=" + diagnostics[params.uri].diagnostics.length);
+            });
+
             var path;
             try
             {
@@ -163,7 +182,11 @@
                 capabilities: this.capabilities,
                 trace: "verbose"
             })
-            .then(() => ready = true)
+            .then(() =>
+            {
+                connection.sendNotification(new rpc.NotificationType('initialized'), {});
+                ready = true;
+            })
             .catch(reportError.bind(null, "initialize caught"));
         };
 
@@ -179,16 +202,186 @@
             }
         };
 
+        /**
+         * Open or update the buffer in the language server.  Documents stay
+         * open between requests so the server can keep its analysis state.
+         */
+        var openDocument = function (opts)
+        {
+            var args = opts.args;
+            var uri = args.path ? legacy.uriparse.pathToURI(args.path) : "file://unsaved";
+            var text = args.buf || "";
+            var previous = openDocs[uri];
+            var version = previous ? previous.version + 1 : 1;
+            var sent = Date.now();
+
+            if (previous)
+            {
+                var prevLines = previous.text.split(/\r\n|\r|\n/);
+                connection.sendNotification(new rpc.NotificationType('textDocument/didChange'), {
+                    textDocument: { uri: uri, version: version },
+                    contentChanges: [{
+                        range: {
+                            start: { line: 0, character: 0 },
+                            end: {
+                                line: prevLines.length - 1,
+                                character: prevLines[prevLines.length - 1].length
+                            }
+                        },
+                        text: text
+                    }]
+                });
+            }
+            else
+            {
+                connection.sendNotification(new rpc.NotificationType('textDocument/didOpen'), {
+                    textDocument: {
+                        uri: uri,
+                        languageId: (meta.opts.language || meta.language),
+                        version: version,
+                        text: text
+                    }
+                });
+            }
+
+            openDocs[uri] = { version: version, text: text };
+
+            return { uri: uri, version: version, sent: sent };
+        };
+
+        /**
+         * Wait until the server has parsed the document and published
+         * diagnostics for it.  Resolves on timeout as well so a server that
+         * never publishes diagnostics cannot wedge a request.
+         */
+        var waitForDiagnostics = function (doc, timeout)
+        {
+            return new Promise((resolve) =>
+            {
+                var deadline = Date.now() + timeout;
+                var check = () =>
+                {
+                    var entry = diagnostics[doc.uri];
+                    if (entry && entry.timestamp >= doc.sent &&
+                        (entry.version === doc.version || entry.version === undefined))
+                    {
+                        return resolve();
+                    }
+                    if (Date.now() > deadline)
+                    {
+                        log.debug("diagnostics timeout for " + doc.uri + " version=" + doc.version);
+                        return resolve();
+                    }
+                    w.setTimeout(check, 50);
+                };
+                check();
+            });
+        };
+
+        /**
+         * Convert the Scintilla absolute position to a zero-based LSP
+         * position.
+         */
+        var getPosition = function (opts)
+        {
+            var args = opts.args;
+            var before = (args.buf || "").substr(0, args.pos);
+            var lines = before.split(/\r\n|\r|\n/);
+            return {
+                line: Math.max(lines.length - 1, 0),
+                character: lines[lines.length - 1].length
+            };
+        };
+
+        var uriToPath = function (uri)
+        {
+            try { return legacy.uriparse.URIToLocalPath(uri); }
+            catch (e) { return uri; }
+        };
+
+        /**
+         * Normalize definition responses.  Servers may return a Location, an
+         * array of Locations or an array of LocationLinks.
+         */
+        var normalizeLocations = function (data)
+        {
+            if ( ! data)
+                return [];
+
+            if ( ! Array.isArray(data))
+                data = [data];
+
+            var locations = [];
+            for (let item of data)
+            {
+                if ( ! item)
+                    continue;
+
+                if ("targetUri" in item)
+                {
+                    locations.push({
+                        uri: item.targetUri,
+                        range: item.targetSelectionRange || item.targetRange
+                    });
+                }
+                else if ("uri" in item)
+                {
+                    locations.push({ uri: item.uri, range: item.range });
+                }
+            }
+
+            return locations.filter((loc) => loc.range);
+        };
+
+        var getBufferLines = function (opts, uri)
+        {
+            var currentUri = opts.args.path ? legacy.uriparse.pathToURI(opts.args.path) : null;
+            if (uri == currentUri || uri == "file://unsaved")
+                return (opts.args.buf || "").split(/\r\n|\r|\n/);
+
+            try { return koFile.read(uriToPath(uri)).split(/\r\n|\r|\n/); }
+            catch (e) { return []; }
+        };
+
+        var getSymbolAtPosition = function (opts)
+        {
+            var buf = opts.args.buf || "";
+            var pos = Math.min(Math.max(opts.args.pos || 0, 0), buf.length);
+            var start = pos;
+            var end = pos;
+
+            while (start > 0 && /[\w$:-]/.test(buf.charAt(start - 1)))
+                start--;
+            while (end < buf.length && /[\w$:-]/.test(buf.charAt(end)))
+                end++;
+
+            return buf.substring(start, end);
+        };
+
         this.onClosePremature = function () {};
 
         this.stop = function ()
         {
+            if (connection)
+            {
+                for (let uri in openDocs)
+                {
+                    try
+                    {
+                        connection.sendNotification(new rpc.NotificationType('textDocument/didClose'),
+                                                    { textDocument: { uri: uri } });
+                    }
+                    catch (e) {}
+                }
+            }
             if (process)
             {
                 try { process.kill(); } catch (e) {}
                 process = null;
             }
             connection = null;
+            openDocs = {};
+            diagnostics = {};
             ready = false;
         };
         
@@ -213,12 +406,12 @@
 
             method = "mediate_" + method;
 
-            return new koPromise((resolve, reject) =>
+            return new koPromise((resolve, reject, each) =>
             {
                 if ( ! (method in this))
                     return reject("Method not supported: " + method);
 
-                this[method](opts, resolve, reject);
+                this[method](opts, resolve, reject, each);
             });
         };
 
@@ -232,30 +425,10 @@
         {
             log.debug("getSymbolsInBuffer called");
 
-            var uri = "file://unsaved";
-            var view = opts.view || views.current().get();
-            if (view.koDoc && view.koDoc.file)
-                uri = view.koDoc.file.URI;
-
-            var args = opts.args;
-
-            var textDocument = {
-                uri: uri,
-                languageId: (meta.opts.language || meta.language),
-                version: 0,
-                text: args.buf
-            };
-            var notification = new rpc.NotificationType('textDocument/didOpen');
-            connection.sendNotification(notification, { textDocument: textDocument });
-
-            var close = () =>
-            {
-                var notification = new rpc.NotificationType('textDocument/didClose');
-                connection.sendNotification(notification, { textDocument: legacy.uriparse.pathToURI(args.path) });
-            };
+            var doc = openDocument(opts);
 
             connection.sendRequest("textDocument/documentSymbol", {
-                textDocument: { uri: uri }
+                textDocument: { uri: doc.uri }
             })
             .then((items) =>
             {
@@ -263,9 +436,7 @@
                 .then(resolve)
                 .catch(reject);
             })
-            .then(close)
             .catch(reportError.bind(null, "getSymbolsInBuffer caught"))
-            .catch(close)
             .catch(reject);
         };
 
@@ -361,30 +532,10 @@
         {
             log.debug("getCaretScope called");
 
-            var uri = "file://unsaved";
-            var view = opts.view || views.current().get();
-            if (view.koDoc && view.koDoc.file)
-                uri = view.koDoc.file.URI;
-
-            var args = opts.args;
-
-            var textDocument = {
-                uri: uri,
-                languageId: (meta.opts.language || meta.language),
-                version: 0,
-                text: args.buf
-            };
-            var notification = new rpc.NotificationType('textDocument/didOpen');
-            connection.sendNotification(notification, { textDocument: textDocument });
-
-            var close = () =>
-            {
-                var notification = new rpc.NotificationType('textDocument/didClose');
-                connection.sendNotification(notification, { textDocument: legacy.uriparse.pathToURI(args.path) });
-            };
+            var doc = openDocument(opts);
 
             connection.sendRequest("textDocument/documentSymbol", {
-                textDocument: { uri: uri }
+                textDocument: { uri: doc.uri }
             })
             .then((items) =>
             {
@@ -429,10 +580,139 @@
                     "api": "lsp"
                 }));
             })
-            .then(close)
-            .catch(reportError.bind(null, "getSymbolsInBuffer caught"))
-            .catch(close)
+            .catch(reportError.bind(null, "getCaretScope caught"))
             .catch(reject);
+        };
+
+        this.mediate_getDefinition = function (opts, resolve, reject, each)
+        {
+            log.debug("getDefinition called");
+
+            var doc = openDocument(opts);
+            var position = getPosition(opts);
+
+            waitForDiagnostics(doc, 2000)
+            .then(() => connection.sendRequest("textDocument/definition", {
+                textDocument: { uri: doc.uri },
+                position: position
+            }))
+            .then((data) =>
+            {
+                log.debug("definition response: " + JSON.stringify(data));
+                var locations = normalizeLocations(data);
+                if ( ! locations.length)
+                    return resolve();
+
+                var location = locations[0];
+                var result = {
+                    filename: uriToPath(location.uri),
+                    line: location.range.start.line + 1,
+                    pos: location.range.start.character,
+                    symbol: null
+                };
+                resolve(result);
+            })
+            .catch(reportError.bind(null, "getDefinition caught"))
+            .catch(reject);
+        };
+
+        this.mediate_getReferences = function (opts, resolve, reject, each)
+        {
+            log.debug("getReferences called");
+
+            var doc = openDocument(opts);
+            var position = getPosition(opts);
+
+            // The server may answer before its background analysis finishes,
+            // so retry briefly when the first answer is empty.
+            var requestReferences = (attempt) =>
+            {
+                return connection.sendRequest("textDocument/references", {
+                    textDocument: { uri: doc.uri },
+                    position: position,
+                    context: { includeDeclaration: true }
+                })
+                .then((data) =>
+                {
+                    var locations = normalizeLocations(data);
+                    log.debug("references response (attempt " + attempt + "): " +
+                              locations.length);
+                    if (locations.length || attempt >= 4)
+                        return locations;
+
+                    return new Promise((next) => w.setTimeout(next, 250))
+                        .then(() => requestReferences(attempt + 1));
+                });
+            };
+
+            waitForDiagnostics(doc, 2000)
+            .then(() => requestReferences(0))
+            .then((locations) =>
+            {
+                var name = getSymbolAtPosition(opts);
+                var groups = {};
+
+                for (let location of locations)
+                {
+                    if ( ! (location.uri in groups))
+                        groups[location.uri] = [];
+                    groups[location.uri].push(location);
+                }
+
+                for (let uri in groups)
+                {
+                    let lines = getBufferLines(opts, uri);
+                    let path = uriToPath(uri);
+                    let results = [];
+
+                    for (let location of groups[uri])
+                    {
+                        let line = location.range.start.line;
+                        let character = location.range.start.character;
+                        let absolute = character;
+                        for (let i = 0; i < line; i++)
+                            absolute += (lines[i] || "").length + 1;
+
+                        results.push({
+                            name: name,
+                            path: path,
+                            line: line + 1,
+                            pos: absolute,
+                            lineData: lines[line] || ""
+                        });
+                    }
+
+                    each({ "path": path, "results": results });
+                }
+
+                resolve();
+            })
+            .catch(reportError.bind(null, "getReferences caught"))
+            .catch(reject);
+        };
+
+        this.getSignature = function (uri, position)
+        {
+            return connection.sendRequest("textDocument/signatureHelp", {
+                textDocument: { uri: uri },
+                position: position
+            })
+            .then((data) =>
+            {
+                if ( ! data || ! data.signatures || ! data.signatures.length)
+                    return {};
+
+                var signature = data.signatures[data.activeSignature || 0] || data.signatures[0];
+                var docblock = signature.documentation || "";
+                if (docblock && typeof docblock == "object")
+                    docblock = docblock.value || "";
+
+                return {
+                    signature: signature.label || "",
+                    docblock: docblock
+                };
+            })
+            .catch(() => ({}));
         };
 
         this.mediate_getCompletions = function (opts, resolve, reject) 
@@ -440,8 +720,8 @@
             log.debug("getCompletions called");
 
             var view = opts.view || views.current().get();
-            editor = koEditor.editor(view.scintilla, view.scimoz);
-            queryRx = new RegExp(`[${meta.opts.completion_query_characters || meta.opts.completion_word_characters}]`);
+            var editor = koEditor.editor(view.scintilla, view.scimoz);
+            var queryRx = new RegExp(`[${meta.opts.completion_query_characters || meta.opts.completion_word_characters}]`);
             var query = editor.getWord(opts.args.pos, queryRx) || "";
             query = query.toLowerCase();
 
@@ -461,23 +741,10 @@
                 };
             }
 
-            var textDocument = {
-                uri: legacy.uriparse.pathToURI(args.path),
-                languageId: (meta.opts.language || meta.language),
-                version: 0,
-                text: args.buf
-            };
-            var notification = new rpc.NotificationType('textDocument/didOpen');
-            connection.sendNotification(notification, { textDocument: textDocument });
-
-            var close = () =>
-            {
-                var notification = new rpc.NotificationType('textDocument/didClose');
-                connection.sendNotification(notification, { textDocument: legacy.uriparse.pathToURI(args.path) });
-            };
+            var doc = openDocument(opts);
 
             connection.sendRequest("textDocument/completion", {
-                textDocument: { uri: legacy.uriparse.pathToURI(args.path) },
+                textDocument: { uri: doc.uri },
                 position: { line: pos.line - 1, character: pos.ch }
             })
             .then((data) =>
@@ -486,21 +753,33 @@
                 items = items.filter((v) => v.label.toLowerCase().indexOf(query) != -1);
 
                 this.parseCompletions(items, opts)
-                .then((symbols) => {
-                    resolve({
+                .then((symbols) =>
+                {
+                    var result = {
                         "symbol": "",
                         "query": query,
                         "docblock": "",
                         "signature": "",
                         "entries": symbols,
                         "language": (meta.opts.language || meta.language)
+                    };
+
+                    // Calltips request a single completion and expect the
+                    // signature/docblock fields to be populated.
+                    if (opts.args.limit != 1)
+                        return resolve(result);
+
+                    this.getSignature(uri, { line: pos.line - 1, character: pos.ch })
+                    .then((signature) =>
+                    {
+                        result.signature = signature.signature || "";
+                        result.docblock = signature.docblock || "";
+                        resolve(result);
                     });
                 })
                 .catch(reject);
             })
-            .then(close)
             .catch(reportError.bind(null, "getCompletions caught"))
-            .catch(close)
             .catch(reject);
         };
 
@@ -531,9 +810,6 @@
         };
         
         this.normalizeCompletionSymbol = function (symbol) { return symbol; };
-
-        this.stop = function () 
-        {};
 
     }).apply(module.exports);
     

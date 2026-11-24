@@ -338,8 +338,11 @@
         var opts = {
             "language": "raku",
             "supports": [this.FEATURE_COMPLETIONS,
+                         this.FEATURE_CALLTIPS,
                          this.FEATURE_SYMBOLBROWSER,
-                         this.FEATURE_SYMBOLSCOPE],
+                         this.FEATURE_SYMBOLSCOPE,
+                         this.FEATURE_GOTODEF,
+                         this.FEATURE_FINDREFERENCES],
             "completion_query_characters": "[\\w-]",
             "completion_word_characters": "[\\w-]"
         };
