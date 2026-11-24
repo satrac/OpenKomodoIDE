@@ -26,7 +26,7 @@ import random
 import json
 import logging
 # cstringio would save a little time, but doesn't support unicode
-from io import StringIO
+from io import BytesIO, StringIO
 from hashlib import md5
 from xml.sax import SAXParseException
 from xml.sax.saxutils import escape, quoteattr
@@ -1291,7 +1291,7 @@ class koProject(koLiveFolderPart):
 
     def _loadContents(self, contents, url, fname):
         self._update_lastmd5_from_contents(contents)
-        self._parseStream(StringIO(contents), url, fname)
+        self._parseStream(BytesIO(contents), url, fname)
 
     def loadQuiet(self, url):
         self._quiet = 1

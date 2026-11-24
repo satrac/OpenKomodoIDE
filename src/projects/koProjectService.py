@@ -22,10 +22,14 @@ class KomodoWindowData(object):
 
 
     def isCurrent(self, project):
-        return project and project in [self._currentProject]
+        return (project is not None and
+                self._currentProject is not None and
+                project == self._currentProject)
 
     def set_currentProject(self, project):
-        if self._currentProject == project: return
+        if project is self._currentProject: return
+        if (project is not None and self._currentProject is not None and
+                project == self._currentProject): return
         if self._currentProject:
             self._currentProject.deactivate()
         self._currentProject = project
