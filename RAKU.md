@@ -1,28 +1,69 @@
 # Raku support
 
-Komodo's Raku support is being brought up in phases.  The first phase is
-usable editor support; DAP debugging and LSP/CodeIntel integration follow.
+Raku has a native language service, a dedicated UDL lexer, LSP-backed
+CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
+
+## Status at a glance
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| Editing / highlighting | ✅ | Dedicated UDL lexer (`src/udl/udl/raku.udl` → `Raku.lexres`), folding and brace indent |
+| File associations | ✅ | `.raku`, `.rakumod`, `.rakutest`, `.rakudoc`, `.nqp`, `.pod6`, `.p6`, `.pm6`, `.t6`; `.t` stays Perl |
+| Interpreter discovery | ✅ | PATH, rakubrew and common Perl 6 locations; `rakuDefaultInterpreter` |
+| Run | ✅ | `koInvocation;1?type=Raku`, arguments, cwd, env and `RAKULIB` |
+| Lint / diagnostics | ✅ | LSP diagnostics, with `raku -c` fallback |
+| REPL | ✅ | `raku --repl-mode=process` in the terminal pane |
+| Completions | ✅ | LSP (`nimala-raku-lsp`) |
+| Symbols in current file | ✅ | LSP document symbols |
+| Go to definition | ✅ | LSP |
+| Find references | ✅ | LSP, project-wide |
+| Calltips / signatures | ✅ | LSP signature help |
+| Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output |
+| Projects / SCC / search | ✅ | Generic IDE features |
+| Snippets / templates / icon | ❌ | Not shipped yet |
+| Test runner | ❌ | `.rakutest` opens as Raku, but there is no “run test” integration |
+| Package manager | ❌ | No `zef` integration |
+| Automated GUI tests | ⚠️ | DAP bridge has tests; run/REPL/debug GUI flows are still manual |
+
+## Roadmap
+
+| Priority | Item | Notes |
+| --- | --- | --- |
+| 1 | Raku snippets, file templates and a language icon | Quick polish win |
+| 2 | Test-runner integration for `.rakutest` | Run a file or a `plan`/`done-testing` suite from the IDE |
+| 3 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
+| 4 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
+| 5 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
+| 6 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
+| 7 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
+| 8 | `zef` package-manager integration | Optional |
 
 ## Phase 0 — editor, run, lint, REPL (implemented)
 
 - Native `Raku` language component with file associations:
-  `.raku`, `.rakumod`, `.rakutest`, `.p6`, `.pm6`, `.t6`.
+  `.raku`, `.rakumod`, `.rakutest`, `.rakudoc`, `.nqp`, `.pod6`, `.p6`,
+  `.pm6`, `.t6`.  `.t` remains associated with Perl to avoid changing Perl
+  test-file behavior.
 - `raku`, `rakudo` and `perl6` shebangs, plus the Emacs `raku`/`perl6` modes.
-- Syntax highlighting through Scintilla's Perl lexer with a Raku keyword list.
-  This is deliberate and provisional: Scintilla 3.x in the Mozilla 35 runtime
-  has no dedicated Raku lexer.
+- Syntax highlighting uses the dedicated UDL lexer
+  `src/udl/udl/raku.udl`, compiled to `Raku.lexres` by the language build.
+  It handles sigils, twigils, comments, POD, strings, regexes, numbers,
+  quoting forms and heredoc introducers.
+  Known approximations: heredocs end at the first bare-word line, string
+  interpolation is painted as part of the string, and some Unicode
+  metaoperators are painted as generic operators.
 - Raku interpreter preference (`rakuDefaultInterpreter`), discovery through
   PATH and common `rakubrew` / Perl 6 locations, and `RAKULIB` support via
   `rakuExtraPaths`.
 - Run support through `koInvocation;1?type=Raku`.
-- Background syntax checking with `raku -c`.
+- Background syntax checking uses LSP diagnostics when the language server is
+  available and falls back to `raku -c`.
 - A Raku REPL started from the Interactive Shell menu.  It runs
   `raku --repl-mode=process` in Komodo's terminal pane rather than through the
   DBGP debugger.
 
 ### Phase 0 follow-ups
 
-- Replace the Perl-lexer fallback with a dedicated Raku lexer or a bundled UDL.
 - Ship a Raku icon and Raku snippets/file templates.
 - Add automated GUI tests for run, lint and the REPL.
 
