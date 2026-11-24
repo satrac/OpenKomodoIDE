@@ -4,23 +4,21 @@
 
 """Raku language service implementation.
 
-Raku is the language formerly known as Perl 6.  The bundled Scintilla does not
-ship a dedicated Raku lexer, so this uses the Perl lexer with a Raku keyword
-list.  That gives useful highlighting for comments, strings, numbers, sigils,
-regexes, heredocs and keywords while a dedicated lexer or UDL is developed.
+Raku is the language formerly known as Perl 6.  Syntax highlighting uses a
+dedicated UDL lexer (``src/udl/udl/raku.udl``, compiled to ``Raku.lexres``)
+rather than Scintilla's Perl lexer.
 """
 
 import re
 
 from xpcom import components
-from koLanguageServiceBase import KoLanguageBase, KoLexerLanguageService
+from koUDLLanguageBase import KoUDLLanguage
 
 
-sci_constants = components.interfaces.ISciMoz
-
-
-class KoRakuLanguage(KoLanguageBase):
+class KoRakuLanguage(KoUDLLanguage):
     name = "Raku"
+    lexresLangName = "Raku"
+    lang_from_udl_family = {'SSL': 'Raku'}
     _reg_desc_ = "%s Language" % name
     _reg_contractid_ = "@activestate.com/koLanguage?language=%s;1" % name
     _reg_clsid_ = "{0edd96c3-8bcc-45e1-a391-00e31d4934e3}"
@@ -35,7 +33,8 @@ class KoRakuLanguage(KoLanguageBase):
     accessKey = 'k'
 
     defaultExtension = ".raku"
-    extraFileAssociations = ["*.rakumod", "*.rakutest", "*.p6", "*.pm6", "*.t6"]
+    extraFileAssociations = ["*.rakumod", "*.rakutest", "*.rakudoc",
+                             "*.nqp", "*.pod6", "*.p6", "*.pm6", "*.t6"]
     downloadURL = "https://raku.org/"
     searchURL = "https://docs.raku.org/search?q=%W"
     commentDelimiterInfo = {"line": ["#"]}
@@ -67,15 +66,6 @@ for @languages -> $language {
     say $language;
 }
 """
-
-    def get_lexer(self):
-        if self._lexer is None:
-            self._lexer = KoLexerLanguageService()
-            self._lexer.setLexer(sci_constants.SCLEX_PERL)
-            self._lexer.setKeywords(0, self._keywords)
-            self._lexer.supportsFolding = 1
-            self._lexer.setProperty('fold.perl.comment.explicit', '0')
-        return self._lexer
 
     def get_interpreter(self):
         if self._interpreter is None:

@@ -26,6 +26,14 @@ Import(
 
 $cons->Install($idlExportDir, 'koILanguage.idl');
 $cons->BuildAndInstallXpt('koILanguage.idl');
+
+# Compile the Raku UDL lexer into the lexer resource that KoRakuLanguage loads.
+$cons->Command(
+    "$supportDir/lexers/Raku.lexres",
+    "../udl/udl/raku.udl",
+    qq(
+        $unsiloedPythonExe ../udl/luddite.py just_compile -d "$supportDir/lexers" %1
+    ));
 $cons->Preprocess('koPythonLanguage.p.py', 'koPythonLanguage.py');
 $cons->InstallXpcomComponent('koPythonLanguage.py');
 $cons->InstallXpcomComponent('koLanguage.py');
