@@ -264,6 +264,14 @@
                                                   helptag="configuring-javascript"/>
                                     </treerow>
                                 </treeitem>
+                                <treeitem container="false" id="rakuItem">
+                                    <treerow>
+                                        <treecell class="treecell-indent"
+                                                  url="chrome://komodo/content/pref/pref-raku.xul"
+                                                  label="&raku.label;"
+                                                  helptag="configuring-raku"/>
+                                    </treerow>
+                                </treeitem>
                                 <treeitem container="false" id="perlItem">
                                     <treerow>
                                         <treecell class="treecell-indent"

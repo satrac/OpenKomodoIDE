@@ -25,6 +25,7 @@ $cons->BuildAndInstallXpt('koILinter.idl');
 
 $cons->InstallPythonUtility('koLintResult.py');
 $cons->InstallXpcomComponent('koPerlCompileLinter.py');
+$cons->InstallXpcomComponent('koRakuLinter.py');
 $cons->InstallXpcomComponent('koPythonLinter.py');
 # Only Python 3 syntax checking is supported.
 $cons->InstallAs("$supportDir/python/py3compile.py", 'pycompile.py');

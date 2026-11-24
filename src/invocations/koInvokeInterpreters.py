@@ -1913,6 +1913,114 @@ class koTclInvocation(koInterpreterInvocation):
  
         return result
 
+class koRakuInvocation(koInterpreterInvocation):
+    _language = "Raku"
+    _reg_clsid_ = "{2a17289e-648d-4f23-9f7e-d6a3ff252485}"
+    _reg_contractid_ = "@activestate.com/koInvocation;1?type=Raku"
+
+    _invocation_name_ = "Raku"
+    _invocation_description_ = "Raku"
+
+    def __init__(self):
+        koInterpreterInvocation.__init__(self)
+        registryService = Cc['@activestate.com/koLanguageRegistryService;1'].\
+               getService(Ci.koILanguageRegistryService)
+        self.languageService = registryService.getLanguage('Raku')
+
+    def get_supportedInvokeTypes(self):
+        # Raku debugging is not available through DBGP yet.
+        return INVOKE_RUN | INVOKE_INTERACTIVE
+
+    def _determineExecutable(self):
+        rakuExe = self.effectivePrefs.getStringPref("rakuDefaultInterpreter")
+        if rakuExe and os.path.isfile(rakuExe):
+            return rakuExe
+        rakuInfo = self.languageService.\
+            getLanguageService(Ci.koIAppInfoEx)
+        rakuExe = rakuInfo.executablePath
+        if not rakuExe or not os.path.isfile(rakuExe):
+            log.error("No Raku interpreter could be found.")
+            return ""
+        return rakuExe
+
+    def _do_validate(self, invokeType):
+        try:
+            prefset = self.currentInstancePrefs
+            checkFileExists(prefset, 'executable',
+                            "You must specify the Raku executable used for the run")
+            if invokeType != INVOKE_INTERACTIVE:
+                checkFileExists(prefset, 'filename',
+                                "You must specify the main Raku script to run")
+            cwd = prefset.getStringPref("cwd")
+            if cwd and not os.path.isdir(cwd):
+                raise PrefException("cwd", "Directory '%s' does not exist" % cwd)
+        except PrefException as exc:
+            return 0, exc.prefid, exc.msg
+        return 1, None, None
+
+    def _getScriptArgs(self):
+        params = self.currentInstancePrefs.getString('params', "")
+        return _line2argv(params) if params else []
+
+    def _getenv(self):
+        env = koInterpreterInvocation._getenv(self)
+        if self.effectivePrefs.hasPref("rakuExtraPaths"):
+            rakuLib = self.effectivePrefs.getStringPref("rakuExtraPaths")
+            if rakuLib:
+                if sys.platform.startswith("win"):
+                    rakuLib = rakuLib.replace('\\', '/')
+                env["RAKULIB"] = rakuLib
+        return env
+
+    def _launchForInteractive(self):
+        executable = self._determineExecutable()
+        params = self.currentInstancePrefs.getString('executable-params', "")
+        argv = ([str(executable)] + _line2argv(params) +
+                ["--repl-mode=process"])
+        cwd = self.currentInstancePrefs.getString('cwd')
+        if not cwd:
+            cwd = os.getcwd()
+        return self._doLaunch(argv, cwd, self._getenv())
+
+    def _launchForRun(self):
+        exe = self.getExecutable()
+        return self._doLaunch(exe["argv"] + exe["script"], exe["cwd"], exe["env"])
+
+    def getExecutable(self, asJSON=False):
+        script = []
+        noPrefs = False
+        if not self.currentInstancePrefs:
+            noPrefs = True
+            self.currentInstancePrefs = self.prefService.effectivePrefs
+        else:
+            script = [self.currentInstancePrefs.getStringPref('filename')]
+            script += self._getScriptArgs()
+
+        executable = self._determineExecutable()
+        params = self.currentInstancePrefs.getString('executable-params', "")
+        argv = [str(executable)] + _line2argv(params)
+        cwd = self.currentInstancePrefs.getString('cwd', "")
+        if len(script) and not cwd:
+            cwd = os.path.dirname(script[0])
+        env = self._getenv()
+
+        result = {
+            "argv": argv,
+            "cwd": cwd,
+            "env": env,
+            "script": script,
+        }
+
+        if asJSON:
+            import json
+            result = json.dumps(result)
+
+        if noPrefs:
+            self.currentInstancePrefs = None
+
+        return result
+
+
 class koRubyInvocation(koInterpreterInvocation):
     _language = "Ruby"
     _reg_clsid_ = "{a580e9d6-8d99-4f65-b032-9062b5b9a3b0}"

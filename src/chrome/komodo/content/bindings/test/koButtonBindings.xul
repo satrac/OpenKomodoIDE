@@ -1527,6 +1527,11 @@ NOTE: Width and height are defined by the xul around the buttons
                         label="Start New Perl Shell"
                         class="menuitem-iconic ishell-icon"
                         language="Perl"/>
+                    <menuitem id="tbmenu_RakuInteractiveShell"
+                        command="cmd_startRakuInteractiveShell"
+                        label="Start New Raku Shell"
+                        class="menuitem-iconic ishell-icon"
+                        language="Raku"/>
                     <menuitem id="tbmenu_RubyInteractiveShell"
                         command="cmd_startRubyInteractiveShell"
                         label="Start New Ruby Shell"

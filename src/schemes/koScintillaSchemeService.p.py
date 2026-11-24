@@ -75,6 +75,12 @@ class Scheme(SchemeBase):
                 return False
             import json
         self._loadSchemeSettings(namespace, upgradeSettings=(not unsaved))
+        if "Raku" not in self._languageStyles:
+            # Raku currently uses the Perl Scintilla lexer and therefore the
+            # Perl style names.  Existing schemes do not need to duplicate
+            # those entries.
+            self._languageStyles["Raku"] = copy.deepcopy(
+                self._languageStyles.get("Perl", {}))
         return True
 
     _current_scheme_version = 15

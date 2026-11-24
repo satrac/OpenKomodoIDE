@@ -2,7 +2,7 @@
 # Copyright (c) 2000-2006 ActiveState Software Inc.
 # See the file LICENSE.txt for licensing information.
 
-import sys, os, re, string
+import sys, os, re, string, glob
 import os.path
 import tempfile
 import threading
@@ -617,6 +617,65 @@ class KoPython3InfoEx(KoPythonCommonInfoEx):
     def get_webHelpURL(self):
         """Return a web URL for help on this app, else return None."""
         return "http://docs.activestate.com/activepython/3.2/"
+
+class KoRakuInfoEx(KoAppInfoEx):
+    _reg_clsid_ = "{5e31cf55-fa3b-4691-9904-e28eadfdfd79}"
+    _reg_contractid_ = "@activestate.com/koAppInfoEx?app=Raku;1"
+    _reg_desc_ = "Extended Raku Information"
+
+    exenames = ["raku", "rakudo", "perl6"]
+    defaultInterpreterPrefName = "rakuDefaultInterpreter"
+    minVersionSupported = (2015, 1)
+    versionCheckExecutables = True
+
+    _rakuVersionFromPath = {}
+
+    def FindExecutables(self):
+        if self._executables is None:
+            paths = list(self._userPath)
+            for pattern in ("~/.rakubrew/versions/*/install/bin",
+                            "~/.perl6/bin",
+                            "/opt/rakudo/bin"):
+                paths.extend(glob.glob(os.path.expanduser(pattern)))
+            self._executables = []
+            for count, exename in enumerate(self.exenames):
+                if count == 0:
+                    self._executables += self._locateExecutables(
+                        exename, self.defaultInterpreterPrefName, paths=paths)
+                else:
+                    self._executables += self._locateExecutables(
+                        exename, paths=paths)
+        return self._executables
+
+    def get_haveLicense(self):
+        return 1
+
+    def getVersionForBinary(self, rakuExe):
+        if not os.path.exists(rakuExe):
+            raise ServerException(nsError.NS_ERROR_FILE_NOT_FOUND)
+        if rakuExe in self._rakuVersionFromPath:
+            return self._rakuVersionFromPath[rakuExe]
+
+        argv = [rakuExe, "--version"]
+        p = process.ProcessOpen(argv, stdin=None)
+        versionDump, stderr = p.communicate()
+        # Rakudo --version output looks like:
+        #   Welcome to Rakudo™ v2026.09.
+        #   Implementing Raku® Programming Language v6.d.
+        match = re.search(r'Rakudo.*?v([0-9][0-9.]*)', versionDump, re.DOTALL)
+        if not match:
+            match = re.search(r'version\s+v?([0-9][0-9.]*)', versionDump,
+                              re.IGNORECASE)
+        version = match.group(1).rstrip(".") if match else ""
+        self._rakuVersionFromPath[rakuExe] = version
+        return version
+
+    def get_localHelpFile(self):
+        return None
+
+    def get_webHelpURL(self):
+        return "https://docs.raku.org/"
+
 
 #---- components
 

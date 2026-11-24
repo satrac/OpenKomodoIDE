@@ -23,6 +23,14 @@ class Python3LangInfo(_PythonCommonLangInfo):
         (0, "regex", re.compile(r'\A#!.*python3.*$', re.I | re.M))
     ]
 
+class RakuLangInfo(LangInfo):
+    name = "Raku"
+    exts = ['.raku', '.rakumod', '.rakutest', '.p6', '.pm6', '.t6']
+    default_encoding = "utf-8"
+    magic_numbers = [
+        (0, "regex", re.compile(r'\A#!.*(?:raku|perl6|rakudo).*$', re.I | re.M))
+    ]
+
 class CompiledPythonLangInfo(LangInfo):
     name = "Compiled Python"
     exts = ['.pyc', '.pyo']

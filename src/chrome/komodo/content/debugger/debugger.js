@@ -190,7 +190,7 @@ function DBG_getDefaultInteractiveShellLanguage() {
 
     var language = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
     if (ko.dbg.haveInteractiveShellExecutable(language)) return language;
-    var ishells = ['Perl','Python3','Tcl','Ruby'];
+    var ishells = ['Raku','Perl','Python3','Tcl','Ruby'];
     for (var i = 0; i < ishells.length; i++) {
         if (ko.dbg.haveInteractiveShellExecutable(ishells[i])) return ishells[i];
     }
@@ -203,7 +203,7 @@ this.getDefaultInteractiveShellLanguageAsync =
 function DBG_getDefaultInteractiveShellLanguageAsync(callback) {
     var pref_lang = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
     // Note: pref_lang may be in there twice... but that won't matter.
-    var ishellLanguages = [pref_lang, 'Python3','Perl','Ruby','Tcl'];
+    var ishellLanguages = [pref_lang, 'Raku','Python3','Perl','Ruby','Tcl'];
     var langIdx = 0;
     var getNextIShellLanguage = function() {
         if (langIdx >= ishellLanguages.length) {
@@ -2563,6 +2563,10 @@ this.invocation = {
     {
         try {
             var language = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
+            if (language == "Raku") {
+                this.startRakuRepl();
+                return;
+            }
             var tabMgr = ko.dbg.tabManager.getInteractiveShell(language);
             if (tabMgr) {
                 var debuggerPanel = tabMgr.debuggerPanel;
@@ -2591,14 +2595,32 @@ this.invocation = {
         }
     },
     
+    startRakuRepl: function ko_dbg_invocation_startRakuRepl()
+    {
+        var appInfo = Components.classes["@activestate.com/koAppInfoEx?app=Raku;1"].
+            getService(Ci.koIAppInfoEx);
+        var rakuExe = appInfo.executablePath || "raku";
+        var command = '"' + rakuExe.replace(/"/g, '\\"') +
+                      '" --repl-mode=process';
+        ko.run.command(command, {
+            "runIn": "command-output-window",
+            "name": "Raku REPL",
+        });
+    },
+
     interactiveShell: function ko_dbg_invocation_interactiveShell(language, onSuccessCallback, onErrorCallback)
     {
         if (!onSuccessCallback) onSuccessCallback = function() {};
         if (!onErrorCallback) onErrorCallback = function() {};
+        if (!language)
+            language = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
+        if (language == "Raku") {
+            this.startRakuRepl();
+            onSuccessCallback();
+            return;
+        }
 
         ko.dbg.manager.newSession(true, (function onSuccess(session) {
-                if (!language)
-                    language = ko.prefs.getStringPref('interactiveShellDefaultLanguage');
                 session.language = language;
                 this.doStart(Components.interfaces.koIDBGPSession.RESUME_GO,
                              ko.dbg.invocation.INVOKE_INTERACTIVE,

@@ -330,6 +330,13 @@ make install-local LOCAL_PREFIX=/tmp/komodo-local
   Python 2.7 tree is build-only and is used solely by the legacy Mozilla 35
   IDL/build tools.
 
+- **Raku support (Phase 0).** `.raku`, `.rakumod`, `.rakutest`, `.p6`, `.pm6`
+  and `.t6` files are recognised as Raku, with highlighting, `raku -c`
+  syntax checking, run support and a `raku --repl-mode=process` REPL.  Raku
+  currently uses the Perl Scintilla lexer as a provisional highlighter.  DAP
+  debugging and LSP/CodeIntel integration are planned in
+  [RAKU.md](RAKU.md).
+
 - **Symbol Browser / CodeIntel.** The CodeIntel server is started
   automatically and the Symbol Browser tab is shown for supported languages.
   If you hide it, reopen it with **View > Tabs > Symbol Browser** or

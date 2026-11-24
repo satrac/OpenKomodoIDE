@@ -214,3 +214,14 @@ Remaining optional follow-ups:
 - The `underscore.js` `n is undefined` error remains; it comes from a
   throttled callback invoked after its view disappears and does not affect
   normal operation.
+
+## Raku support
+
+Phase 0 is implemented: native `Raku` language detection, `.raku`/
+`.rakumod`/`.rakutest`/`.p6`/`.pm6`/`.t6` associations, highlighting via the
+Perl lexer, `raku -c` syntax checking, run support, and a
+`raku --repl-mode=process` REPL.  See [RAKU.md](RAKU.md).
+
+Raku debugging is not DBGP-based.  The roadmap in `RAKU.md` covers a
+DAP-to-DBGP bridge first (to reuse Komodo's existing debugger UI), then native
+DAP integration if needed, followed by optional LSP/CodeIntel support.

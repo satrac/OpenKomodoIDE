@@ -95,6 +95,23 @@ Got:      %s
         for head in notPythonHeads:
             self._assertPossibleLanguagesAre(head, "", [])
 
+    def test_raku_shebang(self):
+        rakuHeads = [
+            "#!raku",
+            "#!/usr/bin/env raku",
+            "#!/usr/bin/env perl6",
+            "#!/usr/bin/rakudo",
+            "#!/opt/rakudo/bin/raku -Ilib",
+        ]
+        for head in rakuHeads:
+            self._assertPossibleLanguagesAre(head, "", ["Raku"])
+        notRakuHeads = [
+            "foo",
+            "#!/bin/rak",
+        ]
+        for head in notRakuHeads:
+            self._assertPossibleLanguagesAre(head, "", [])
+
     def test_sh_shebang(self):
         heads = [
             "#!/bin/sh",

@@ -97,6 +97,7 @@
                 <menupopup>
                     <menuitem data="Python" label="&python.label;"/>
                     <menuitem data="Python3" label="&python3.label;"/>
+                    <menuitem data="Raku" label="&raku.label;"/>
                     <menuitem data="Perl" label="&perl.label;"/>
                     <menuitem data="Ruby" label="&ruby.label;"/>
                     <menuitem data="Tcl" label="&tcl.label;"/>

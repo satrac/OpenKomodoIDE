@@ -362,6 +362,15 @@ adding an additional caret at the clicked position.">
 <!ENTITY patterns.label "Patterns">
 <!ENTITY nodejs.label "Node.js">
 <!ENTITY perl.label "Perl">
+<!ENTITY raku.label "Raku">
+<!ENTITY defaultRakuInterpreter.label "Raku Interpreter">
+<!ENTITY noRakuInterpreter.description "No Raku interpreter was found on your system PATH. Install Rakudo from raku.org, then select the Raku executable to use below.">
+<!ENTITY httpRakuOrg.label "https://raku.org">
+<!ENTITY noteRestartRaku.alert "Note: Komodo must be restarted for it to recognize new Raku installations.">
+<!ENTITY filePrefRakuUseThisInterpreter.label "Use this interpreter">
+<!ENTITY additionalRakuImportDirectories.label "Additional Raku Library Directories">
+<!ENTITY filePrefRakuAdditionalDirectory.description "Specify any additional directories that you want Komodo to add to RAKULIB when running, syntax checking or starting a Raku shell.">
+<!ENTITY filePrefRakuExcludeDirectory.description "Specify any directories you want to exclude from code autocompletion scans.">
 <!ENTITY perlcriticRCFileLocation.label "Location of .perlcriticrc file to use">
 <!ENTITY phpPHP.label ".php: PHP">
 <!ENTITY plPerl.label ".pl: Perl">

@@ -646,6 +646,7 @@ DebuggerItemsController.prototype.do_cmd_dbgViewAsHex = function(event, commandE
  * This gets updated asynchronously after updateInteractiveShellCommands().
  */
 var _interactiveShellEnabled_data = {
+    "Raku": true,
     "Perl": true,
     "Python3": true,
     "Ruby": true,
@@ -739,6 +740,14 @@ DebuggerItemsController.prototype.is_cmd_startPerlInteractiveShell_enabled = fun
 }
 DebuggerItemsController.prototype.do_cmd_startPerlInteractiveShell = function() {
     ko.dbg.invocation.interactiveShell('Perl');
+}
+
+// language specific commands for built in menu items
+DebuggerItemsController.prototype.is_cmd_startRakuInteractiveShell_enabled = function () {
+    return _interactiveShellEnabled_data['Raku'];
+}
+DebuggerItemsController.prototype.do_cmd_startRakuInteractiveShell = function() {
+    ko.dbg.invocation.interactiveShell('Raku');
 }
 
 // language specific commands for built in menu items

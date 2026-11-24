@@ -79,6 +79,7 @@
 <!ENTITY debuggerStartPerlInteractiveShell.desc "Debugger: Start Perl Interactive Shell">
 <!ENTITY debuggerStartPythonInteractiveShell.desc "Debugger: Start Python Interactive Shell">
 <!ENTITY debuggerStartPython3InteractiveShell.desc "Debugger: Start Python3 Interactive Shell">
+<!ENTITY debuggerStartRakuInteractiveShell.desc "Debugger: Start Raku Interactive Shell">
 <!ENTITY debuggerStartRubyInteractiveShell.desc "Debugger: Start Ruby Interactive Shell">
 <!ENTITY debuggerStartSkipDialog.desc "Debugger: Go/Continue - skip the Options dialog">
 <!ENTITY debuggerStartTclInteractiveShell.desc "Debugger: Start Tcl Interactive Shell">
@@ -145,6 +146,7 @@
 <!ENTITY properties.label "Properties">
 <!ENTITY python.label "Python">
 <!ENTITY python3.label "Python3">
+<!ENTITY raku.label "Raku">
 <!ENTITY removeWatch.label "Remove Watch">
 <!ENTITY removeWatch.tooltiptext "Remove variable from the watch list">
 <!ENTITY ruby.label "Ruby">
@@ -159,6 +161,7 @@
 <!ENTITY startNewPerlShell.label "Start New Perl Shell">
 <!ENTITY startNewPythonShell.label "Start New Python Shell">
 <!ENTITY startNewPython3Shell.label "Start New Python3 Shell">
+<!ENTITY startNewRakuShell.label "Start New Raku Shell">
 <!ENTITY startNewRubyShell.label "Start New Ruby Shell">
 <!ENTITY startNewSession.label "Start New Session">
 <!ENTITY startNewTclShell.label "Start New Tcl Shell">

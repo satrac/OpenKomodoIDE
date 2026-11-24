@@ -45,6 +45,10 @@
             desc="&debuggerStartPerlInteractiveShell.desc;"
             oncommand="ko.commands.doCommandAsync('cmd_startPerlInteractiveShell', event)"/>
         <command
+            id="cmd_startRakuInteractiveShell" key="key_cmd_startRakuInteractiveShell"
+            desc="&debuggerStartRakuInteractiveShell.desc;"
+            oncommand="ko.commands.doCommandAsync('cmd_startRakuInteractiveShell', event)"/>
+        <command
             id="cmd_startRubyInteractiveShell" key="key_cmd_startRubyInteractiveShell"
             desc="&debuggerStartRubyInteractiveShell.desc;"
             oncommand="ko.commands.doCommandAsync('cmd_startRubyInteractiveShell', event)"/>
@@ -442,6 +446,12 @@
                             class="menuitem-iconic ishell-icon"
                             type="dummy_so_menuitem_iconic_works"
                             language="Perl"/>
+                        <menuitem id="menu_RakuInteractiveShell"
+                            command="cmd_startRakuInteractiveShell"
+                            label="&startNewRakuShell.label;"
+                            class="menuitem-iconic ishell-icon"
+                            type="dummy_so_menuitem_iconic_works"
+                            language="Raku"/>
                         <menuitem id="menu_RubyInteractiveShell"
                             command="cmd_startRubyInteractiveShell"
                             label="&startNewRubyShell.label;"
@@ -497,6 +507,12 @@
                     class="menuitem-iconic ishell-icon"
                     type="dummy_so_menuitem_iconic_works"
                     language="Perl"/>
+                <menuitem id="tbmenu_RakuInteractiveShell"
+                    command="cmd_startRakuInteractiveShell"
+                    label="&startNewRakuShell.label;"
+                    class="menuitem-iconic ishell-icon"
+                    type="dummy_so_menuitem_iconic_works"
+                    language="Raku"/>
                 <menuitem id="tbmenu_RubyInteractiveShell"
                     command="cmd_startRubyInteractiveShell"
                     label="&startNewRubyShell.label;"

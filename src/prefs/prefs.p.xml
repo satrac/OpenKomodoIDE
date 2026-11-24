@@ -351,6 +351,7 @@ SSL_CLIENT_I_C=
   <string id="nodejsDefaultInterpreter"/>
   <string id="perlDefaultInterpreter"/>
   <string id="python3DefaultInterpreter"/>
+  <string id="rakuDefaultInterpreter"/>
   <string id="tclshDefaultInterpreter"/>
   <string id="wishDefaultInterpreter"/>
   <string id="tclInterpreterType">wish</string>
@@ -374,6 +375,8 @@ SSL_CLIENT_I_C=
   <string id="python3ExcludePaths"></string>
   <string id="perlExtraPaths"></string>
   <string id="perlExcludePaths"></string>
+  <string id="rakuExtraPaths"></string>
+  <string id="rakuExcludePaths"></string>
   <string id="tclExtraPaths"></string>
 
   <!-- Go prefs -->
@@ -582,6 +585,7 @@ SSL_CLIENT_I_C=
  '*.mysql': 'MySQL',
  '*.nim': 'Nimrod',
  '*.nsi': 'Nsis',
+ '*.p6': 'Raku',
  '*.pas': 'Pascal',
  '*.patch': 'Diff',
  '*.pb': 'PowerBasic',
@@ -592,6 +596,7 @@ SSL_CLIENT_I_C=
  '*.plx': 'Perl',
  '*.plsql': 'PL-SQL',
  '*.pm': 'Perl',
+ '*.pm6': 'Raku',
  '*.po': 'GetText',
  '*.pov': 'POVRay',
  '*.ps': 'PostScript',
@@ -603,6 +608,9 @@ SSL_CLIENT_I_C=
  '*.pyx': 'Python3',
  '*.pxd': 'Python3',
  '*.rake': 'Ruby',
+ '*.raku': 'Raku',
+ '*.rakumod': 'Raku',
+ '*.rakutest': 'Raku',
  '*.rb': 'Ruby',
  '*.rjs': 'Ruby',
  '*.ru': 'Ruby',
@@ -617,6 +625,7 @@ SSL_CLIENT_I_C=
  '*.sql': 'SQL',
  '*.sty': 'LaTeX',
  '*.t': 'Perl',
+ '*.t6': 'Raku',
  '*.tab': 'nnCrontab',
  '*.tal': 'TAL',
  '*.tacl': 'TACL',
@@ -864,6 +873,7 @@ SSL_CLIENT_I_C=
   <!-- The commands that are run to lookup information on a per language basis -->
 <!-- #if PLATFORM == "darwin" -->
   <string id="PerlHelpCommand">open http://www.google.com/search?q=site%3Adocs.activestate.com%2Factiveperl+%W</string>
+  <string id="RakuHelpCommand">open https://docs.raku.org/search?q=%W</string>
   <string id="PythonHelpCommand">open http://www.google.com/search?q=site%3Adocs.activestate.com%2Factivepython+%W</string>
   <string id="Python3HelpCommand">open http://www.google.com/search?q=site%3Adocs.activestate.com%2Factivepython+%W</string>
   <string id="PHPHelpCommand">open http://www.php.net/manual-lookup.php?pattern=%W</string>
@@ -875,6 +885,7 @@ SSL_CLIENT_I_C=
   <string id="OtherHelpCommand">open http://www.google.com/search?q=%W</string>
 <!-- #else -->
   <string id="PerlHelpCommand">%(browser) http://www.google.com/search?q=site%3Adocs.activestate.com%2Factiveperl+%W</string>
+  <string id="RakuHelpCommand">%(browser) https://docs.raku.org/search?q=%W</string>
   <string id="PythonHelpCommand">%(browser) http://www.google.com/search?q=site%3Adocs.activestate.com%2Factivepython+%W</string>
   <string id="Python3HelpCommand">%(browser) http://www.google.com/search?q=site%3Adocs.activestate.com%2Factivepython+%W</string>
   <string id="PHPHelpCommand">%(browser) http://www.php.net/manual-lookup.php?pattern=%W</string>
@@ -2108,6 +2119,32 @@ SSL_CLIENT_I_C=
             <!-- #endif -->
             <string id="preference">python3DefaultInterpreter</string>
             <string id="documentation">https://www.activestate.com/activepython</string>
+        </preference-set>
+        <preference-set id="raku">
+            <string id="label">Raku</string>
+            <string id="group">Languages</string>
+            <ordered-preference id="executables">
+                <string>raku</string>
+                <string>rakudo</string>
+                <string>perl6</string>
+            </ordered-preference>
+            <!-- #if PLATFORM == "win" -->
+            <ordered-preference id="paths">
+                <string>C:\rakudo\bin</string>
+            </ordered-preference>
+            <!-- #elif PLATFORM == "linux" -->
+            <ordered-preference id="paths">
+                <string>~/rakubrew/versions/moar-current/install/bin</string>
+                <string>/usr/local/bin</string>
+            </ordered-preference>
+            <!-- #else -->
+            <ordered-preference id="paths">
+                <string>~/rakubrew/versions/moar-current/install/bin</string>
+                <string>/usr/local/bin</string>
+            </ordered-preference>
+            <!-- #endif -->
+            <string id="preference">rakuDefaultInterpreter</string>
+            <string id="documentation">https://raku.org/</string>
         </preference-set>
         <preference-set id="perl">
             <string id="label">Perl</string>
