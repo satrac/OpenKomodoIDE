@@ -78,12 +78,12 @@
                     <checkbox id="lintJavaScript_SpiderMonkey"
                               label="&lintJavaScript_SpiderMonkey.label;"
                               pref="true"
-                              oncommand="languageInfo.JavaScript.doWarningEnabling(this);"/>
+                              oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.doWarningEnabling(this); }"/>
                     <checkbox id="lintJavaScriptEnableWarnings"
                               label="&lintJavaScriptEnableWarnings.label;"
                               class="indentedPref01"
                               pref="true"
-                              oncommand="languageInfo.JavaScript.doWarningEnabling(this);"/>
+                              oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.doWarningEnabling(this); }"/>
                     <checkbox id="lintJavaScriptEnableStrict"
                               class="indentedPref02"
                               label="&lintJavaScriptEnableStrict.label;"
@@ -94,7 +94,7 @@
                     <checkbox id="lintWithJSHint"
                               label="&lintJavaScriptWithJSHint.label;"
                               pref="true"
-                              oncommand="languageInfo.JavaScript.doWarningEnabling(this);" />
+                              oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.doWarningEnabling(this); }" />
                     <vbox id="jshintPrefsVbox">
                       <hbox id="jshintOptionsBox" flex="1">
                          <vbox id="jshintOptionsBox-vbox">
@@ -135,11 +135,11 @@
                                                  label="&customJshintLinter.label;" />
                                           <textbox id="jshint_linter_specific"
                                                    pref="true"
-                                                   onchange="languageInfo.JavaScript.handleChangedJSLinter();"
+                                                   onchange="if (languageInfo.JavaScript) { languageInfo.JavaScript.handleChangedJSLinter(); }"
                                                    flex="1"/>
                                           <button id='jshint_linter_browse'
                                                   label="&browse.label;"
-                                                  oncommand="languageInfo.JavaScript.browseForJSLinter();"/>
+                                                  oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.browseForJSLinter(); }"/>
                                       </hbox>
                                       <label id="jshint_linter_specific_version" value=""/>
                                   </vbox>
@@ -169,7 +169,7 @@
                                  pref="true"/>
                         <button id='eslint_linter_browse'
                                 label="&browse.label;"
-                                oncommand="languageInfo.JavaScript.browseForESLinter();"/>
+                                oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.browseForESLinter(); }"/>
                     </hbox>
                     <hbox>
                         <description>
@@ -182,7 +182,7 @@
                                  pref="true"/>
                         <button id='eslint_config_browse'
                                 label="&browse.label;"
-                                oncommand="languageInfo.JavaScript.browseForESConfig();"/>
+                                oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.browseForESConfig(); }"/>
                     </hbox>
                 </groupbox>
         
@@ -193,7 +193,7 @@
                     <checkbox id="lint_typescript"
                               label="&lintTypeScriptWithTSLint.label;"
                               pref="true"
-                              oncommand="languageInfo.TypeScript.doEnabling(this);" />
+                              oncommand="if (languageInfo.TypeScript) { languageInfo.TypeScript.doEnabling(this); }" />
                     <description id="lint_typescript_failure" class="pref_hide" />
                     <vbox id="tslintPrefsVbox">
                         <hbox id="tslintOptionsBox" flex="1">
@@ -206,7 +206,7 @@
                                      flex="1"/>
                             <button id="tslintConfigFileBrowse"
                                     label="&browse.label;"
-                                    oncommand="languageInfo.TypeScript.browseForTSLintConfigFile();"/>
+                                    oncommand="if (languageInfo.TypeScript) { languageInfo.TypeScript.browseForTSLintConfigFile(); }"/>
                         </hbox>
                     </vbox>
                 </groupbox>
@@ -235,7 +235,7 @@
                          pref="true"/>
                     <button id='eslint_linter_browse'
                         label="&browse.label;"
-                        oncommand="languageInfo.JavaScript.browseForESLinter();"/>
+                        oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.browseForESLinter(); }"/>
                   </hbox>
                   <hbox>
                     <description>
@@ -248,7 +248,7 @@
                          pref="true"/>
                     <button id='eslint_config_browse'
                         label="&browse.label;"
-                        oncommand="languageInfo.JavaScript.browseForESConfig();"/>
+                        oncommand="if (languageInfo.JavaScript) { languageInfo.JavaScript.browseForESConfig(); }"/>
                   </hbox>
                 </groupbox>
             </vbox>
@@ -258,7 +258,7 @@
                   <caption label="&HTMLTidy.label;"/>
                   <checkbox id="lintHTMLTidy"
                             label="&CheckWithHTMLTidy.label;"
-                            oncommand="languageInfo.HTML.updateHTMLTidySyntaxChecking(this);"
+                            oncommand="if (languageInfo.HTML) { languageInfo.HTML.updateHTMLTidySyntaxChecking(this); }"
                             pref="true" />
                   <vbox flex="1" align="center" id="lintHTMLTidy_Details_vbox">
                     <vbox flex="1" align="center">
@@ -321,7 +321,7 @@
                     <hbox align="center">
                         <textbox id="tidy_configpath" pref="true" prefstring="tidy_configpath" flex="1"/>
                         <button label="&browse.label;"
-                                oncommand="languageInfo.HTML.loadTidyConfigFile();"/>
+                                oncommand="if (languageInfo.HTML) { languageInfo.HTML.loadTidyConfigFile(); }"/>
                     </hbox>
                   </vbox>
               </groupbox>
@@ -374,7 +374,7 @@
                                 flex="1"
                                 prefattribute="value"
                                 orient="horizontal"
-                                oncommand="languageInfo.Less.updateLessLinterType(event);">
+                                oncommand="if (languageInfo.Less) { languageInfo.Less.updateLessLinterType(event); }">
                         <vbox flex="1">
                             <radio group="lessLinterType"
                                    id="lessLinterType_interpreter" value="path"
@@ -389,7 +389,7 @@
                                           >
                                     <menupopup id="avail-interp-list"/>
                                 </menulist>
-                                <button label="&browse.label;" id="browseLess" oncommand="languageInfo.Less.load_Less_Executable();"/>
+                                <button label="&browse.label;" id="browseLess" oncommand="if (languageInfo.Less) { languageInfo.Less.load_Less_Executable(); }"/>
                             </hbox>
                             <radio group="lessLinterType"
                                    id="lessLinterType_none" value="none"
@@ -429,7 +429,7 @@
                          />
                   <menulist id="perl_lintOption_perlCriticLevel"
                             pref="true" prefattribute="data"
-                            oncommand="languageInfo.Perl.onPerlCriticLevelChanged(this);">
+                            oncommand="if (languageInfo.Perl) { languageInfo.Perl.onPerlCriticLevelChanged(this); }">
                       <menupopup>
                           <menuitem data="off" label="&prefPerl.perlCriticOption.off.label;"/>
                           <menuitem data="gentle" label="&prefPerl.perlCriticOption.gentle.label;"/>
@@ -449,7 +449,7 @@
                  <hbox id="perlcritic_checking_hbox_rcfile">
                    <textbox id="perlcritic_checking_rcfile" pref="true"
                             prefstring="perlcritic_checking_rcfile" flex="1"/>
-                   <button id="perlcritic_browse_rcfile" label="&browse.label;" oncommand="languageInfo.Perl.loadPerlcriticRcfile();"/>
+                   <button id="perlcritic_browse_rcfile" label="&browse.label;" oncommand="if (languageInfo.Perl) { languageInfo.Perl.loadPerlcriticRcfile(); }"/>
                 </hbox>
               </vbox>
               
@@ -469,7 +469,7 @@
                   <checkbox id="lint_python3_with_pylint3"
                             label="&pylintCheckingStatus.label;"
                             pref="true"
-                            oncommand="languageInfo.Python3.onTogglePylint3Checking(this);" />
+                            oncommand="if (languageInfo.Python3) { languageInfo.Python3.onTogglePylint3Checking(this); }" />
                   <description id="pylint3_failure" class="pref_hide" />
 
                   <vbox id="pylint3_checking_vbox_rcfile" class="indentedPref01">
@@ -479,14 +479,14 @@
                      <hbox id="pylint3_checking_hbox_rcfile">
                        <textbox id="pylint3_checking_rcfile" pref="true"
                                 prefstring="pylint3_checking_rcfile" flex="1"/>
-                       <button id="pylint3_browse_rcfile" label="&browse.label;" oncommand="languageInfo.Python3.loadPylint3Rcfile();"/>
+                       <button id="pylint3_browse_rcfile" label="&browse.label;" oncommand="if (languageInfo.Python3) { languageInfo.Python3.loadPylint3Rcfile(); }"/>
                     </hbox>
                   </vbox>
                   <separator class="thin"/>
                   <checkbox id="lint_python3_with_pep83"
                             label="&pep8CheckingStatus.label;"
                             pref="true"
-                            oncommand="languageInfo.Python3.onTogglePep83Checking(this);" />
+                            oncommand="if (languageInfo.Python3) { languageInfo.Python3.onTogglePep83Checking(this); }" />
                   <description id="pep83_failure" class="pref_hide" />
 
                   <vbox id="pep83_checking_vbox_rcfile" class="indentedPref01">
@@ -496,7 +496,7 @@
                      <hbox id="pep83_checking_hbox_rcfile">
                        <textbox id="pep83_checking_rcfile" pref="true"
                                 prefstring="pep83_checking_rcfile" flex="1"/>
-                       <button id="pep83_browse_rcfile" label="&browse.label;" oncommand="languageInfo.Python3.loadPep83Rcfile();"/>
+                       <button id="pep83_browse_rcfile" label="&browse.label;" oncommand="if (languageInfo.Python3) { languageInfo.Python3.loadPep83Rcfile(); }"/>
                     </hbox>
                   </vbox>
                   <separator class="thin"/>
@@ -509,7 +509,7 @@
                   <checkbox id="lint_python3_with_pychecker3"
                             label="&lintWithPychecker.label;"
                             pref="true"
-                            oncommand="languageInfo.Python3.onTogglePychecker3Checking(this);" />
+                            oncommand="if (languageInfo.Python3) { languageInfo.Python3.onTogglePychecker3Checking(this); }" />
                   <description id="pychecker3_dangerous" class="pref_hide" >
                     &pycheckerWarning.descr;
                   </description>
@@ -520,10 +520,10 @@
                      <hbox id="pychecker3_wrapper_location_hbox">
                        <textbox id="pychecker3_wrapper_location" pref="true"
                                 prefstring="pychecker3_wrapper_location" flex="1"
-                                oninput="languageInfo.Python3.updatePychecker3PathStatus(this);" />
+                                oninput="if (languageInfo.Python3) { languageInfo.Python3.updatePychecker3PathStatus(this); }" />
                        <button id="pychecker3_browse_wrapper_location"
                                label="&browse.label;"
-                               oncommand="languageInfo.Python3.loadPychecker3WrapperFile();"/>
+                               oncommand="if (languageInfo.Python3) { languageInfo.Python3.loadPychecker3WrapperFile(); }"/>
                     </hbox>
                     <separator class="thin"/>
                     <label id="pychecker3_checking_rcfile_label"
@@ -532,7 +532,7 @@
                     <hbox id="pychecker3_checking_hbox_rcfile">
                        <textbox id="pychecker3_checking_rcfile" pref="true"
                                 prefstring="pychecker3_checking_rcfile" flex="1"/>
-                       <button id="pychecker3_browse_rcfile" label="&browse.label;" oncommand="languageInfo.Python3.loadPychecker3RcFile();"/>
+                       <button id="pychecker3_browse_rcfile" label="&browse.label;" oncommand="if (languageInfo.Python3) { languageInfo.Python3.loadPychecker3RcFile(); }"/>
                     </hbox>
                     <description id="pychecker3_failure" class="pref_hide" >
                     &pycheckerNeedsPath.descr;
@@ -572,7 +572,7 @@
                                 flex="1"
                                 prefattribute="value"
                                 orient="horizontal"
-                                oncommand="languageInfo.Sass.updateLinterType(event);">
+                                oncommand="if (languageInfo.Sass) { languageInfo.Sass.updateLinterType(event); }">
                         <vbox flex="1">
                             <radio group="sassLinterType"
                                    id="sassLinterType_interpreter" value="path"
@@ -587,7 +587,7 @@
                                           >
                                     <menupopup id="avail-interp-list"/>
                                 </menulist>
-                                <button label="&browse.label;" id="browse_Sass" oncommand="languageInfo.Sass.loadExecutable();"/>
+                                <button label="&browse.label;" id="browse_Sass" oncommand="if (languageInfo.Sass) { languageInfo.Sass.loadExecutable(); }"/>
                             </hbox>
                             <radio group="sassLinterType"
                                    id="sassLinterType_none" value="none"
@@ -604,7 +604,7 @@
                                 flex="1"
                                 prefattribute="value"
                                 orient="horizontal"
-                                oncommand="languageInfo.SCSS.updateLinterType(event);">
+                                oncommand="if (languageInfo.SCSS) { languageInfo.SCSS.updateLinterType(event); }">
                         <vbox flex="1">
                             <radio group="scssLinterType"
                                    id="scssLinterType_interpreter" value="path"
@@ -619,7 +619,7 @@
                                           >
                                     <menupopup id="avail-interp-list"/>
                                 </menulist>
-                                <button label="&browse.label;" id="browse_SCSS" oncommand="languageInfo.SCSS.loadExecutable();"/>
+                                <button label="&browse.label;" id="browse_SCSS" oncommand="if (languageInfo.SCSS) { languageInfo.SCSS.loadExecutable(); }"/>
                             </hbox>
                             <radio group="scssLinterType"
                                    id="scssLinterType_none" value="none"
