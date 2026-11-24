@@ -481,22 +481,36 @@
           var [w,h,x,y] = dimensions;
           w = parseInt(w); h = parseInt(h);
           x = parseInt(x); y = parseInt(y);
-          
+
+          // Never apply an off-screen or oversized geometry.  Older
+          // profiles can contain a window positioned on a monitor that is
+          // no longer connected (for example x=1920 on a 1920-wide screen).
+          var screenX = window.screen.left;
+          var screenY = window.screen.top;
+          var availWidth = window.screen.availWidth || 1280;
+          var availHeight = window.screen.availHeight || 1024;
+          var offscreen = x < screenX || y < screenY ||
+              (x - screenX + w) > availWidth ||
+              (y - screenY + h) > availHeight;
+
+          if (w > availWidth)
+            w = availWidth;
+          if (h > availHeight)
+            h = availHeight;
+
+          if (offscreen)
+          {
+            w = Math.max(1, w);
+            h = Math.max(1, h);
+            window.outerWidth = w;
+            window.outerHeight = h;
+            centerWindow(window);
+            return;
+          }
+
           window.outerWidth = w;
           window.outerHeight = h;
           window.moveTo(x, y);
-          
-          // Detect if window is outside screen boundaries, if so - center it
-          setTimeout(function() {
-            var screenX = window.screen.left;
-            var screenY = window.screen.top;
-            if (x < screenX || y < screenY ||
-                (x - screenX + w) > window.screen.availWidth ||
-                (h - screenY + y) > window.screen.availHeight)
-            {
-              centerWindow(window);
-            }
-          }, 50);
         ]]>
         </body>
       </method>
