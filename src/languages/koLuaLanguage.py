@@ -6,6 +6,9 @@ import re, os
 from xpcom import components, ServerException
 import logging
 from koLintResult import runGenericLinter
+from lsp_client import to_lint_results
+import lua_lsp_client
+import koprocessutils
 import process
 
 from koLanguageKeywordBase import KoLanguageKeywordBase
@@ -26,6 +29,7 @@ class koLuaLanguage(KoLanguageKeywordBase):
     _reg_categories_ = [("komodo-language", name)]
 
     defaultExtension = ".lua"
+    extraFileAssociations = ["*.rockspec"]
     commentDelimiterInfo = {
         "line": [ "--" ],
         "block": [ ("--[[", "]]") ],
@@ -225,17 +229,32 @@ class KoLuaLinter(object):
             self._luac = None
     
     def lint(self, request):
-        if self._luac is None:
-            return
-        text = request.content.encode(request.encoding.python_encoding_name)
-        return self.lint_with_text_aux(request, text)
+        return self.lint_with_text(request, request.content)
         
     def lint_with_text(self, request, text):
         """This routine exists only if someone uses Lua in a multi-lang document
         """
+        if isinstance(text, bytes):
+            lsp_text = text.decode(request.encoding.python_encoding_name, "replace")
+            raw_text = text
+        else:
+            lsp_text = text
+            raw_text = text.encode(request.encoding.python_encoding_name)
+
+        # Prefer the language server's diagnostics when it is available.
+        try:
+            diagnostics = lua_lsp_client.get_diagnostics_for_request(
+                request, lsp_text, koprocessutils.getUserEnv())
+        except Exception:
+            log.exception("Lua LSP diagnostics failed")
+            diagnostics = None
+        if diagnostics is not None:
+            return to_lint_results(diagnostics)
+
         if self._luac is None:
             return
-        return self.lint_with_text_aux(request, text)
+        return self.lint_with_text_aux(request, raw_text)
+
     
     _ptn_err = re.compile(r'.*?:.*?:(\d+)\s*:\s*(.*)')
     def lint_with_text_aux(self, request, text):

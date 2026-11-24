@@ -381,6 +381,16 @@ adding an additional caret at the clicked position.">
 <!ENTITY rakuLspCommand.label "LSP command">
 <!ENTITY rakuLspArgs.label "LSP arguments">
 <!ENTITY rakuLspDiagnostics.label "Use the language server for syntax checking">
+<!ENTITY lua.label "Lua">
+<!ENTITY luaInterpreter.label "Lua Interpreter">
+<!ENTITY luaInterpreter.description "Leave empty to use the first lua, lua5.x or luajit found on PATH, or select a Lua executable.">
+<!ENTITY luaExtraPaths.label "Additional Lua module paths">
+<!ENTITY luaExtraPaths.description "Value for LUA_PATH when running or checking Lua files.">
+<!ENTITY luaLanguageServer.label "Lua Language Server">
+<!ENTITY luaLspEnabled.label "Use the Lua language server for completions, symbols and navigation">
+<!ENTITY luaLspCommand.label "LSP command">
+<!ENTITY luaLspArgs.label "LSP arguments">
+<!ENTITY luaLspDiagnostics.label "Use the language server for syntax checking">
 <!ENTITY perlcriticRCFileLocation.label "Location of .perlcriticrc file to use">
 <!ENTITY phpPHP.label ".php: PHP">
 <!ENTITY plPerl.label ".pl: Perl">

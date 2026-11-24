@@ -132,6 +132,7 @@
 
         mediator.unregister("codeintel/service/mediator/codeintel");
         mediator.unregister("codeintel/service/mediator/lsp", "Raku");
+        mediator.unregister("codeintel/service/mediator/lsp", "Lua");
     };
 
     this.stopSocket = () =>
@@ -376,6 +377,74 @@
         }
     };
 
+    var setupLuaLsp = () =>
+    {
+        log.info("Setting up Lua LSP");
+        if (mediator.getMediatorMetaByLanguage("Lua"))
+        {
+            log.info("Lua LSP already registered");
+            return;
+        }
+        if (prefs.hasPref("luaLspEnabled") && !prefs.getBoolean("luaLspEnabled"))
+        {
+            log.info("Lua LSP disabled by preference");
+            return;
+        }
+
+        var command = prefs.getString("luaLspCommand", "lua-language-server");
+        if ( ! command)
+            return;
+
+        var sysUtils = Cc["@activestate.com/koSysUtils;1"].getService(Ci.koISysUtils);
+        var binary = sysUtils.Which(command);
+        if ( ! binary)
+        {
+            for (let candidate of ["/usr/bin/lua-language-server",
+                                   "/usr/local/bin/lua-language-server"])
+            {
+                if (koFile.exists(candidate))
+                {
+                    binary = candidate;
+                    break;
+                }
+            }
+        }
+
+        if ( ! binary)
+        {
+            log.warn("Lua LSP executable not found: " + command);
+            return;
+        }
+
+        var opts = {
+            "language": "lua",
+            "supports": [this.FEATURE_COMPLETIONS,
+                         this.FEATURE_CALLTIPS,
+                         this.FEATURE_SYMBOLBROWSER,
+                         this.FEATURE_SYMBOLSCOPE,
+                         this.FEATURE_GOTODEF,
+                         this.FEATURE_FINDREFERENCES],
+            "completion_query_characters": "[\\w-]",
+            "completion_word_characters": "[\\w-]"
+        };
+        mediator.register("codeintel/service/mediator/lsp",
+                          "Lua Language Server",
+                          "Lua", opts);
+
+        var args = prefs.getString("luaLspArgs", "");
+        args = args.trim() ? args.trim().split(/\s+/) : [];
+        var env = require("ko/shell").getEnv();
+        try
+        {
+            mediator.getMediatorByLanguage("Lua").spawn(binary, args, env);
+            log.info("Started Lua LSP: " + binary + " " + args.join(" "));
+        }
+        catch (e)
+        {
+            log.exception(e, "Failed to start Lua LSP");
+        }
+    };
+
     var onServiceReady = () =>
     {
         loadFeatures();
@@ -386,6 +455,14 @@
         catch (e)
         {
             log.exception(e, "Raku LSP setup failed");
+        }
+        try
+        {
+            setupLuaLsp();
+        }
+        catch (e)
+        {
+            log.exception(e, "Lua LSP setup failed");
         }
 
         require("ko/dom")(require("ko/windows").getMain()).trigger("codeintel-ready");

@@ -384,6 +384,12 @@ SSL_CLIENT_I_C=
   <string id="rakuLspCommand">nimala-raku-lsp</string>
   <string id="rakuLspArgs">--stdio</string>
   <boolean id="rakuLspDiagnostics">1</boolean>
+  <boolean id="luaLspEnabled">1</boolean>
+  <string id="luaLspCommand">lua-language-server</string>
+  <string id="luaLspArgs"></string>
+  <boolean id="luaLspDiagnostics">1</boolean>
+  <string id="luaDefaultInterpreter"></string>
+  <string id="luaExtraPaths"></string>
   <string id="tclExtraPaths"></string>
 
   <!-- Go prefs -->

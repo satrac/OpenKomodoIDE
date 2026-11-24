@@ -2064,6 +2064,77 @@ class koRakuInvocation(koInterpreterInvocation):
         return result
 
 
+class koLuaInvocation(koInterpreterInvocation):
+    _language = "Lua"
+    _reg_clsid_ = "{3f063e55-495f-4f36-80c7-34b7953aef14}"
+    _reg_contractid_ = "@activestate.com/koInvocation;1?type=Lua"
+
+    _invocation_name_ = "Lua"
+    _invocation_description_ = "Lua"
+
+    def __init__(self):
+        koInterpreterInvocation.__init__(self)
+        registryService = Cc['@activestate.com/koLanguageRegistryService;1'].\
+               getService(Ci.koILanguageRegistryService)
+        self.languageService = registryService.getLanguage('Lua')
+
+    def get_supportedInvokeTypes(self):
+        return INVOKE_RUN | INVOKE_INTERACTIVE
+
+    def _determineExecutable(self):
+        luaExe = ""
+        if self.effectivePrefs.hasPref("luaDefaultInterpreter"):
+            luaExe = self.effectivePrefs.getStringPref("luaDefaultInterpreter")
+        if luaExe and os.path.isfile(luaExe):
+            return luaExe
+        import which
+        for name in ("lua", "lua5.5", "lua5.4", "lua5.3", "lua5.2", "lua5.1",
+                     "luajit"):
+            try:
+                return which.which(name)
+            except which.WhichError:
+                pass
+        log.error("No Lua interpreter could be found.")
+        return ""
+
+    def _do_validate(self, invokeType):
+        try:
+            prefset = self.currentInstancePrefs
+            checkFileExists(prefset, 'executable',
+                            "You must specify the Lua executable used for the run")
+            if invokeType != INVOKE_INTERACTIVE:
+                checkFileExists(prefset, 'filename',
+                                "You must specify the main Lua script to run")
+            cwd = prefset.getStringPref("cwd")
+            if cwd and not os.path.isdir(cwd):
+                raise PrefException("cwd", "Directory '%s' does not exist" % cwd)
+        except PrefException as exc:
+            return 0, exc.prefid, exc.msg
+        return 1, None, None
+
+    def _getScriptArgs(self):
+        params = self.currentInstancePrefs.getString('params', "")
+        return _line2argv(params) if params else []
+
+    def _getenv(self):
+        env = koInterpreterInvocation._getenv(self)
+        prefset = self.effectivePrefs
+        if prefset.hasPref("luaExtraPaths"):
+            extra = prefset.getStringPref("luaExtraPaths")
+            if extra:
+                env["LUA_PATH"] = extra
+        return env
+
+    def _launchForInteractive(self):
+        executable = self._determineExecutable()
+        params = self.currentInstancePrefs.getString('executable-params', "")
+        argv = ([str(executable)] + _line2argv(params) + ["-i"])
+        cwd = self.currentInstancePrefs.getString('cwd')
+        if not cwd:
+            cwd = os.getcwd()
+        return self._doLaunch(argv, cwd, self._getenv())
+
+
 class koRubyInvocation(koInterpreterInvocation):
     _language = "Ruby"
     _reg_clsid_ = "{a580e9d6-8d99-4f65-b032-9062b5b9a3b0}"

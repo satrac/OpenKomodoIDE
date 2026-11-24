@@ -43,32 +43,6 @@ class KoRakuLinter:
         text = request.content
         return self.lint_with_text(request, text)
 
-    def _diagnostics_to_results(self, diagnostics):
-        results = koLintResults()
-        for diagnostic in diagnostics:
-            range_ = diagnostic.get("range") or {}
-            start = range_.get("start") or {}
-            end = range_.get("end") or {}
-            start_line = int(start.get("line", 0)) + 1
-            end_line = max(int(end.get("line", start.get("line", 0))) + 1, start_line)
-            start_col = int(start.get("character", 0)) + 1
-            end_col = int(end.get("character", start.get("character", 0))) + 1
-            if end_col <= start_col:
-                end_col = start_col + 1
-            severity = {
-                1: KoLintResult.SEV_ERROR,
-                2: KoLintResult.SEV_WARNING,
-            }.get(diagnostic.get("severity"), KoLintResult.SEV_INFO)
-            results.addResult(KoLintResult(
-                description=diagnostic.get("message", "Raku diagnostic"),
-                severity=severity,
-                lineStart=start_line,
-                lineEnd=end_line,
-                columnStart=start_col,
-                columnEnd=end_col,
-            ))
-        return results
-
     def lint_with_text(self, request, text):
         prefset = request.prefset
         if (prefset.hasPref("genericLinter:Raku") and
@@ -91,7 +65,7 @@ class KoRakuLinter:
             log.exception("Raku LSP diagnostics failed")
             diagnostics = None
         if diagnostics is not None:
-            return self._diagnostics_to_results(diagnostics)
+            return raku_lsp_client.to_lint_results(diagnostics)
 
         rakuExe = self._rakuInfo.getExecutableFromPrefs(prefset)
         if not rakuExe:

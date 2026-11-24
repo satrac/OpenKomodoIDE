@@ -76,6 +76,9 @@ $cons->InstallInChrome('pref-tcl-lint.js');
 $cons->InstallInChrome('pref-raku.xul');
 $cons->InstallInChrome('pref-raku.js');
 
+$cons->InstallInChrome('pref-lua.xul');
+$cons->InstallInChrome('pref-lua.js');
+
 $cons->Preprocess('pref-perl.p.xul', 'pref-perl.xul');
 $cons->InstallInChrome('pref-perl.xul');
 $cons->InstallInChrome('pref-perl.js');

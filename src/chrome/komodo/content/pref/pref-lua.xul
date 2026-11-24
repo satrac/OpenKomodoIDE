@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!DOCTYPE window SYSTEM "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" [
+  <!ENTITY % prefDTD SYSTEM "chrome://komodo/locale/pref/pref.dtd">
+  %prefDTD;
+]>
+
+<!-- Copyright (c) 2026 ActiveState Software Inc.
+     See the file LICENSE.txt for licensing information. -->
+
+<?xml-stylesheet href="less://komodo/skin/global/global.less" type="text/css"?>
+<?xml-stylesheet href="chrome://komodo/skin/bindings/buttons.css" type="text/css"?>
+<?xml-stylesheet href="chrome://komodo/skin/bindings/widgets.css" type="text/css"?>
+
+<window xmlns:html="http://www.w3.org/1999/xhtml"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        class="kodialog pref-window"
+        orient="vertical"
+        onload="PrefLua_OnLoad();">
+
+    <script src="chrome://xtk/content/xtk.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/library/logging.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/library/dialogs.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/library/filepickers.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/library/windowManager.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/pref/koPrefUtils.js" type="application/x-javascript;version=1.7"/>
+    <script src="chrome://komodo/content/pref/pref-lua.js" type="application/x-javascript;version=1.7"/>
+
+    <vbox id="lua-prefs-vbox" flex="1" class="autoscroll">
+
+        <groupbox orient="vertical">
+            <caption label="&luaInterpreter.label;"/>
+            <hbox align="center">
+                <textbox id="luaDefaultInterpreter" flex="1" pref="true"
+                         prefstring="luaDefaultInterpreter"/>
+                <button label="&browse.label;" oncommand="loadLuaExecutable();"/>
+            </hbox>
+            <description>&luaInterpreter.description;</description>
+        </groupbox>
+
+        <groupbox orient="vertical">
+            <caption label="&luaExtraPaths.label;"/>
+            <textbox id="luaExtraPaths" flex="1" pref="true"
+                     prefstring="luaExtraPaths"/>
+            <description>&luaExtraPaths.description;</description>
+        </groupbox>
+
+        <groupbox orient="vertical">
+            <caption label="&luaLanguageServer.label;"/>
+            <checkbox id="luaLspEnabled" label="&luaLspEnabled.label;"
+                      pref="true" prefstring="luaLspEnabled"
+                      prefattribute="checked"/>
+            <label value="&luaLspCommand.label;" control="luaLspCommand"/>
+            <textbox id="luaLspCommand" flex="1" pref="true"
+                     prefstring="luaLspCommand"/>
+            <label value="&luaLspArgs.label;" control="luaLspArgs"/>
+            <textbox id="luaLspArgs" flex="1" pref="true"
+                     prefstring="luaLspArgs"/>
+            <checkbox id="luaLspDiagnostics" label="&luaLspDiagnostics.label;"
+                      pref="true" prefstring="luaLspDiagnostics"
+                      prefattribute="checked"/>
+        </groupbox>
+
+    </vbox>
+
+</window>

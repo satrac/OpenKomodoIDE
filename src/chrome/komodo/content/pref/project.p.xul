@@ -451,6 +451,14 @@
                                                           helptag="configuring-raku"/>
                                             </treerow>
                                         </treeitem>
+                                        <treeitem container="false" id="luaItem">
+                                            <treerow>
+                                                <treecell class="treecell-indent"
+                                                          url="chrome://komodo/content/pref/pref-lua.xul"
+                                                          label="&lua.label;"
+                                                          helptag="configuring-lua"/>
+                                            </treerow>
+                                        </treeitem>
                                         <treeitem container="false" id="perlItem">
                                             <treerow>
                                                 <treecell class="treecell-indent"
