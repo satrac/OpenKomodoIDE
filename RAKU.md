@@ -18,7 +18,7 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 | Go to definition | ✅ | LSP |
 | Find references | ✅ | LSP, project-wide |
 | Calltips / signatures | ✅ | LSP signature help |
-| Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output |
+| Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output, restart and exception filters. Attach is adapter-blocked. |
 | Projects / SCC / search | ✅ | Generic IDE features |
 | Snippets / templates / icon | ✅ | Abbreviations (`say`, `sub`, `class`, `for`, `given`, `grammar`), print-debug snippet, script/module templates and `raku.svg` |
 | Test runner | ✅ | Unit Testing panel handler runs `.rakutest`/`.t6` with `prove -v --exec raku` and parses TAP |
@@ -29,7 +29,7 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 
 | Priority | Item | Notes |
 | --- | --- | --- |
-| 1 | Debugger attach mode, restart and exception filters | Present in the DAP adapter, not exposed in Komodo |
+| 1 | Debugger attach mode | Blocked: `nimala-raku-dap` rejects `attach`; needs an adapter with attach support |
 | 2 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
 | 3 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
 | 4 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
@@ -71,6 +71,16 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
   `src/templates/default-templates/All Languages/Raku.raku`.
 - A file icon: `src/images/fileicons/raku.svg`.
 
+### Debugger controls
+
+- **Restart**: Debug > Restart, and a restart button on the debugger toolbar.
+  The bridge sends the DAP `restart` request and keeps breakpoints.
+- **Exception filters**: the Raku preference page has “Break on exceptions”
+  with *Uncaught exceptions*, *All exceptions* and *None*.  The choice is
+  passed to the bridge as `--exception-filters`.
+- **Attach**: not available with `nimala-raku-dap`; its attach handler
+  returns “Attaching to a running process is not currently supported”.
+
 ### Unit testing
 
 The Unit Testing panel has a `raku` handler. Set the config path to the
@@ -99,7 +109,8 @@ are configurable with `rakuDapCommand` and `rakuDapArgs`; the default is
 Implemented launch flow: initialize, launch, setBreakpoints,
 configurationDone, stop-on-entry, threads, stackTrace, scopes, variables,
 evaluate, output, continue, next, stepIn, stepOut, pause and disconnect.
-Attach mode is not exposed in the Komodo debugger dialog yet.
+Restart and exception filters are exposed; attach is rejected by the current
+adapter (`handle-attach` returns "not currently supported").
 
 ### Option A (recommended): DAP-to-DBGP adapter bridge
 
@@ -148,7 +159,8 @@ bridge becomes a limiting abstraction.
   Locals/Watch panels, Evaluate, step buttons and debug output.
 - Verified locally: stop-on-entry, line breakpoints, continue, console
   output, stack frames, variables, child variables and expression evaluation.
-- Attach mode, restart and exception-filter controls are not exposed yet.
+- Restart and exception filters are exposed.  Attach remains blocked because
+  `nimala-raku-dap` does not implement it.
 
 ## Phase 3 — DAP tests and hardening
 

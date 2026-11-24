@@ -231,7 +231,9 @@ the dedicated UDL lexer in `src/udl/udl/raku.udl`, and `.rakudoc`, `.nqp` and
 `.pod6` are associated with Raku.  Snippets, script/module templates and a
 `raku.svg` file icon ship with the language.  The Unit Testing panel has a
 Raku handler that runs `.rakutest`/`.t6` suites through `prove -v --exec raku`
-and parses TAP.  The remaining roadmap details are in [RAKU.md](RAKU.md).
+and parses TAP.  Restart and exception-filter controls are exposed; attach is
+blocked by the current DAP adapter.  The remaining roadmap details are in
+[RAKU.md](RAKU.md).
 
 ## Lua support
 
