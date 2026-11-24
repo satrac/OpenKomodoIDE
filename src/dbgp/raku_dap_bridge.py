@@ -270,6 +270,18 @@ class DAPClient:
             pass
 
 
+def parse_exception_filters(value):
+    """Turn the Komodo preference into DAP exception filter names.
+
+    "none" is sent as an unknown filter so the adapter installs no exception
+    breakpoints (an empty filter list would fall back to "uncaught").
+    """
+    value = (value or "uncaught").strip().lower()
+    if value in ("", "none", "off", "no"):
+        return ["none"]
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
 class RakuDAPBridge:
     def __init__(self, options):
         self.options = options
@@ -278,6 +290,8 @@ class RakuDAPBridge:
         self.raku = options.raku or "raku"
         self.stop_on_entry = options.stop_on_entry
         self.idekey = options.idekey or "komodo"
+        self.exception_filters = parse_exception_filters(
+            getattr(options, "exception_filters", "uncaught"))
         self.appid = str(uuid.uuid4())
         self.dbgp = None
         self._dbgp_buffer = b""
@@ -395,7 +409,8 @@ class RakuDAPBridge:
                 self._send_all_breakpoints()
                 try:
                     self.dap.request("setExceptionBreakpoints",
-                                     {"filters": ["uncaught"]}, wait=False)
+                                     {"filters": self.exception_filters},
+                                     wait=False)
                     self.dap.request("configurationDone", {}, wait=False)
                 except Exception:
                     traceback.print_exc()
@@ -524,6 +539,29 @@ class RakuDAPBridge:
                              wait=False)
         except Exception:
             traceback.print_exc()
+
+    def _handle_restart(self, tid):
+        if not self._launched:
+            self._error("restart", tid, 999,
+                        "No debug session to restart")
+            return
+        try:
+            self.dap.request("restart", {}, wait=False)
+            with self._lock:
+                self._stopped = False
+                self._terminated = False
+                self._frames = []
+                self._scopes = []
+                self._scope_by_context = {}
+                self._varref_by_fullname = {}
+                self._value_by_fullname = {}
+                self._property_xml_by_fullname = {}
+                self._break_tid = None
+            self._response("restart", tid, ' status="running" reason="ok"')
+        except Exception:
+            _log("restart failed: %s" % traceback.format_exc())
+            self._error("restart", tid, 998,
+                        "Unable to restart the Raku DAP session")
 
     def _handle_resume(self, argv, tid):
         action = argv[0]
@@ -766,6 +804,8 @@ class RakuDAPBridge:
                 self._handle_breakpoint_update(argv, tid)
             elif command == "breakpoint_list":
                 self._handle_breakpoint_list(tid)
+            elif command == "restart":
+                self._handle_restart(tid)
             elif command in ("stop", "detach"):
                 self._shutdown = True
                 try:
@@ -949,6 +989,8 @@ def main(argv=None):
     parser.add_argument("--arg", action="append", default=[])
     parser.add_argument("--include-path", action="append", default=[])
     parser.add_argument("--stop-on-entry", action="store_true")
+    parser.add_argument("--exception-filters", default="uncaught",
+                        help="comma list: uncaught, all, none")
     parser.add_argument("--idekey", default="komodo")
     options = parser.parse_args(argv)
     bridge = RakuDAPBridge(options)

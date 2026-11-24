@@ -703,6 +703,10 @@
                                 class="debug-continue-icon"
                                 tooltiptext="&goContinue.tooltiptext;"
                                 observes="cmd_dbgGo"/>
+                    <xul:toolbarbutton id="restart-button"
+                                class="debug-restart-icon"
+                                tooltiptext="&restart.tooltiptext;"
+                                observes="cmd_dbgRestart"/>
                     <xul:toolbarbutton id="break-button"
                                 class="debug-break-icon"
                                 tooltiptext="&breakNow.tooltiptext;"

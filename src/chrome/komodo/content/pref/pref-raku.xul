@@ -95,6 +95,20 @@
             <checkbox id="rakuStopOnEntry" label="&rakuStopOnEntry.label;"
                       pref="true" prefstring="rakuStopOnEntry"
                       prefattribute="checked"/>
+            <label value="&rakuExceptionFilters.label;"
+                   control="rakuExceptionFilters"/>
+            <menulist id="rakuExceptionFilters" pref="true"
+                      prefstring="rakuExceptionFilters"
+                      prefattribute="value">
+                <menupopup>
+                    <menuitem label="&rakuExceptionUncaught.label;"
+                              value="uncaught"/>
+                    <menuitem label="&rakuExceptionAll.label;"
+                              value="all"/>
+                    <menuitem label="&rakuExceptionNone.label;"
+                              value="none"/>
+                </menupopup>
+            </menulist>
         </groupbox>
 
         <separator class="thin"/>

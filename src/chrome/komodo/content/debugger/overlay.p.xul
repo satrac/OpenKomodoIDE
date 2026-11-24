@@ -148,6 +148,11 @@
             disabled="true"
             desc="&debuggerStart.desc;"/>
         <command
+            id="cmd_dbgRestart"
+            oncommand="ko.dbg.doCommand('cmd_dbgRestart')"
+            disabled="true"
+            desc="&debuggerRestart.desc;"/>
+        <command
             id="cmd_dbgGoSkipDialog" key="key_cmd_dbgGoSkipDialog"
             oncommand="ko.dbg.doCommand('cmd_dbgGoSkipDialog', event)"
             desc="&debuggerStartSkipDialog.desc;"/>
@@ -316,6 +321,10 @@
                           id="menu_dbgGo"
                           accesskey="&buttondbgGo.accesskey;"
                           observes="cmd_dbgGo"
+                          />
+                <menuitem label="&restart.label;"
+                          id="menu_dbgRestart"
+                          observes="cmd_dbgRestart"
                           />
                 <menuitem label="&runWithoutDebugging.label;"
                           id="menu_dbgRun"

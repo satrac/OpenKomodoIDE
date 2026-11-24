@@ -375,6 +375,10 @@ adding an additional caret at the clicked position.">
 <!ENTITY rakuDapCommand.label "DAP adapter command">
 <!ENTITY rakuDapArgs.label "Adapter arguments">
 <!ENTITY rakuStopOnEntry.label "Stop at the entry point">
+<!ENTITY rakuExceptionFilters.label "Break on exceptions">
+<!ENTITY rakuExceptionUncaught.label "Uncaught exceptions">
+<!ENTITY rakuExceptionAll.label "All exceptions">
+<!ENTITY rakuExceptionNone.label "None">
 <!ENTITY rakuDapCommand.description "The Raku DAP adapter is used through a DBGP bridge. The default is nimala-raku-dap.">
 <!ENTITY rakuLanguageServer.label "Raku Language Server">
 <!ENTITY rakuLspEnabled.label "Use the Raku language server for completions and symbols">

@@ -15,6 +15,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from xml.dom import minidom
 
@@ -23,6 +24,20 @@ BRIDGE = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                       "raku_dap_bridge.py")
 HAS_RAKU = bool(shutil.which("raku"))
 HAS_DAP = bool(shutil.which("nimala-raku-dap"))
+
+
+class ExceptionFilterParsingTest(unittest.TestCase):
+    def setUp(self):
+        sys.path.insert(0, os.path.dirname(BRIDGE))
+        import raku_dap_bridge
+        self.parse = raku_dap_bridge.parse_exception_filters
+
+    def test_defaults_and_values(self):
+        self.assertEqual(self.parse("uncaught"), ["uncaught"])
+        self.assertEqual(self.parse("all"), ["all"])
+        self.assertEqual(self.parse("none"), ["none"])
+        self.assertEqual(self.parse("uncaught,all"), ["uncaught", "all"])
+        self.assertEqual(self.parse(""), ["uncaught"])
 
 
 @unittest.skipUnless(HAS_RAKU and HAS_DAP,
@@ -159,6 +174,22 @@ class RakuDAPBridgeTest(unittest.TestCase):
         self.assertTrue(value)
         self.assertEqual(
             base64.b64decode(value[0].firstChild.data).decode("utf-8"), "1")
+
+        self._send("restart -i 45")
+        restart = self._recv_xml("restart")
+        self.assertEqual(restart.getAttribute("status"), "running")
+
+        status = None
+        deadline = time.time() + 20
+        request_id = 46
+        while time.time() < deadline:
+            self._send("status -i %d" % request_id)
+            request_id += 1
+            status = self._recv_xml("status").getAttribute("status")
+            if status == "break":
+                break
+            time.sleep(0.25)
+        self.assertEqual(status, "break")
 
         self._send("stop -i 50")
         self._recv_xml("stop")

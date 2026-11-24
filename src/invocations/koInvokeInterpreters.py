@@ -2004,6 +2004,10 @@ class koRakuInvocation(koInterpreterInvocation):
             adapter = "nimala-raku-dap"
         adapter_args = self.effectivePrefs.getString("rakuDapArgs", "")
         stop_on_entry = self.effectivePrefs.getBoolean("rakuStopOnEntry", False)
+        exception_filters = "uncaught"
+        if self.effectivePrefs.hasPref("rakuExceptionFilters"):
+            exception_filters = (self.effectivePrefs.getStringPref(
+                "rakuExceptionFilters") or "uncaught")
 
         argv = [
             koDirs.pythonExe, bridge,
@@ -2013,6 +2017,7 @@ class koRakuInvocation(koInterpreterInvocation):
             "--cwd", cwd,
             "--raku", executable,
             "--adapter", adapter,
+            "--exception-filters", exception_filters,
         ]
         if adapter_args:
             argv += ["--adapter-args", adapter_args]

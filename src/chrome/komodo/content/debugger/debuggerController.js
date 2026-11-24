@@ -187,6 +187,29 @@ DebuggerItemsController.prototype.do_cmd_dbgInteractiveStop = function(event) {
     }
 }
 
+DebuggerItemsController.prototype.is_cmd_dbgRestart_enabled = function () {
+    try {
+        var session = ko.dbg.manager.currentSession;
+        return !!session && session.languageName.indexOf("Raku") == 0 &&
+               this._debuggerSessionStateIsNot(ko.dbg.manager.STATE_STOPPED);
+    } catch (ex) {
+        return false;
+    }
+}
+DebuggerItemsController.prototype.do_cmd_dbgRestart = function () {
+    try {
+        var session = ko.dbg.manager.currentSession;
+        if (!session)
+            return;
+        session.sendCommand(["restart"], 1, "");
+        require("sdk/timers").setTimeout(function () {
+            try { session.updateStatus(); } catch (ex) {}
+        }, 750);
+    } catch (ex) {
+        ko.dbg.manager.log.exception(ex);
+    }
+}
+
 DebuggerItemsController.prototype.is_cmd_dbgGo_enabled = function () {
     return this._debuggerCanStepOrStart();
 }

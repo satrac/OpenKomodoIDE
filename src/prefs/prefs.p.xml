@@ -378,6 +378,7 @@ SSL_CLIENT_I_C=
   <string id="rakuExtraPaths"></string>
   <string id="rakuExcludePaths"></string>
   <boolean id="rakuStopOnEntry">0</boolean>
+  <string id="rakuExceptionFilters">uncaught</string>
   <string id="rakuDapCommand">nimala-raku-dap</string>
   <string id="rakuDapArgs"></string>
   <boolean id="rakuLspEnabled">1</boolean>

@@ -110,6 +110,9 @@
 <!ENTITY functionCall.label "Function Call">
 <!ENTITY functionReturn.label "Function Return">
 <!ENTITY go.label "Go">
+<!ENTITY restart.label "Restart">
+<!ENTITY restart.tooltiptext "Restart the current debug session">
+<!ENTITY debuggerRestart.desc "Debugger: Restart Debug Session">
 <!ENTITY goContinue.label "Go/Continue">
 <!ENTITY goContinue.tooltiptext "Start or continue debugging">
 <!ENTITY goToTheSourceCode.tooltiptext "Go to the source code">
