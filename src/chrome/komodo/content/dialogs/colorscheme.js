@@ -294,7 +294,8 @@
         {
             let item = $("<menuitem>");
             item.attr("label", font);
-            item.css("font-family", font);
+            // See pref-ui.js: per-item font previews crash the Gecko 35
+            // HarfBuzz font-table blob sharing code.
             fontlistmono.append(item);
             fontlist2mono.append(item.clone());
         }
@@ -614,7 +615,6 @@
                         var face = e.target.getAttribute("label");
                         selectedScheme.setFont(property.name, face);
                         $("#fontlist").attr("label", face);
-                        $("#fontlist").css("font-family", face);
                         this.updateScintilla();
                     }
                 });
@@ -623,7 +623,6 @@
                 var property = this.getSelectedProperty();
                 var face = selectedScheme.getFont(property.name);
                 $("#fontlist").attr("label", face);
-                $("#fontlist").css("font-family", face);
             }
         },
         size: {
@@ -905,7 +904,6 @@
                         var face = e.target.getAttribute("label");
                         selectedScheme.setInterfaceStyle(property.name, "face", face);
                         $("#iface-face").attr("label", face);
-                        $("#iface-face").css("font-family", face);
                     }
                 });
             },
@@ -913,7 +911,6 @@
                 var property = this.getSelectedProperty();
                 var face = selectedScheme.getInterfaceStyle(property.name, "face");
                 $("#iface-face").attr("label", face);
-                $("#iface-face").css("font-family", face);
             }
         },
         "iface-size": {

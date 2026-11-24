@@ -1,0 +1,114 @@
+Fix a font-table blob lifetime crash in Gecko 35 (weak reference UAF).
+
+gfxFontEntry::FontTableHashEntry kept only a weak pointer to the hb_blob_t
+owned by the hashtable entry.  HarfBuzz could hold the last strong reference
+and free the blob while the hashtable entry still pointed at it, so a later
+GetBlob()/hb_blob_reference() call dereferenced freed memory.  This showed up
+when opening the Preferences font lists or applying some fonts, crashing in
+hb_blob_reference().
+
+Make the hashtable entry own a strong reference to each blob, return an
+additional reference to callers, and handle a cleared/empty entry safely.
+
+--- a/gfx/thebes/gfxFontEntry.cpp
++++ b/gfx/thebes/gfxFontEntry.cpp
+@@ -579,6 +579,7 @@
+ ShareTableAndGetBlob(FallibleTArray<uint8_t>& aTable,
+                      nsTHashtable<FontTableHashEntry> *aHashtable)
+ {
++    (void)aHashtable;
+     Clear();
+     // adopts elements of aTable
+     mSharedBlobData = new FontTableBlobData(aTable);
+@@ -586,32 +587,29 @@
+                            mSharedBlobData->GetTableLength(),
+                            HB_MEMORY_MODE_READONLY,
+                            mSharedBlobData, DeleteFontTableBlobData);
+-    if (!mSharedBlobData) {
+-        // The FontTableBlobData was destroyed during hb_blob_create().
+-        // The (empty) blob is still be held in the hashtable with a strong
+-        // reference.
+-        return hb_blob_reference(mBlob);
++    if (mBlob == hb_blob_get_empty()) {
++        // hb_blob_create() destroyed the FontTableBlobData, so do not
++        // dereference it.  The inert empty blob is still owned below.
++        mSharedBlobData = nullptr;
+     }
+ 
+-    // Tell the FontTableBlobData to remove this hash entry when destroyed.
+-    // The hashtable does not keep a strong reference.
+-    mSharedBlobData->ManageHashEntry(aHashtable, GetKey());
+-    return mBlob;
++    // The hash entry owns one strong reference to the blob; return a second
++    // reference to the caller.  This keeps the font data alive for as long
++    // as any HarfBuzz object still refers to it.
++    return hb_blob_reference(mBlob);
+ }
+ 
+ void
+ gfxFontEntry::FontTableHashEntry::Clear()
+ {
+-    // If the FontTableBlobData is managing the hash entry, then the blob is
+-    // not owned by this HashEntry; otherwise there is strong reference to the
+-    // blob that must be removed.
+-    if (mSharedBlobData) {
+-        mSharedBlobData->ForgetHashEntry();
+-        mSharedBlobData = nullptr;
+-    } else if (mBlob) {
++    // The hash entry owns a strong reference to the blob.  Dropping it may
++    // destroy the blob and its FontTableBlobData, but references still held
++    // by HarfBuzz or other callers keep the data alive.
++    if (mBlob) {
+         hb_blob_destroy(mBlob);
++        mBlob = nullptr;
+     }
+-    mBlob = nullptr;
++    mSharedBlobData = nullptr;
+ }
+ 
+ // a hb_destroy_func for hb_blob_create
+@@ -625,7 +623,7 @@
+ hb_blob_t *
+ gfxFontEntry::FontTableHashEntry::GetBlob() const
+ {
+-    return hb_blob_reference(mBlob);
++    return mBlob ? hb_blob_reference(mBlob) : nullptr;
+ }
+ 
+ bool
+@@ -643,7 +641,7 @@
+     }
+ 
+     *aBlob = entry->GetBlob();
+-    return true;
++    return *aBlob != nullptr;
+ }
+ 
+ hb_blob_t *
+--- a/gfx/thebes/gfxFontEntry.h
++++ b/gfx/thebes/gfxFontEntry.h
+@@ -541,9 +541,8 @@
+      *
+      * This is used to share font tables across fonts with the same
+      * font entry (but different sizes) for use by HarfBuzz.  The hashtable
+-     * does not own a strong reference to the blob, but keeps a weak pointer,
+-     * managed by FontTableBlobData.  Similarly FontTableBlobData keeps only a
+-     * weak pointer to the hashtable, managed by FontTableHashEntry.
++     * owns a strong reference to each blob; FontTableBlobData is owned by the
++     * blob via its destroy callback.
+      */
+ 
+     class FontTableHashEntry : public nsUint32HashKey
+@@ -578,9 +577,9 @@
+         // FontTable/Blob API
+ 
+         // Transfer (not copy) elements of aTable to a new hb_blob_t and
+-        // return ownership to the caller.  A weak reference to the blob is
+-        // recorded in the hashtable entry so that others may use the same
+-        // table.
++        // return ownership of a reference to the caller.  The hashtable
++        // entry keeps its own strong reference so that later callers can
++        // share the same table.
+         hb_blob_t *
+         ShareTableAndGetBlob(FallibleTArray<uint8_t>& aTable,
+                              nsTHashtable<FontTableHashEntry> *aHashtable);

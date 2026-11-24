@@ -60,7 +60,7 @@
             {
                 if (v == known)
                     return true;
-                if (v.toLowerCase().indexOf("mono") > 0)
+                if (v.toLowerCase().indexOf("mono") != -1)
                     return true;
             }
 
@@ -131,7 +131,7 @@
      */
     this.getEffectiveFont = (fontlist) =>
     {
-        fontstack = fontlist.split(",");
+        var fontstack = fontlist.split(",");
         for (let i=0;i<fontstack.length;i++)
             fontstack[i] = fontstack[i].replace(/['"]/g, '');
 

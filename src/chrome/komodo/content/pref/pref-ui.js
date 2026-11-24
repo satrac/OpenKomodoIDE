@@ -180,7 +180,9 @@ function PrefUi_OnLoad() {
         {
             let item = $("<menuitem>");
             item.attr("label", font);
-            item.css("font-family", font);
+            // Do not render each entry in its own font.  Gecko 35's bundled
+            // HarfBuzz crashes while loading the font tables for a long
+            // list of preview faces (shared gfxFontEntry blob lifetime).
             fontlistmono.append(item);
             fontlist2mono.append(item.clone());
         }
@@ -188,13 +190,11 @@ function PrefUi_OnLoad() {
         $("#editor-font").on("command", (e) => {
             var face = e.target.getAttribute("label");
             $("#editor-font").attr("label", face);
-            $("#editor-font").css("font-family", face);
         });
         
         $("#interface-font").on("command", (e) => {
             var face = e.target.getAttribute("label");
             $("#interface-font").attr("label", face);
-            $("#interface-font").css("font-family", face);
         });
     };
     

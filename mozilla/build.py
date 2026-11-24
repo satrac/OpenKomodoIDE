@@ -2170,8 +2170,11 @@ def target_pyxpcom(argv=["pyxpcom"]):
         #
         # The magic sauce - need to escape the $ so it's not shell-translated.
         # Note that we want to end up with:
-        #   "$ORIGIN:$ORIGIN/../python/lib"
-        ldflags += " -Wl,-rpath=\\\\$\\$ORIGIN:\\\\$\\$ORIGIN/../python/lib"
+        #   "$ORIGIN:$ORIGIN/..:$ORIGIN/../python/lib:$ORIGIN/../../python/lib"
+        # The extra entries cover both locations used by the build and the
+        # installed layout: libpyxpcom.so in lib/mozilla (or dist/bin) and
+        # libpyloader.so in components (or dist/bin/components).
+        ldflags += " -Wl,-rpath=\\\\$\\$ORIGIN:\\\\$\\$ORIGIN/..:\\\\$\\$ORIGIN/../python/lib:\\\\$\\$ORIGIN/../../python/lib"
     if ldflags:
         configure_flags += ' LDFLAGS="%s"' % (ldflags, )
     if config.buildType == "debug":
