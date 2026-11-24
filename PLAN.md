@@ -230,3 +230,11 @@ find-references, calltips and LSP diagnostics) is implemented.  Editing uses
 the dedicated UDL lexer in `src/udl/udl/raku.udl`, and `.rakudoc`, `.nqp` and
 `.pod6` are associated with Raku.  The remaining roadmap details are in
 [RAKU.md](RAKU.md).
+
+## Lua support
+
+Lua now uses the Lua Language Server for completions, symbols,
+go-to-definition, find-references and calltips, with LSP diagnostics and a
+`luac -p` fallback.  Run support, a Lua preference page and `.rockspec`
+associations are included; a debugger is the main remaining gap.  See
+[LUA.md](LUA.md).
