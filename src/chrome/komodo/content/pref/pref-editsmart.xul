@@ -39,7 +39,7 @@
             var schemeService = Components.classes['@activestate.com/koScintillaSchemeService;1'].getService()
             var currentScheme = schemeService.getScheme(schemeName);
             var edgeCheckbox = document.getElementById('editUseEdge');
-            if (currentScheme.preferFixed) {
+            if (currentScheme && currentScheme.preferFixed) {
                 edgeCheckbox.setAttribute('label', showEdgeLine);
             } else {
                 edgeCheckbox.setAttribute('label', highlightCharactersBeyondEdgeLine);
@@ -55,7 +55,7 @@
             widgets.restoreAutoAbbreviationTriggerCharacters = document.getElementById("restoreAutoAbbreviationTriggerCharacters");
             widgets.enableAutoAbbreviations = document.getElementById("enableAutoAbbreviations");
             check_trigger_characters_changed();
-            widgets.editDelimitedBlockSelectDelimiters = document.getElementById("editDelimitedBlockSelectDelimiters");
+            widgets.editDelimitedBlockSelectDelimiters = document.getElementById("delimitedBlockSelectDelimiters");
             widgets.editDelimitedBlockSelectDelimiters_FactorySetting = prefset.getStringPref("editDelimitedBlockSelectDelimiters_FactorySetting");
         } catch (ex) {
             // Ignore any errors.
@@ -136,11 +136,13 @@
     }
     
     function pref_delimitedBlockSelect_restoreDefaults() {
+        if (!widgets.editDelimitedBlockSelectDelimiters) return;
         widgets.editDelimitedBlockSelectDelimiters.value = widgets.editDelimitedBlockSelectDelimiters_FactorySetting;
         check_delimited_block_select_delimiters_changed();
     }
     
     function check_delimited_block_select_delimiters_changed() {
+        if (!widgets.editDelimitedBlockSelectDelimiters || !widgets.restoreDelimitedBlockSelectDelimiters) return;
         widgets.restoreDelimitedBlockSelectDelimiters.disabled = widgets.editDelimitedBlockSelectDelimiters_FactorySetting == widgets.editDelimitedBlockSelectDelimiters.value;
     }
     
