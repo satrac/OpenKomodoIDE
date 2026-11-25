@@ -59,6 +59,15 @@ class koGenericFormatter(object):
             log.exception("Could not set the last formatter error message")
         raise ServerException(nsError.NS_ERROR_FAILURE, message)
 
+    def _notifyOutput(self, message):
+        """Send formatter progress/warnings to the Command Output pane."""
+        try:
+            observerSvc = components.classes["@mozilla.org/observer-service;1"].\
+                    getService(components.interfaces.nsIObserverService)
+            observerSvc.notifyObservers(None, "formatter-output", message)
+        except Exception:
+            log.exception("Could not notify formatter output")
+
     def format(self, context):
         executable_path = None
         arguments = None
@@ -141,5 +150,9 @@ class koGenericFormatter(object):
             # handling.
             self._raiseFormatError(
                 "Format error running '%s':\n%s" % (cmd, stderr.strip()))
+        message = "Formatting complete: %s\n" % cmd
+        if stderr.strip():
+            message += "\nWarnings:\n%s\n" % stderr.strip()
+        self._notifyOutput(message)
         # Convert back to Unicode using the original encoding.
         context.text = stdout

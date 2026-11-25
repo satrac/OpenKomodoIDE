@@ -24,6 +24,27 @@ if (typeof(ko.formatters) == 'undefined') {
     // Variable to hold the number of highlighting events that have occurred.
     var highlight_count = 0;
 
+    // The generic command-line formatter reports progress and warnings via
+    // the "formatter-output" observer topic.
+    var _formatterOutputObserver = {
+        observe: function(subject, topic, data)
+        {
+            if (topic != "formatter-output")
+                return;
+            // Only the main window owns the Command Output pane.
+            if (require("ko/windows").getMain() !== window)
+                return;
+            _appendFormatterOutput(String(data), false);
+        }
+    };
+    var _observerSvc = Components.classes["@mozilla.org/observer-service;1"]
+                        .getService(Components.interfaces.nsIObserverService);
+    _observerSvc.addObserver(_formatterOutputObserver, "formatter-output", false);
+    window.addEventListener("unload", function()
+    {
+        _observerSvc.removeObserver(_formatterOutputObserver, "formatter-output");
+    }, false);
+
     /************************************************************
      *         Controller for the formatter commands            *
      ************************************************************/
@@ -88,14 +109,15 @@ if (typeof(ko.formatters) == 'undefined') {
      ************************************************************/
 
     /**
-     * Show formatter diagnostics in the Command Output pane so users can see
-     * which command ran and what it wrote to stderr.
+     * Append formatter output to the Command Output pane. Successful output
+     * is appended without opening or focusing the pane; failures show it.
      */
-    function _showFormatterError(message) {
-        var text = "\n---- Formatting failed ----\n\n" + message + "\n";
+    function _appendFormatterOutput(text, showPane) {
         try {
             var mainWindow = require("ko/windows").getMain();
-            var output = mainWindow && mainWindow.ko && mainWindow.ko.run &&
+            if ( ! mainWindow || mainWindow !== window)
+                return;
+            var output = mainWindow.ko && mainWindow.ko.run &&
                          mainWindow.ko.run.output;
             if ( ! output)
                 return;
@@ -104,12 +126,23 @@ if (typeof(ko.formatters) == 'undefined') {
                 return;
             output.startSession("Formatter", false, null, null, null, false);
             var terminal = output.getTerminal();
-            terminal.proxyAddText(text.length, text, "<stderr>");
-            output.endSession(1);
-            output.show(mainWindow, false, false);
+            terminal.proxyAddText(text.length, text,
+                                  showPane ? "<stderr>" : "<stdout>");
+            output.endSession(showPane ? 1 : 0);
+            if (showPane || mainWindow.ko.uilayout.outputPaneShown())
+                output.show(mainWindow, false, false);
         } catch (e) {
             log.exception(e, "Could not display formatter output");
         }
+    }
+
+    /**
+     * Show formatter diagnostics in the Command Output pane so users can see
+     * which command ran and what it wrote to stderr.
+     */
+    function _showFormatterError(message) {
+        _appendFormatterOutput(
+            "\n---- Formatting failed ----\n\n" + message + "\n", true);
     }
 
     /**
