@@ -171,7 +171,7 @@
         search.stdout.on('data', function (data)
         {
             var entry, rx = /([0-9a-zA-Z-_.]+)\s+-\s(.*)/g;
-            while (entry = rx.exec(data))
+            while ((entry = rx.exec(data)))
             {
                 result[entry[1]] = {
                     description: entry[2]
@@ -215,7 +215,7 @@
         search.stdout.on('data', function (data)
         {
             var entry, rx = /([0-9a-zA-Z-_.]+)\s+\(([0-9a-zA-Z-_.]+)\)/g;
-            while (entry = rx.exec(data))
+            while ((entry = rx.exec(data)))
             {
                 result[entry[1]] = {
                     description: entry[2]

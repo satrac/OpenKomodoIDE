@@ -23,7 +23,8 @@
     {
         // This is being loaded in a JS component or a JS module
         var { classes: Cc, interfaces: Ci, utils: Cu } = Components;
-        this.EXPORTED_SYMBOLS = ["console"];
+        if (typeof EXPORTED_SYMBOLS == "undefined")
+            this.EXPORTED_SYMBOLS = ["console"];
         this.console = this;
         addObs = true;
     }

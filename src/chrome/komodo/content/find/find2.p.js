@@ -1679,8 +1679,9 @@ function _escape_for_textbox(s, scimoz_eol_mode /* =null */)
 function updateWrapperHeight(repeat=true)
 {
     var elem = opener.document.getElementById("findReplaceWrap");
-    var bo = document.getElementById('find-box-wrap').boxObject;
-    elem.setAttribute("height", bo.height + 6);
+    var wrap = document.getElementById('find-box-wrap');
+    var height = wrap ? Math.ceil(wrap.getBoundingClientRect().height) : 0;
+    elem.setAttribute("height", height + 6);
     
     if (repeat) setTimeout(updateWrapperHeight.bind(null, false), 100);
 }

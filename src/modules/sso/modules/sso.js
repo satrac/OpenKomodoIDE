@@ -1,4 +1,5 @@
-this.EXPORTED_SYMBOLS = ['SSOSvc'];
+if (typeof EXPORTED_SYMBOLS == 'undefined')
+    this.EXPORTED_SYMBOLS = ['SSOSvc'];
 
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");

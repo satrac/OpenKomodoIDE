@@ -428,7 +428,7 @@ ko.scc = {};
     this.getWebService.cache = {};
     
     this.getCurrentService = function () {
-        sccContextFile = _getSCCContext();
+        var sccContextFile = _getSCCContext();
         if ( ! sccContextFile ) return;
         
         var sccType = sccContextFile.sccType;

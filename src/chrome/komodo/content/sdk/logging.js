@@ -20,7 +20,8 @@ if (typeof(require) === "function") {
     // object with the desired API.
     var { classes: Cc, interfaces: Ci, utils: Cu } = Components;
     // Note that Cu.getGlobalForObject({}) gives us the wrong global...
-    this.EXPORTED_SYMBOLS = ["logging"];
+    if (typeof EXPORTED_SYMBOLS == "undefined")
+        this.EXPORTED_SYMBOLS = ["logging"];
     this.logging = this.exports = {};
 }
 

@@ -899,8 +899,11 @@
 
     var allValidExts = {Python3:[], Perl:[]};
     for (let k in allExts) {
-        if (allExts[k] == "Perl" || allExts[k] == "Python3")
-            allValidExts[allExts[k]].push(k.split(".")[1]);
+        if (allExts[k] == "Perl" || allExts[k] == "Python3") {
+            let ext = k.split(".")[1];
+            if (ext)
+                allValidExts[allExts[k]].push(ext);
+        }
     }
     for (let ext of pythonExts) {
         if (allValidExts.Python3.indexOf(ext) == -1){

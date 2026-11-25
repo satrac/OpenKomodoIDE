@@ -72,7 +72,8 @@ const [JetPack, require] = (function() {
         }
     } else if (String(this).contains("BackstagePass")) {
         // Being loaded via Components.utils.import
-        this.EXPORTED_SYMBOLS = ["require", "JetPack"];
+        if (typeof EXPORTED_SYMBOLS == "undefined")
+            this.EXPORTED_SYMBOLS = ["require", "JetPack"];
     }
 
     // Note that "paths" is required; _something_ needs to name the modules

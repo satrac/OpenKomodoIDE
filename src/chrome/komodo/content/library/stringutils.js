@@ -281,7 +281,8 @@ this.contractUser = function(path) {
 
 if (typeof(window) == "undefined") {
     (function() {
-	this.EXPORTED_SYMBOLS = ["stringutils"];
+	if (typeof EXPORTED_SYMBOLS == "undefined")
+	    this.EXPORTED_SYMBOLS = ["stringutils"];
 	this.stringutils = ko.stringutils;
     })();
 }

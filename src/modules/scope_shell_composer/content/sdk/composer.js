@@ -272,7 +272,7 @@
         search.stdout.on('data', function (data)
         {
             var entry, rx = /([0-9a-zA-Z-_]+\/[0-9a-zA-Z-_]+)\s([0-9a-zA-Z-_.*]+)/g;
-            while (entry = rx.exec(data))
+            while ((entry = rx.exec(data)))
             {
                 let name = entry[1];
                 let description = entry[2];

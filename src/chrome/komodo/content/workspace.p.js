@@ -454,10 +454,10 @@ this._restoreWindowWorkspace =
 
         var ids = workspace.getPrefIds();
         for (var i = 0; i < ids.length; i++) {
-            id = ids[i];
-            elt = currentWindow.document.getElementById(id);
+            var id = ids[i];
+            var elt = currentWindow.document.getElementById(id);
             if (elt) {
-                pref = workspace.getPref(id);
+                var pref = workspace.getPref(id);
                 elt.setState(pref);
             }
         }
@@ -810,7 +810,7 @@ this.saveWorkspace = (saveNow, shuttingDown) =>
 /**
  * save all workspace preferences and state
  */
-this._saveWorkspaceDebounce = _.debounce(ko.workspace._saveWorkspace,3000);
+this._saveWorkspaceDebounce = _.debounce((saveNow) => ko.workspace._saveWorkspace(saveNow), 3000);
 
 this._saveWorkspace = (saveNow) =>
 {

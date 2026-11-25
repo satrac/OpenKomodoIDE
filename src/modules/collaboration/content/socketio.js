@@ -404,8 +404,9 @@
       return Array.prototype.indexOf.call(arr, o, i);
     }
 
-    for (var j = arr.length, i = i < 0 ? i + j < 0 ? 0 : i + j : i || 0; 
-         i < j && arr[i] !== o; i++);
+    var j = arr.length;
+    i = i < 0 ? i + j < 0 ? 0 : i + j : i || 0;
+    for (; i < j && arr[i] !== o; i++);
 
     return j <= i ? -1 : i;
   };
@@ -1130,7 +1131,7 @@
     if (!pieces) return {};
 
     var id = pieces[2] || ''
-      , data = pieces[5] || ''
+      , payload = pieces[5] || ''
       , packet = {
             type: packets[pieces[1]]
           , endpoint: pieces[4] || ''
@@ -1148,18 +1149,18 @@
     // handle different packet types
     switch (packet.type) {
       case 'error':
-        var pieces = data.split('+');
+        var pieces = payload.split('+');
         packet.reason = reasons[pieces[0]] || '';
         packet.advice = advice[pieces[1]] || '';
         break;
 
       case 'message':
-        packet.data = data || '';
+        packet.data = payload || '';
         break;
 
       case 'event':
         try {
-          var opts = JSON.parse(data);
+          var opts = JSON.parse(payload);
           packet.name = opts.name;
           packet.args = opts.args;
         } catch (e) { }
@@ -1169,16 +1170,16 @@
 
       case 'json':
         try {
-          packet.data = JSON.parse(data);
+          packet.data = JSON.parse(payload);
         } catch (e) { }
         break;
 
       case 'connect':
-        packet.qs = data || '';
+        packet.qs = payload || '';
         break;
 
       case 'ack':
-        var pieces = data.match(/^([0-9]+)(\+)?(.*)/);
+        var pieces = payload.match(/^([0-9]+)(\+)?(.*)/);
         if (pieces) {
           packet.ackId = pieces[1];
           packet.args = [];

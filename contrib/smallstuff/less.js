@@ -2,7 +2,7 @@ var window = {};
 var EXPORTED_SYMBOLS = [];
 
 window.less = {};
-less = window.less;
+var less = window.less;
 
 (function() {
 

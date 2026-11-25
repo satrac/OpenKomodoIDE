@@ -147,7 +147,7 @@ Lexer.prototype.lex = function(src) {
  */
 
 Lexer.prototype.token = function(src, top, bq) {
-  var src = src.replace(/^ +$/gm, '')
+  src = src.replace(/^ +$/gm, '')
     , next
     , loose
     , cap
