@@ -254,6 +254,30 @@ this.doCommand = function command_doCommand(command, options) {
             }
         }
 
+        // Xwayland does not preserve selections after the owning X11 window
+        // goes away, so mirror copied text to the Wayland clipboard.
+        if (command == "cmd_copy" || command == "cmd_cut" ||
+            command == "cmd_copyRegion" || command == "cmd_copyLine")
+        {
+            try {
+                xtk.include("clipboard");
+                // The X11 clipboard can take a moment to become readable
+                // after the copy command completes.
+                var tries = 0;
+                var syncCopiedText = function() {
+                    var clipText = xtk.clipboard.getText();
+                    if (clipText) {
+                        xtk.clipboard.syncToWayland(clipText);
+                    } else if (++tries < 10) {
+                        window.setTimeout(syncCopiedText, 50);
+                    }
+                };
+                window.setTimeout(syncCopiedText, 20);
+            } catch (e) {
+                _log.exception(e, "Could not sync clipboard to Wayland");
+            }
+        }
+
         var w = require("ko/windows").getMain();
         var evt = new w.CustomEvent("after_command",
         {

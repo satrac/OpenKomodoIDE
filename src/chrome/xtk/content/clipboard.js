@@ -289,6 +289,65 @@ this.copyFromTransferable = function(transferable) {
 this.setText = function(text) {
     var transferable = this.addTextDataFlavor("text/unicode", text);
     xtk.clipboard.copyFromTransferable(transferable);
+    xtk.clipboard.syncToWayland(text);
+}
+
+var _waylandSync = { text: null, time: 0 };
+
+/**
+ * Mirror text to the Wayland clipboard.
+ *
+ * Xwayland's selection bridge does not keep the clipboard alive after the
+ * owning X11 window goes away, and clipboard managers cannot see those
+ * selections. Handing the text to wl-copy makes it persist and visible to
+ * Wayland clients and clipboard managers.
+ *
+ * @param {string} text  The text to mirror.
+ */
+this.syncToWayland = function(text) {
+    if ( ! text || Services.appinfo.OS != "Linux")
+        return;
+
+    try {
+        var envSvc = Components.classes["@mozilla.org/process/environment;1"]
+                        .getService(Components.interfaces.nsIEnvironment);
+        var waylandDisplay = envSvc.get("WAYLAND_DISPLAY");
+        if ( ! waylandDisplay && envSvc.get("XDG_SESSION_TYPE") != "wayland")
+            return;
+
+        var shell = require("ko/shell");
+        if ( ! shell.lookup("wl-copy"))
+            return;
+
+        // Avoid spawning wl-copy twice for the same copy (the command
+        // dispatcher and xtk.clipboard.setText can both trigger this).
+        var now = Date.now();
+        if (text == _waylandSync.text && (now - _waylandSync.time) < 1000)
+            return;
+        _waylandSync = { text: text, time: now };
+
+        var env = shell.getEnv();
+        ["WAYLAND_DISPLAY", "XDG_RUNTIME_DIR"].forEach(function(name)
+        {
+            if ( ! env[name])
+            {
+                var value = envSvc.get(name);
+                if (value)
+                    env[name] = value;
+            }
+        });
+
+        // Detach wl-copy with its own session and stdio so the clipboard
+        // survives Komodo exiting and any cleanup of its process group.
+        var shellCmd = 'printf %s "$1" | wl-copy >/dev/null 2>&1';
+        if (shell.lookup("setsid"))
+            shell.run("setsid", ["sh", "-c", shellCmd, "sh", text],
+                      { env: env });
+        else
+            shell.run("sh", ["-c", shellCmd, "sh", text], { env: env });
+    } catch (e) {
+        try { Cu.reportError(e); } catch (e2) {}
+    }
 }
 
 }).apply(xtk.clipboard);
