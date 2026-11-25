@@ -88,6 +88,31 @@ if (typeof(ko.formatters) == 'undefined') {
      ************************************************************/
 
     /**
+     * Show formatter diagnostics in the Command Output pane so users can see
+     * which command ran and what it wrote to stderr.
+     */
+    function _showFormatterError(message) {
+        var text = "\n---- Formatting failed ----\n\n" + message + "\n";
+        try {
+            var mainWindow = require("ko/windows").getMain();
+            var output = mainWindow && mainWindow.ko && mainWindow.ko.run &&
+                         mainWindow.ko.run.output;
+            if ( ! output)
+                return;
+            // Never disturb a command that is still producing output.
+            if (output.getTerminal().active)
+                return;
+            output.startSession("Formatter", false, null, null, null, false);
+            var terminal = output.getTerminal();
+            terminal.proxyAddText(text.length, text, "<stderr>");
+            output.endSession(1);
+            output.show(mainWindow, false, false);
+        } catch (e) {
+            log.exception(e, "Could not display formatter output");
+        }
+    }
+
+    /**
      * Format the supplied view with the provided formatter and context.
      
      * @param view {Components.interfaces.koIScintillaView}  The view to format.
@@ -134,8 +159,15 @@ if (typeof(ko.formatters) == 'undefined') {
             try {
                 formatter.format(context);
             } catch (ex) {
-                require("notify/notify").send(ex, "formatting", {priority: "error"});
+                var message = ex;
+                try {
+                    message = Components.classes["@activestate.com/koLastErrorService;1"]
+                        .getService(Components.interfaces.koILastErrorService)
+                        .getLastErrorMessage() || ex;
+                } catch (e) {}
+                require("notify/notify").send(message, "formatting", {priority: "error"});
                 log.exception(ex, "Formatting failed");
+                _showFormatterError(String(message));
                 return;
             }
             var text = context.text;

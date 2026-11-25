@@ -44,6 +44,21 @@ class koGenericFormatter(object):
         # This formatter supports everything.
         return True
 
+    def _raiseFormatError(self, message):
+        """Set the thread's last error and raise a ServerException.
+
+        XPCOM only propagates the error code for ServerException, so the
+        message must go through koLastErrorService for the UI to show it.
+        """
+        log.error("%s", message)
+        try:
+            lastErrorSvc = components.classes["@activestate.com/koLastErrorService;1"].\
+                    getService(components.interfaces.koILastErrorService)
+            lastErrorSvc.setLastError(nsError.NS_ERROR_FAILURE, message)
+        except Exception:
+            log.exception("Could not set the last formatter error message")
+        raise ServerException(nsError.NS_ERROR_FAILURE, message)
+
     def format(self, context):
         executable_path = None
         arguments = None
@@ -55,8 +70,8 @@ class koGenericFormatter(object):
             if prefs.hasStringPref("arguments"):
                 arguments = prefs.getStringPref("arguments")
         if not executable_path:
-            raise ServerException(nsError.NS_ERROR_FAILURE,
-                                  "The formatter is not yet configured for '%s'." % (context.lang, ))
+            self._raiseFormatError(
+                "The formatter is not yet configured for '%s'." % (context.lang, ))
 
         interpolation_items = [executable_path]
         if arguments:
@@ -95,8 +110,9 @@ class koGenericFormatter(object):
                 executable_path = which.which(executable_path, path=userPath)
             except which.WhichError:
                 log.debug("command executable does not exist: %r", executable_path)
-                raise ServerException(nsError.NS_ERROR_FAILURE,
-                                      "Could not locate the formatter executable: '%s'" % (executable_path, ))
+                self._raiseFormatError(
+                    "Could not locate the formatter executable: '%s'"
+                    % (executable_path, ))
 
         # Quote the executable, in case their are spaces or specials chars.
         interpolation_items[0] = '"%s"' % (executable_path.replace('"', '\\"'), )
@@ -107,16 +123,23 @@ class koGenericFormatter(object):
         # http://bugs.activestate.com/show_bug.cgi?id=80371
         cmd = " ".join(interpolation_items)
         log.debug("command: %r", cmd)
-        p = process.ProcessOpen(cmd, cwd=cwd, env=env)
 
-        # Encode the input using the context's encoding, bug 82615.
+        # ProcessOpen creates text-mode pipes. Configure them with the
+        # document's encoding (bug 82615); passing pre-encoded bytes to a text
+        # pipe fails on Python 3.
         encoding = context.encoding or sys.getfilesystemencoding()
-        text = context.text.encode(encoding)
-        stdout, stderr = p.communicate(text)
+        try:
+            p = process.ProcessOpen(cmd, cwd=cwd, env=env)
+            for stream in (p.stdin, p.stdout, p.stderr):
+                stream.reconfigure(encoding=encoding, errors="replace")
+            stdout, stderr = p.communicate(context.text)
+        except Exception as ex:
+            self._raiseFormatError(
+                "Could not run formatter command '%s': %s" % (cmd, ex))
         if p.retval != 0 and not stdout:
             # Best we can do until we have specific preferences for retval
             # handling.
-            raise ServerException(nsError.NS_ERROR_FAILURE,
-                                  "Format error: '%s'" % (stderr, ))
+            self._raiseFormatError(
+                "Format error running '%s':\n%s" % (cmd, stderr.strip()))
         # Convert back to Unicode using the original encoding.
-        context.text = stdout.decode(encoding)
+        context.text = stdout
