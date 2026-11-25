@@ -20,6 +20,7 @@
 
     this.FEATURE_COMPLETIONS = "completions";
     this.FEATURE_CALLTIPS = "calltips";
+    this.FEATURE_HOVER = "hover";
     this.FEATURE_SYMBOLBROWSER = "symbolbrowser";
     this.FEATURE_SYMBOLLIST = "symbollist";
     this.FEATURE_SYMBOLSCOPE = "symbolscope";
@@ -31,6 +32,7 @@
     var features = [
         this.FEATURE_COMPLETIONS,
         this.FEATURE_CALLTIPS,
+        this.FEATURE_HOVER,
         this.FEATURE_SYMBOLBROWSER,
         this.FEATURE_SYMBOLLIST,
         this.FEATURE_SYMBOLSCOPE,
@@ -340,6 +342,7 @@
             "language": "raku",
             "supports": [this.FEATURE_COMPLETIONS,
                          this.FEATURE_CALLTIPS,
+                         this.FEATURE_HOVER,
                          this.FEATURE_SYMBOLBROWSER,
                          this.FEATURE_SYMBOLSCOPE,
                          this.FEATURE_GOTODEF,
@@ -420,6 +423,7 @@
             "language": "lua",
             "supports": [this.FEATURE_COMPLETIONS,
                          this.FEATURE_CALLTIPS,
+                         this.FEATURE_HOVER,
                          this.FEATURE_SYMBOLBROWSER,
                          this.FEATURE_SYMBOLSCOPE,
                          this.FEATURE_GOTODEF,

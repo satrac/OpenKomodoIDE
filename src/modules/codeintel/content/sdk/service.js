@@ -301,6 +301,23 @@
         "getReferences", ["buf", "pos", "path", "parentPath", "language"],
         { cache: true, maxAge: 10000, method: "fallback", feature: codeintel.FEATURE_FINDREFERENCES }
     );
+    /**
+     * Get hover information for the symbol at the given position
+     *
+     * input object:
+     * {
+     *   <string> buf: the buffer (your code)
+     *   <int> pos: caret position in the buffer
+     *   <string> path (optional): path of the current buffer
+     *   <string> parentPath (optional): the project/workspace path
+     *   <string> importPaths (optional): additional import paths
+     *   <string> language: language name
+     * }
+     */
+    this.getHover = mediator.mediate(
+        "getHover", ["buf", "pos", "path", "parentPath", "importPaths", "language"],
+        { cache: true, maxAge: 300, feature: codeintel.FEATURE_HOVER }
+    );
     
     /**
      * Get available catalogs for the given language.

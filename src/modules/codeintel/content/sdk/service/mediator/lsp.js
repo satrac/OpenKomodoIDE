@@ -727,6 +727,102 @@
             .catch(reject);
         };
 
+        this.mediate_getHover = function (opts, resolve, reject)
+        {
+            log.debug("getHover called");
+
+            var doc = openDocument(opts);
+            var position = getPosition(opts);
+
+            var normalizeHover = (contents) =>
+            {
+                var parts = [];
+                var append = (value) =>
+                {
+                    if (value == null)
+                        return;
+                    if (typeof value == "string")
+                    {
+                        parts.push(value);
+                    }
+                    else if (Array.isArray(value))
+                    {
+                        for (let part of value)
+                            append(part);
+                    }
+                    else if (value.value)
+                    {
+                        parts.push(value.value);
+                    }
+                };
+                append(contents);
+                return parts.join("\n\n")
+                    .replace(/```[^\n]*\n?/g, "")
+                    .trim();
+            };
+
+            waitForDiagnostics(doc, 1500)
+            .then(() => connection.sendRequest("textDocument/hover", {
+                textDocument: { uri: doc.uri },
+                position: position
+            }))
+            .then((data) =>
+            {
+                if ( ! data || ! data.contents)
+                    return resolve();
+
+                resolve({
+                    contents: normalizeHover(data.contents),
+                    range: data.range || null
+                });
+            })
+            .catch(reportError.bind(null, "getHover caught"))
+            .catch(reject);
+        };
+
+        this.mediate_getSymbols = function (opts, resolve, reject)
+        {
+            log.debug("getSymbols called");
+
+            var args = opts.args;
+            var limit = args.limit || 50;
+
+            connection.sendRequest("workspace/symbol", {
+                query: args.query || ""
+            })
+            .then((items) =>
+            {
+                var symbols = [];
+                for (let item of (items || []))
+                {
+                    if (symbols.length >= limit)
+                        break;
+                    if ( ! item || ! item.name)
+                        continue;
+
+                    let location = item.location || {};
+                    let uri = location.uri || location.targetUri;
+                    let range = location.range || location.targetSelectionRange ||
+                                location.targetRange;
+                    if ( ! uri || ! range)
+                        continue;
+
+                    symbols.push({
+                        name: item.name,
+                        type: this.symbolKindMap[item.kind] || "KW",
+                        filename: uri,
+                        path: uriToPath(uri),
+                        line: range.start.line + 1,
+                        pos: -1,
+                        weight: 0
+                    });
+                }
+                resolve(symbols);
+            })
+            .catch(reportError.bind(null, "getSymbols caught"))
+            .catch(reject);
+        };
+
         this.getSignature = function (uri, position)
         {
             return connection.sendRequest("textDocument/signatureHelp", {

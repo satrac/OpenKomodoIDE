@@ -2023,6 +2023,7 @@ SSL_CLIENT_I_C=
   <!-- CodeIntel v3 -->
   <boolean id="codeintel.completions.enabled">1</boolean>
   <boolean id="codeintel.calltips.enabled">1</boolean>
+  <boolean id="codeintel.hover.enabled">1</boolean>
   <boolean id="codeintel.symbollist.enabled">1</boolean>
   <boolean id="codeintel.symbolbrowser.enabled">1</boolean>
   <boolean id="codeintel.symbolbrowser.auto_show">1</boolean>
