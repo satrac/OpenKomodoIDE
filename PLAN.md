@@ -229,7 +229,8 @@ working.  Phase 4 (LSP completions, symbols, go-to-definition,
 find-references, calltips and LSP diagnostics) is implemented.  Editing uses
 the dedicated UDL lexer in `src/udl/udl/raku.udl`, and `.rakudoc`, `.nqp` and
 `.pod6` are associated with Raku.  Snippets, script/module templates and a
-`raku.svg` file icon ship with the language.  The Unit Testing panel has a
+`raku.svg` file icon ship with the language.  LSP hover popups and the
+project-wide Commando symbol scope are wired for Raku and Lua.  The Unit Testing panel has a
 Raku handler that runs `.rakutest`/`.t6` suites through `prove -v --exec raku`
 and parses TAP.  Restart and exception-filter controls are exposed; attach is
 blocked by the current DAP adapter.  The remaining roadmap details are in

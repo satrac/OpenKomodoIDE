@@ -18,6 +18,8 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 | Go to definition | ✅ | LSP |
 | Find references | ✅ | LSP, project-wide |
 | Calltips / signatures | ✅ | LSP signature help |
+| Hover popups | ✅ | LSP `textDocument/hover` on mouse hover |
+| Project-wide symbols | ✅ | Commando “Symbols” scope via LSP `workspace/symbol` |
 | Debugging | ✅ | Launch, breakpoints, stop-on-entry, stepping, stack, variables, evaluate, output, restart and exception filters. Attach is adapter-blocked. |
 | Projects / SCC / search | ✅ | Generic IDE features |
 | Snippets / templates / icon | ✅ | Abbreviations (`say`, `sub`, `class`, `for`, `given`, `grammar`), print-debug snippet, script/module templates and `raku.svg` |
@@ -30,11 +32,10 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
 | Priority | Item | Notes |
 | --- | --- | --- |
 | 1 | Debugger attach mode | Blocked: `nimala-raku-dap` rejects `attach`; needs an adapter with attach support |
-| 2 | Project-wide symbol search and hover popups | LSP supports them; CodeIntel currently exposes document symbols and calltips only |
-| 3 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
-| 4 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
-| 5 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
-| 6 | `zef` package-manager integration | Optional |
+| 2 | LSP rename, formatting, code actions and semantic tokens | Mediator support exists; UI wiring does not |
+| 3 | Lexer refinements | Heredoc terminator heuristic, interpolation inside strings, Unicode metaoperators |
+| 4 | Automated GUI tests for run, lint and the REPL | Reuse the headless harness |
+| 5 | `zef` package-manager integration | Optional |
 
 ## Phase 0 — editor, run, lint, REPL (implemented)
 
@@ -80,6 +81,12 @@ CodeIntel, LSP diagnostics and a DAP-to-DBGP debugger bridge.
   passed to the bridge as `--exception-filters`.
 - **Attach**: not available with `nimala-raku-dap`; its attach handler
   returns “Attaching to a running process is not currently supported”.
+
+### Code intelligence UI
+
+- **Hover**: hovering a symbol shows the LSP hover text in a small popup.
+- **Project symbols**: Commando’s “Symbols” scope uses `workspace/symbol`,
+  so it searches the LSP workspace/project rather than only the current file.
 
 ### Unit testing
 
@@ -197,8 +204,8 @@ Current limits:
 
 - Raku has no bundled CIX database; LSP is the preferred route for richer
   CodeIntel support.
-- Hover text is shown through the signature-help calltip; there is no
-  dedicated editor hover popup.
+- Hover text is available both through the signature-help calltip and the
+  editor hover popup.
 
 ## Acceptance criteria
 

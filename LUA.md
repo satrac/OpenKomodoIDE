@@ -18,6 +18,8 @@ Language Server for CodeIntel and diagnostics.
 | Go to definition | ✅ | LuaLS |
 | Find references | ✅ | LuaLS |
 | Calltips / signatures | ✅ | LuaLS signature help |
+| Hover popups | ✅ | LuaLS `textDocument/hover` |
+| Project-wide symbols | ✅ | LuaLS `workspace/symbol` through the shared LSP mediator |
 | Preferences | ✅ | Lua page for interpreter, `LUA_PATH` and LSP settings |
 | Debugging | ❌ | No Lua debug adapter yet |
 | Snippets / templates / icon | ⚠️ | A Lua template and print snippet exist; no icon or broader pack |
@@ -33,7 +35,7 @@ Language Server for CodeIntel and diagnostics.
 | 3 | Luau dialect | Separate association/highlighting and LSP support for `.luau` |
 | 4 | Snippets, templates and icon | Expand the existing Lua template and print snippet |
 | 5 | Automated GUI tests | Cover run, lint, LSP navigation and the REPL |
-| 6 | LSP UI extras | Rename, formatting, code actions, hover popups and project-wide symbols |
+| 6 | LSP UI extras | Rename, formatting and code actions |
 | 7 | Shared LSP process | Reuse one LuaLS instance for CodeIntel and diagnostics |
 
 ## Implementation notes
@@ -55,5 +57,4 @@ Language Server for CodeIntel and diagnostics.
   instances.
 - The debugger is not implemented; launch debugging is the main missing IDE
   feature.
-- Project-wide “Go to Symbol”, hover popups, rename and formatting are not
-  wired to the LSP mediator yet.
+- Rename, formatting and code actions are not wired to the LSP mediator yet.
