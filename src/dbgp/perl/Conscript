@@ -1,5 +1,13 @@
 #!/usr/local/bin/perl
-# Files in this directory are installed by the Blackfile image/packaging
-# step.  This Conscript is intentionally a no-op so the dev build can still
-# run without requiring the target-language debugger binaries.
-return;
+# Install the Perl DBGP debugger library.  This is required by both the
+# Perl debugger and the Perl interactive shell (via PERL5DB).
+
+Import(
+    'cons',
+    'supportDir',
+);
+
+$cons->InstallRecursive("$supportDir/dbgp/perllib",
+                        # InstallRecursive requires an absolute source path.
+                        cwd()."/src/dbgp/perl",
+                        ('Conscript', '\.consign', '\.pyc$'));
